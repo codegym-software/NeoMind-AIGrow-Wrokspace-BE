@@ -1,48 +1,76 @@
-# NeoMind-AIGrow-Wrokspace-BE
+# 🌱 AI-Grow Backend  
 
-# AI-Grow Backend
+Backend API cho dự án **AI-Grow**, được xây dựng bằng **Spring Boot** và **MySQL**.  
+Hệ thống hỗ trợ **CRUD người dùng, đăng nhập**, và các tính năng mở rộng trong tương lai.  
 
-Backend API cho dự án AI-Grow, được xây dựng bằng **Spring Boot** và **MySQL**.  
-Hỗ trợ quản lý người dùng (CRUD), đăng nhập, và các chức năng mở rộng sau này.
+---
 
 ## 🚀 Tech Stack
-- Java 17
-- Spring Boot 3
-- Spring Data JPA (Hibernate)
-- MySQL
-- Lombok
-- Spring Validation
-- Spring Security Crypto (BCrypt)
-- Maven
+- **☕ Java 21**
+- **🌱 Spring Boot 3**
+- **🗄 Spring Data JPA (Hibernate)**
+- **🐬 MySQL 8**
+- **🧩 Lombok**
+- **✅ Spring Validation**
+- **🔐 Spring Security (BCrypt)**
+- **📦 Maven**
+
+---
 
 ## ⚙️ Yêu cầu hệ thống
-- JDK 21 
-- Maven 3.9+
-- MySQL 8.0.4
-- IDE: IntelliJ IDEA / VS Code
+- **JDK 21** → [Tải tại đây](https://jdk.java.net/)  
+- **Maven 3.9+** → [Tải tại đây](https://maven.apache.org/download.cgi)  
+- **MySQL 8.0.4** → [Tải tại đây](https://dev.mysql.com/downloads/installer/)  
+- IDE khuyến nghị: **IntelliJ IDEA** / **VS Code**  
 
-## 🛠️ Cài đặt & chạy dự án
+---
 
-git clone https://github.com/codegym-software/NeoMind-AIGrow-Wrokspace-BE
+## 🛠️ Hướng dẫn cài đặt & chạy dự án  
 
-## Tạo database MySQL
-CREATE DATABASE ai-grow;
+### 1️⃣ Cài đặt môi trường  
+- **Java Development Kit (JDK) 21**:  Tải xuống và cài đặt từ trang web chính thức của Oracle hoặc OpenJDK. Sau khi cài đặt, mở Terminal/Command Prompt và kiểm tra phiên bản bằng lệnh:
+  ```bash
+  java -version
+- **Maven**:  Tải xuống phiên bản mới nhất từ trang chủ Maven. Giải nén file và cấu hình biến môi trường MAVEN_HOME, sau đó thêm %MAVEN_HOME%\bin vào biến Path. Mở Terminal/Command Prompt mới và kiểm tra phiên bản bằng lệnh:
+  ```bash
+  mvn -v
 
-## Cấu hình application.properties
+- **MySQL Server và MySQL Workbench**: Tải xuống MySQL Installer từ MySQL Community Downloads. Trong quá trình cài đặt, hãy chọn tùy chọn "Full" để cài đặt cả MySQL Server và MySQL Workbench. Ghi nhớ mật khẩu root mà bạn đã thiết lập.
 
-spring.application.name=backend
-spring.datasource.url=jdbc:mysql://localhost:3306/ai-grow?useSSL=false&serverTimezone=UTC
-spring.datasource.username=root
-spring.datasource.password=25112005
+### 2️⃣ Tải dự án và cấu hình  
 
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
+- **Clone project**:  
+  ```bash
+  git clone https://github.com/codegym-software/NeoMind-AIGrow-Wrokspace-BE
+  cd NeoMind-AIGrow-Wrokspace-BE
 
-server.port=8081
+- **Tạo database trong MySQL**:
+  ```bash
+  CREATE DATABASE `ai-grow`;
 
-## Build and run
 
-mvn spring-boot:run
+- **Cấu hình file src/main/resources/application.properties**:
+  ```bash
+   spring.application.name=backend
+   spring.datasource.url=jdbc:mysql://localhost:3306/ai-grow?useSSL=false&serverTimezone=UTC
+   spring.datasource.username=YOUR_USERNAME
+   spring.datasource.password=YOUR_PASSWORD
 
-## 👨‍💻 Nhóm phát triển: NeoMind
+   spring.jpa.hibernate.ddl-auto=update
+   spring.jpa.show-sql=true
+   spring.jpa.properties.hibernate.format_sql=true
+
+   server.port=8081
+
+## 3️⃣ Build & Run dự án
+- Chạy lệnh:
+  ```bash
+   mvn spring-boot:run
+
+Mặc định ứng dụng sẽ chạy tại:
+👉 http://localhost:8081
+
+
+
+## 👨‍💻 Nhóm phát triển
+_**NeoMind Team**_ – AIGrow Workspace Backend
