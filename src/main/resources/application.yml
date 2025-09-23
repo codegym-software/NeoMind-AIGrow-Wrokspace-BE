@@ -1,0 +1,8 @@
+server:
+  port: ${PORT}
+
+cognito:
+  issuer-uri: ${ISSUER_URI}
+  client-id: ${CLIENT_ID}
+
+
