@@ -68,7 +68,7 @@ Hệ thống hỗ trợ **CRUD người dùng, đăng nhập**, và các tính n
    mvn spring-boot:run
 
 Mặc định ứng dụng sẽ chạy tại:
-👉 http://localhost:8081
+👉 http://localhost:8080
 
 
 
