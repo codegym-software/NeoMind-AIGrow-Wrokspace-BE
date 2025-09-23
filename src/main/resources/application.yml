@@ -1,8 +1,17 @@
 server:
-  port: ${PORT}
+  port: ${PORT:8080}
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ISSUER_URI}
 
 cognito:
   issuer-uri: ${ISSUER_URI}
   client-id: ${CLIENT_ID}
 
-
+app:
+  cors:
+    allowed-origins: ${FRONTEND_ORIGIN:http://localhost:5173}
