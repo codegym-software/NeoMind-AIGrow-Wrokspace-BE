@@ -1,4 +1,3 @@
-// src/main/java/com/springboot/demo/account/AccountService.java
 package com.springboot.demo;
 
 import lombok.RequiredArgsConstructor;
