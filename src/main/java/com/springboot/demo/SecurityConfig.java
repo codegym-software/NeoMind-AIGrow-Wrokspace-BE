@@ -26,14 +26,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/health").permitAll()
+                        .requestMatchers("/health", "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
+                        .requestMatchers("/api/uploads/**").authenticated()
                         .anyRequest().authenticated()
                 )
-                // Xác thực JWT Cognito theo issuer-uri (set trong application.yml)
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
 
-        // Sau khi có SecurityContext (JWT ok) thì ensure user tồn tại
         http.addFilterAfter(ensureUserExistsFilter, AnonymousAuthenticationFilter.class);
 
         return http.build();
@@ -42,7 +42,6 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
-        // Cho phép origin từ env FRONTEND_ORIGIN hoặc localhost:*
         cfg.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*", "${FRONTEND_ORIGIN}"));
         cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
         cfg.setAllowedHeaders(List.of("Authorization","Content-Type","X-Requested-With","Accept","Origin"));

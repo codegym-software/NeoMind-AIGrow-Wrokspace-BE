@@ -1,5 +1,5 @@
 server:
-  port: ${PORT:8080}
+  port: ${PORT}
 
 spring:
   security:
@@ -7,6 +7,10 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${ISSUER_URI}
+  servlet:
+    multipart:
+      max-file-size: ${MAX_UPLOAD_SIZE}
+      max-request-size: ${MAX_UPLOAD_SIZE}
 
 cognito:
   issuer-uri: ${ISSUER_URI}
@@ -14,4 +18,16 @@ cognito:
 
 app:
   cors:
-    allowed-origins: ${FRONTEND_ORIGIN:http://localhost:5173}
+    allowed-origins: ${FRONTEND_ORIGIN}
+
+  upload:
+    base-url: ${PUBLIC_FILES_BASE_URL}
+    max-file-size: ${MAX_UPLOAD_SIZE}
+
+file:
+  storage:
+    base-dir: ${FILE_STORAGE_BASE}
+    buckets:
+      company-logo: company-logos
+      user-avatar: user-avatars
+      temp: temp
