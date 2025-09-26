@@ -1,33 +1,30 @@
-server:
-  port: ${PORT}
-
 spring:
+  profiles:
+    active: dev
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${ISSUER_URI}
-  servlet:
-    multipart:
-      max-file-size: ${MAX_UPLOAD_SIZE}
-      max-request-size: ${MAX_UPLOAD_SIZE}
+          issuer-uri: ${ISSUER_URI:https://cognito-idp.us-east-1.amazonaws.com/us-east-1_DT4Gid44g}
+
+server:
+  port: ${PORT:8088}
 
 cognito:
-  issuer-uri: ${ISSUER_URI}
-  client-id: ${CLIENT_ID}
+  issuer-uri: ${ISSUER_URI:https://cognito-idp.us-east-1.amazonaws.com/us-east-1_DT4Gid44g}
+  client-id: ${CLIENT_ID:4e4vnk6801iebpftjpu5kudp1d}
 
 app:
   cors:
-    allowed-origins: ${FRONTEND_ORIGIN}
+    allowed-origins: ${FRONTEND_ORIGIN:http://localhost:5173}
 
-  upload:
-    base-url: ${PUBLIC_FILES_BASE_URL}
-    max-file-size: ${MAX_UPLOAD_SIZE}
-
-file:
-  storage:
-    base-dir: ${FILE_STORAGE_BASE}
-    buckets:
-      company-logo: company-logos
-      user-avatar: user-avatars
-      temp: temp
+# Swagger/OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: true

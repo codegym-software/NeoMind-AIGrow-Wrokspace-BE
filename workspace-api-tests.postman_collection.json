@@ -1,0 +1,221 @@
+{
+  "info": {
+    "name": "Workspace API Tests",
+    "description": "Collection for testing Workspace CRUD operations",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8088",
+      "type": "string"
+    },
+    {
+      "key": "jwtToken",
+      "value": "YOUR_JWT_TOKEN_HERE",
+      "type": "string"
+    },
+    {
+      "key": "companyId",
+      "value": "your-company-id-here",
+      "type": "string"
+    },
+    {
+      "key": "workspaceId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Create Workspace",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwtToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"name\": \"Test Workspace\",\n  \"description\": \"This is a test workspace\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/workspaces",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "workspaces"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const response = pm.response.json();",
+              "    pm.collectionVariables.set('workspaceId', response.id);",
+              "    console.log('Workspace created with ID:', response.id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Get Workspace by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwtToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "workspaces", "{{workspaceId}}"]
+        }
+      }
+    },
+    {
+      "name": "3. Update Workspace",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwtToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Updated Test Workspace\",\n  \"description\": \"This is an updated test workspace\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "workspaces", "{{workspaceId}}"]
+        }
+      }
+    },
+    {
+      "name": "4. Get Workspaces by Company",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwtToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/workspaces/company/{{companyId}}?page=0&size=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "workspaces", "company", "{{companyId}}"],
+          "query": [
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "10"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "5. Search Workspaces",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwtToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/workspaces/company/{{companyId}}?q=Test&page=0&size=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "workspaces", "company", "{{companyId}}"],
+          "query": [
+            {
+              "key": "q",
+              "value": "Test"
+            },
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "10"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "6. Count Workspaces by Company",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwtToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/workspaces/company/{{companyId}}/count",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "workspaces", "company", "{{companyId}}", "count"]
+        }
+      }
+    },
+    {
+      "name": "7. Delete Workspace (Soft Delete)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwtToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "workspaces", "{{workspaceId}}"]
+        }
+      }
+    },
+    {
+      "name": "8. Restore Workspace",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwtToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}/restore",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "workspaces", "{{workspaceId}}", "restore"]
+        }
+      }
+    }
+  ]
+}

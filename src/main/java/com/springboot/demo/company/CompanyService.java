@@ -6,6 +6,7 @@ import com.springboot.demo.companymember.CompanyMember;
 import com.springboot.demo.companymember.CompanyMemberRepository;
 import com.springboot.demo.user.User;
 import com.springboot.demo.user.UserRepository;
+import com.springboot.demo.workspace.WorkspaceRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
@@ -23,13 +24,16 @@ public class CompanyService {
     private final CompanyRepository repo;
     private final CompanyMemberRepository memberRepo;
     private final UserRepository userRepo;
+    private final WorkspaceRepository workspaceRepo;
 
     public CompanyService(CompanyRepository repo,
                           CompanyMemberRepository memberRepo,
-                          UserRepository userRepo) {
+                          UserRepository userRepo,
+                          WorkspaceRepository workspaceRepo) {
         this.repo = repo;
         this.memberRepo = memberRepo;
         this.userRepo = userRepo;
+        this.workspaceRepo = workspaceRepo;
     }
 
     @Transactional
@@ -105,11 +109,60 @@ public class CompanyService {
         return repo.findByNameContainingIgnoreCase(q.trim(), pageable);
     }
 
+    @Transactional(readOnly = true)
+    public Page<Company> searchByCurrentUser(String q, int page, int size){
+        // Get current user from JWT
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (!(auth instanceof JwtAuthenticationToken jwtAuth)) {
+            throw new IllegalStateException("No authenticated JWT found.");
+        }
+
+        Jwt jwt = jwtAuth.getToken();
+        String email = jwt.getClaimAsString("email");
+        if (email == null || email.isBlank()) {
+            email = jwt.getClaimAsString("cognito:username");
+        }
+        if (email == null || email.isBlank()) {
+            throw new IllegalStateException("Cannot resolve current user (no email/username in JWT).");
+        }
+
+        // Make email final for lambda expression
+        final String finalEmail = email;
+
+        // Find current user
+        User currentUser = userRepo.findByEmail(finalEmail)
+                .orElseThrow(() -> new IllegalStateException("Current user not found for email: " + finalEmail));
+
+        // Get company IDs where user is a member
+        java.util.List<String> companyIds = memberRepo.findCompanyIdsByUserId(currentUser.getId());
+        
+        if (companyIds == null || companyIds.isEmpty()) {
+            // Return empty page if user is not a member of any company
+            return Page.empty(PageRequest.of(page, size));
+        }
+
+        var pageable = PageRequest.of(page, size);
+        
+        // Search with or without query
+        if (q == null || q.isBlank()) {
+            return repo.findByIdIn(companyIds, pageable);
+        } else {
+            return repo.findByIdInAndNameContainingIgnoreCase(companyIds, q.trim(), pageable);
+        }
+    }
+
     @Transactional
     public void delete(String id){
         if (!repo.existsById(id)) {
             throw new NoSuchElementException("Company not found: " + id);
         }
+        // Remove dependents first to satisfy FK constraints
+        // Delete workspaces of this company
+        workspaceRepo.deleteByCompanyId(id);
+        // Delete company members of this company
+        memberRepo.deleteByCompanyId(id);
+
+        // Finally delete company
         repo.deleteById(id);
     }
 }

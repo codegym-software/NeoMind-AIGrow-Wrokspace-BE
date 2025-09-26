@@ -15,9 +15,12 @@ public class StaticResourceConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        Path base = Path.of(props.getBaseDir());
-        registry.addResourceHandler("/files/**")
-                .addResourceLocations("file:" + base.toAbsolutePath().toString() + "/")
-                .setCachePeriod(3600);
+        String baseDir = props.getBaseDir();
+        if (baseDir != null && !baseDir.trim().isEmpty()) {
+            Path base = Path.of(baseDir);
+            registry.addResourceHandler("/files/**")
+                    .addResourceLocations("file:" + base.toAbsolutePath().toString() + "/")
+                    .setCachePeriod(3600);
+        }
     }
 }

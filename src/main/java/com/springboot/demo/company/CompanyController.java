@@ -2,6 +2,12 @@ package com.springboot.demo.company;
 
 import com.springboot.demo.company.dto.CompanyCreateRequest;
 import com.springboot.demo.company.dto.CompanyUpdateRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -12,12 +18,20 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/companies")
+@Tag(name = "Company Management", description = "APIs for managing companies")
+@SecurityRequirement(name = "Bearer Authentication")
 public class CompanyController {
     private final CompanyService service;
     public CompanyController(CompanyService service){ this.service = service; }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create a new company", description = "Create a new company with name and optional logo")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Company created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     public Company create(@Valid @RequestBody CompanyCreateRequest req){
         return service.create(req);
     }
@@ -46,10 +60,15 @@ public class CompanyController {
     }
 
     @GetMapping
-    public Page<Company> list(@RequestParam(required=false) String q,
-                              @RequestParam(defaultValue="0") int page,
-                              @RequestParam(defaultValue="10") int size){
-        return service.search(q, page, size);
+    @Operation(summary = "Get companies for current user", description = "Retrieve companies where the current user is a member")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Companies retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public Page<Company> list(@Parameter(description = "Search query") @RequestParam(required=false) String q,
+                              @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue="0") int page,
+                              @Parameter(description = "Page size") @RequestParam(defaultValue="10") int size){
+        return service.searchByCurrentUser(q, page, size);
     }
 
     @DeleteMapping("/{id}")
@@ -58,5 +77,18 @@ public class CompanyController {
         service.delete(id);
     }
 
+    // Admin endpoint to get all companies (if needed)
+    @GetMapping("/admin/all")
+    @Operation(summary = "Get all companies (Admin only)", description = "Retrieve all companies in the system - Admin access required")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "All companies retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - Admin access required")
+    })
+    public Page<Company> listAll(@Parameter(description = "Search query") @RequestParam(required=false) String q,
+                                 @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue="0") int page,
+                                 @Parameter(description = "Page size") @RequestParam(defaultValue="10") int size){
+        return service.search(q, page, size);
+    }
 
 }
