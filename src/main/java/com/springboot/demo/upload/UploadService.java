@@ -42,7 +42,7 @@ public class UploadService {
                 : "upload";
         String baseName = SAFE.matcher(original.toLowerCase().replace(' ', '-')).replaceAll("");
         if (baseName.isBlank()) baseName = "upload";
-        // db: companies.id + time (ms) + base_name
+        // companies.id(from db when edit comapany) + time (ms) + base_name
         String newName = Instant.now().toEpochMilli() + "-" + UUID.randomUUID() + "-" + baseName;
         if (ext != null && !newName.endsWith(ext)) newName += ext;
 
