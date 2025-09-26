@@ -17,9 +17,21 @@ public class UserService {
 
     @Transactional
     public User ensureFromJwt(Jwt jwt) {
+        // Try multiple possible claim names for email in Cognito
         String email = jwt.getClaimAsString("email");
+        if (email == null || email.isBlank()) {
+            email = jwt.getClaimAsString("cognito:username");
+        }
+        if (email == null || email.isBlank()) {
+            email = jwt.getClaimAsString("preferred_username");
+        }
+        if (email == null || email.isBlank()) {
+            email = jwt.getClaimAsString("username");
+        }
+        
         String given = jwt.getClaimAsString("given_name");
         String family = jwt.getClaimAsString("family_name");
+        String name = jwt.getClaimAsString("name");
 
         if (email == null || email.isBlank()) {
             throw new IllegalArgumentException("JWT missing email claim");
