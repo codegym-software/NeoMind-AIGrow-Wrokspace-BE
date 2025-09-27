@@ -1,0 +1,13 @@
+services:
+  app:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      JAVA_OPTS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./ai-grow-uploads:/app/ai-grow-uploads
+
+  db:
+    ports:
+      - "3306:3306"
