@@ -22,43 +22,67 @@ public class RbacRepositoryImpl implements RbacRepository {
 
         switch (scope) {
             case company -> {
-                // company_members (company_id, user_id, role_id)
                 sql = """
-            SELECT p.code
-            FROM company_members m
-            JOIN roles r ON r.id = m.role_id AND r.scope = 'company'
-            JOIN role_permission rp ON rp.role_id = r.id
-            JOIN permissions p ON p.id = rp.permission_id AND p.scope = 'company'
-            WHERE m.company_id = ? AND m.user_id = ?""";
-                args = new Object[]{ scopeId, userId };
+                SELECT p.code
+                FROM permissions p
+                WHERE p.scope = 'company'
+                  AND EXISTS (
+                    SELECT 1 FROM company_members m
+                    WHERE m.company_id = ? AND m.user_id = ? AND m.is_owner = TRUE
+                  )
+                UNION
+                SELECT p.code
+                FROM company_members m
+                JOIN roles r ON r.id = m.role_id AND r.scope = 'company'
+                JOIN role_permission rp ON rp.role_id = r.id
+                JOIN permissions p ON p.id = rp.permission_id AND p.scope = 'company'
+                WHERE m.company_id = ? AND m.user_id = ?
+            """;
+                args = new Object[]{ scopeId, userId, scopeId, userId };
             }
             case workspace -> {
-                // workspace_members (workspace_id, user_id, role_id)
+                // (tuỳ bạn) Làm tương tự nếu bạn dùng owner cho workspace_members
                 sql = """
-            SELECT p.code
-            FROM workspace_members m
-            JOIN roles r ON r.id = m.role_id AND r.scope = 'workspace'
-            JOIN role_permission rp ON rp.role_id = r.id
-            JOIN permissions p ON p.id = rp.permission_id AND p.scope = 'workspace'
-            WHERE m.workspace_id = ? AND m.user_id = ?""";
+                SELECT p.code
+                FROM permissions p
+                WHERE p.scope = 'workspace'
+                  AND EXISTS (
+                    SELECT 1 FROM workspace_members m
+                    WHERE m.workspace_id = ? AND m.user_id = ? AND m.is_owner = TRUE
+                  )
+                UNION
+                SELECT p.code
+                FROM workspace_members m
+                JOIN roles r ON r.id = m.role_id AND r.scope = 'workspace'
+                JOIN role_permission rp ON rp.role_id = r.id
+                JOIN permissions p ON p.id = rp.permission_id AND p.scope = 'workspace'
+                WHERE m.workspace_id = ? AND m.user_id = ?
+            """;
                 args = new Object[]{ scopeId, userId };
             }
             case project -> {
-                // project_members (project_id, user_id, role_id)
                 sql = """
-            SELECT p.code
-            FROM project_members m
-            JOIN roles r ON r.id = m.role_id AND r.scope = 'project'
-            JOIN role_permission rp ON rp.role_id = r.id
-            JOIN permissions p ON p.id = rp.permission_id AND p.scope = 'project'
-            WHERE m.project_id = ? AND m.user_id = ?""";
+                SELECT p.code
+                FROM permissions p
+                WHERE p.scope = 'project'
+                  AND EXISTS (
+                    SELECT 1 FROM project_members m
+                    WHERE m.project_id = ? AND m.user_id = ? AND m.is_owner = TRUE
+                  )
+                UNION
+                SELECT p.code
+                FROM project_members m
+                JOIN roles r ON r.id = m.role_id AND r.scope = 'project'
+                JOIN role_permission rp ON rp.role_id = r.id
+                JOIN permissions p ON p.id = rp.permission_id AND p.scope = 'project'
+                WHERE m.project_id = ? AND m.user_id = ?
+            """;
                 args = new Object[]{ scopeId, userId };
             }
             default -> {
                 return Set.of();
             }
         }
-
         return new HashSet<>(jdbc.queryForList(sql, String.class, args));
     }
 }

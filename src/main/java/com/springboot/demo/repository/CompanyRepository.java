@@ -22,4 +22,3 @@ public interface CompanyRepository extends JpaRepository<Company, String> {
                                                         @Param("searchTerm") String searchTerm,
                                                         Pageable pageable);
 }
-
