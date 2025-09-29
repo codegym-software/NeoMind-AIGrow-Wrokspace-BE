@@ -1,7 +1,9 @@
-package com.springboot.demo.workspace;
+package com.springboot.demo.service;
 
-import com.springboot.demo.workspace.dto.WorkspaceCreateRequest;
-import com.springboot.demo.workspace.dto.WorkspaceUpdateRequest;
+import com.springboot.demo.dto.workspace.WorkspaceCreateRequest;
+import com.springboot.demo.dto.workspace.WorkspaceUpdateRequest;
+import com.springboot.demo.model.Workspace;
+import com.springboot.demo.repository.WorkspaceRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -120,3 +122,4 @@ public class WorkspaceService {
         return repository.countByCompanyIdAndNotArchived(companyId);
     }
 }
+

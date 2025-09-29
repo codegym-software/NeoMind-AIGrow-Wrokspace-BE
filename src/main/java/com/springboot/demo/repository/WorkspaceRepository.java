@@ -1,5 +1,6 @@
-package com.springboot.demo.workspace;
+package com.springboot.demo.repository;
 
+import com.springboot.demo.model.Workspace;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -43,3 +44,4 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
     Optional<Workspace> findByCompanyIdAndNameAndNotArchived(@Param("companyId") String companyId, 
                                                            @Param("name") String name);
 }
+

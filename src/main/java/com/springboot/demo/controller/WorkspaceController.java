@@ -1,7 +1,9 @@
-package com.springboot.demo.workspace;
+package com.springboot.demo.controller;
 
-import com.springboot.demo.workspace.dto.WorkspaceCreateRequest;
-import com.springboot.demo.workspace.dto.WorkspaceUpdateRequest;
+import com.springboot.demo.dto.workspace.WorkspaceCreateRequest;
+import com.springboot.demo.dto.workspace.WorkspaceUpdateRequest;
+import com.springboot.demo.model.Workspace;
+import com.springboot.demo.service.WorkspaceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -137,3 +139,4 @@ public class WorkspaceController {
         service.deleteByCompanyId(id, companyId);
     }
 }
+

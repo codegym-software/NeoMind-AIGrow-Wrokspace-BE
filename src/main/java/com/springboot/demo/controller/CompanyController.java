@@ -1,7 +1,9 @@
-package com.springboot.demo.company;
+package com.springboot.demo.controller;
 
-import com.springboot.demo.company.dto.CompanyCreateRequest;
-import com.springboot.demo.company.dto.CompanyUpdateRequest;
+import com.springboot.demo.model.Company;
+import com.springboot.demo.dto.company.CompanyCreateRequest;
+import com.springboot.demo.dto.company.CompanyUpdateRequest;
+import com.springboot.demo.service.CompanyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 import java.util.Objects;
 import org.springframework.data.domain.Page;
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/companies")
@@ -90,5 +91,5 @@ public class CompanyController {
                                  @Parameter(description = "Page size") @RequestParam(defaultValue="10") int size){
         return service.search(q, page, size);
     }
-
 }
+

@@ -1,5 +1,6 @@
-package com.springboot.demo.companymember;
+package com.springboot.demo.repository;
 
+import com.springboot.demo.model.CompanyMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,3 +17,4 @@ public interface CompanyMemberRepository extends JpaRepository<CompanyMember, Lo
 
     void deleteByCompanyId(String companyId);
 }
+

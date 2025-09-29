@@ -1,5 +1,7 @@
-package com.springboot.demo.user;
+package com.springboot.demo.service;
 
+import com.springboot.demo.model.User;
+import com.springboot.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -66,3 +68,4 @@ public class UserService {
         }
     }
 }
+

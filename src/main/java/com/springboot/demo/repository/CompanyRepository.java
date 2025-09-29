@@ -1,5 +1,6 @@
-package com.springboot.demo.company;
+package com.springboot.demo.repository;
 
+import com.springboot.demo.model.Company;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,3 +22,4 @@ public interface CompanyRepository extends JpaRepository<Company, String> {
                                                        @Param("searchTerm") String searchTerm, 
                                                        Pageable pageable);
 }
+

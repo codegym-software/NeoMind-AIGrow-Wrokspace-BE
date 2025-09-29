@@ -1,7 +1,6 @@
-package com.springboot.demo;
+package com.springboot.demo.security.filter;
 
-import com.springboot.demo.user.UserService;
-import lombok.RequiredArgsConstructor;
+import com.springboot.demo.service.UserService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -14,10 +13,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Component
-@RequiredArgsConstructor
 public class EnsureUserExistsFilter extends OncePerRequestFilter {
 
     private final UserService userService;
+
+    public EnsureUserExistsFilter(UserService userService) {
+        this.userService = userService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -32,3 +34,4 @@ public class EnsureUserExistsFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 }
+

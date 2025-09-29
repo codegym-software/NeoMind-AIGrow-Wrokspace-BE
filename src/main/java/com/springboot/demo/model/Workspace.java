@@ -1,4 +1,4 @@
-package com.springboot.demo.workspace;
+package com.springboot.demo.model;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -117,3 +117,4 @@ public class Workspace {
         this.archivedAt = null;
     }
 }
+

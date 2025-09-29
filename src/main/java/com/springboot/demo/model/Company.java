@@ -1,11 +1,10 @@
-package com.springboot.demo.company;
+package com.springboot.demo.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.Length;
 
 @Entity
 @Table(name = "companies")
@@ -34,3 +33,4 @@ public class Company {
     @PrePersist
     void prePersist() { if (id == null) id = UUID.randomUUID().toString(); }
 }
+

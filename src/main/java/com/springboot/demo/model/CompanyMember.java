@@ -1,4 +1,4 @@
-package com.springboot.demo.companymember;
+package com.springboot.demo.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -45,3 +45,4 @@ public class CompanyMember {
         if (joinedAt == null) joinedAt = LocalDateTime.now();
     }
 }
+

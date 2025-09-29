@@ -1,4 +1,4 @@
-package com.springboot.demo;
+package com.springboot.demo.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -25,3 +25,4 @@ public class AccountService {
         ChangePasswordResponse resp = cognito.changePassword(req);
     }
 }
+

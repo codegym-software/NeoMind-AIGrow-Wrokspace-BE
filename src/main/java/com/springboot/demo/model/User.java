@@ -1,4 +1,4 @@
-package com.springboot.demo.user;
+package com.springboot.demo.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -63,3 +63,4 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 }
+

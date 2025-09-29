@@ -1,6 +1,6 @@
 package com.springboot.demo.config;
 
-import com.springboot.demo.EnsureUserExistsFilter;
+import com.springboot.demo.security.filter.EnsureUserExistsFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;

@@ -1,12 +1,14 @@
-package com.springboot.demo.company;
+package com.springboot.demo.service;
 
-import com.springboot.demo.company.dto.CompanyCreateRequest;
-import com.springboot.demo.company.dto.CompanyUpdateRequest;
-import com.springboot.demo.companymember.CompanyMember;
-import com.springboot.demo.companymember.CompanyMemberRepository;
-import com.springboot.demo.user.User;
-import com.springboot.demo.user.UserRepository;
-import com.springboot.demo.workspace.WorkspaceRepository;
+import com.springboot.demo.dto.company.CompanyCreateRequest;
+import com.springboot.demo.dto.company.CompanyUpdateRequest;
+import com.springboot.demo.model.Company;
+import com.springboot.demo.model.CompanyMember;
+import com.springboot.demo.repository.CompanyMemberRepository;
+import com.springboot.demo.model.User;
+import com.springboot.demo.repository.UserRepository;
+import com.springboot.demo.repository.WorkspaceRepository;
+import com.springboot.demo.repository.CompanyRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
@@ -166,3 +168,4 @@ public class CompanyService {
         repo.deleteById(id);
     }
 }
+

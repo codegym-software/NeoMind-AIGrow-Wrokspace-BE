@@ -1,6 +1,8 @@
-package com.springboot.demo.user;
+package com.springboot.demo.controller;
 
-import com.springboot.demo.AccountService;
+import com.springboot.demo.model.User;
+import com.springboot.demo.repository.UserRepository;
+import com.springboot.demo.service.AccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,3 +56,4 @@ public class UserController {
     }
     static class BadRequest extends RuntimeException { public BadRequest(String m){ super(m);} }
 }
+
