@@ -41,7 +41,7 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     @Transactional
-    public Company create(CompanyCreateRequest req){
+    public Company create(CompanyCreateRequest req) {
         Company c = new Company();
         c.setName(req.name() == null ? null : req.name().trim());
         c.setLogoUrl(req.logoUrl());
@@ -89,14 +89,14 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     @Transactional(readOnly = true)
-    public Company getById(String id){
+    public Company getById(String id) {
         return repo.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Company not found: " + id));
     }
 
     @Override
     @Transactional
-    public Company update(String id, CompanyUpdateRequest req){
+    public Company update(String id, CompanyUpdateRequest req) {
         Company c = getById(id);
         c.setName(req.name() == null ? null : req.name().trim());
         c.setLogoUrl(req.logoUrl());
@@ -105,11 +105,13 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     @Transactional
-    public Company save(Company c){ return repo.save(c); }
+    public Company save(Company c) {
+        return repo.save(c);
+    }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Company> search(String q, int page, int size){
+    public Page<Company> search(String q, int page, int size) {
         var pageable = PageRequest.of(page, size);
         if (q == null || q.isBlank()) return repo.findAll(pageable);
         return repo.findByNameContainingIgnoreCase(q.trim(), pageable);
@@ -117,7 +119,7 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Company> searchByCurrentUser(String q, int page, int size){
+    public Page<Company> searchByCurrentUser(String q, int page, int size) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (!(auth instanceof JwtAuthenticationToken jwtAuth)) {
             throw new IllegalStateException("No authenticated JWT found.");
@@ -152,7 +154,7 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     @Transactional
-    public void delete(String id){
+    public void delete(String id) {
         if (!repo.existsById(id)) {
             throw new NoSuchElementException("Company not found: " + id);
         }

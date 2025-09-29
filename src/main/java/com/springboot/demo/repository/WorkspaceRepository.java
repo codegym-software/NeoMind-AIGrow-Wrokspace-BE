@@ -13,35 +13,35 @@ import java.util.Optional;
 
 @Repository
 public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
-    
+
     // Find all workspaces by company ID (excluding archived)
     @Query("SELECT w FROM Workspace w WHERE w.companyId = :companyId AND w.archivedAt IS NULL")
     Page<Workspace> findByCompanyIdAndNotArchived(@Param("companyId") String companyId, Pageable pageable);
-    
+
     // Find all workspaces by company ID (including archived)
     List<Workspace> findByCompanyId(String companyId);
 
     // Hard delete all workspaces by company ID
     void deleteByCompanyId(String companyId);
-    
+
     // Find workspace by ID and company ID (excluding archived)
     @Query("SELECT w FROM Workspace w WHERE w.id = :id AND w.companyId = :companyId AND w.archivedAt IS NULL")
     Optional<Workspace> findByIdAndCompanyIdAndNotArchived(@Param("id") String id, @Param("companyId") String companyId);
-    
+
     // Search workspaces by name within a company (excluding archived)
     @Query("SELECT w FROM Workspace w WHERE w.companyId = :companyId AND " +
-           "LOWER(w.name) LIKE LOWER(CONCAT('%', :query, '%')) AND w.archivedAt IS NULL")
-    Page<Workspace> searchByCompanyIdAndName(@Param("companyId") String companyId, 
-                                           @Param("query") String query, 
-                                           Pageable pageable);
-    
+            "LOWER(w.name) LIKE LOWER(CONCAT('%', :query, '%')) AND w.archivedAt IS NULL")
+    Page<Workspace> searchByCompanyIdAndName(@Param("companyId") String companyId,
+                                             @Param("query") String query,
+                                             Pageable pageable);
+
     // Count active workspaces by company
     @Query("SELECT COUNT(w) FROM Workspace w WHERE w.companyId = :companyId AND w.archivedAt IS NULL")
     long countByCompanyIdAndNotArchived(@Param("companyId") String companyId);
-    
+
     // Find workspace by name within a company (for duplicate checking)
     @Query("SELECT w FROM Workspace w WHERE w.companyId = :companyId AND w.name = :name AND w.archivedAt IS NULL")
-    Optional<Workspace> findByCompanyIdAndNameAndNotArchived(@Param("companyId") String companyId, 
-                                                           @Param("name") String name);
+    Optional<Workspace> findByCompanyIdAndNameAndNotArchived(@Param("companyId") String companyId,
+                                                             @Param("name") String name);
 }
 

@@ -6,7 +6,9 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
@@ -21,7 +23,9 @@ public class UploadService {
     );
     private static final Pattern SAFE = Pattern.compile("[^a-zA-Z0-9._-]");
 
-    public UploadService(StorageProperties props) { this.props = props; }
+    public UploadService(StorageProperties props) {
+        this.props = props;
+    }
 
     public StoredFile store(MultipartFile file, UploadBucket bucket) throws IOException {
         if (file.isEmpty()) throw new IllegalArgumentException("Empty file");
@@ -56,17 +60,18 @@ public class UploadService {
         return new StoredFile(newName, contentType, file.getSize(), publicUrl, target.toAbsolutePath().toString());
     }
 
-    private String safeContentType(MultipartFile file){
+    private String safeContentType(MultipartFile file) {
         String t = file.getContentType();
         return (t != null) ? t.toLowerCase() : "application/octet-stream";
     }
 
-    private String getExtensionFromOriginal(String original){
+    private String getExtensionFromOriginal(String original) {
         if (!StringUtils.hasText(original)) return "";
         String name = Path.of(original).getFileName().toString();
         int dot = name.lastIndexOf('.');
         return dot > -1 ? name.substring(dot).toLowerCase() : "";
     }
 
-    public record StoredFile(String filename, String contentType, long size, String url, String path) {}
+    public record StoredFile(String filename, String contentType, long size, String url, String path) {
+    }
 }

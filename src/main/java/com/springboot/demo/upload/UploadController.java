@@ -1,6 +1,5 @@
 package com.springboot.demo.upload;
 
-import lombok.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +14,9 @@ public class UploadController {
 
     private final UploadService service;
 
-    public UploadController(UploadService service) { this.service = service; }
+    public UploadController(UploadService service) {
+        this.service = service;
+    }
 
     // POST /api/uploads/company-logo  (form-data: file=<blob>)
     // POST /api/uploads/user-avatar

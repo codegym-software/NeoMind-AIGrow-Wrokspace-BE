@@ -11,15 +11,15 @@ import java.util.List;
 
 public interface CompanyRepository extends JpaRepository<Company, String> {
     Page<Company> findByNameContainingIgnoreCase(String name, Pageable pageable);
-    
+
     // Find companies by user membership
     @Query("SELECT c FROM Company c WHERE c.id IN :companyIds")
     Page<Company> findByIdIn(@Param("companyIds") List<String> companyIds, Pageable pageable);
-    
+
     // Find companies by user membership with search
     @Query("SELECT c FROM Company c WHERE c.id IN :companyIds AND LOWER(c.name) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
-    Page<Company> findByIdInAndNameContainingIgnoreCase(@Param("companyIds") List<String> companyIds, 
-                                                       @Param("searchTerm") String searchTerm, 
-                                                       Pageable pageable);
+    Page<Company> findByIdInAndNameContainingIgnoreCase(@Param("companyIds") List<String> companyIds,
+                                                        @Param("searchTerm") String searchTerm,
+                                                        Pageable pageable);
 }
 

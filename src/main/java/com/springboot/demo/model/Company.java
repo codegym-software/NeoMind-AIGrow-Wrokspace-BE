@@ -1,10 +1,11 @@
 package com.springboot.demo.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
-import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "companies")
@@ -31,6 +32,8 @@ public class Company {
     private LocalDateTime archivedAt;
 
     @PrePersist
-    void prePersist() { if (id == null) id = UUID.randomUUID().toString(); }
+    void prePersist() {
+        if (id == null) id = UUID.randomUUID().toString();
+    }
 }
 

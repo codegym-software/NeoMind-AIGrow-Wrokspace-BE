@@ -20,6 +20,7 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final AccountService accountService;
+
     @PostMapping("/session")
     public Map<String, Object> session(Authentication authentication) {
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
@@ -41,19 +42,25 @@ public class UserController {
     @PostMapping("account/change-password")
     public ResponseEntity<?> changePassword(@RequestBody ChangePasswordReq req, Authentication auth) {
         if (!(auth instanceof JwtAuthenticationToken jwt)) {
-            return ResponseEntity.status(401).body(Map.of("error","Unauthorized"));
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         }
         accountService.changePassword(jwt.getToken(), req.currentPassword(), req.newPassword(), req.accessToken());
-        return ResponseEntity.ok(Map.of("message","Password changed"));
+        return ResponseEntity.ok(Map.of("message", "Password changed"));
     }
 
-    public record ChangePasswordReq(String currentPassword, String newPassword, String accessToken) {}
+    public record ChangePasswordReq(String currentPassword, String newPassword, String accessToken) {
+    }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(BadRequest.class)
     public Map<String, String> handleBadRequest(BadRequest ex) {
         return Map.of("error", ex.getMessage());
     }
-    static class BadRequest extends RuntimeException { public BadRequest(String m){ super(m);} }
+
+    static class BadRequest extends RuntimeException {
+        public BadRequest(String m) {
+            super(m);
+        }
+    }
 }
 

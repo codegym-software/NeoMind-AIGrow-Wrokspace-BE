@@ -11,9 +11,9 @@ public class HealthController {
     @GetMapping("/health")
     public Map<String, Object> health() {
         return Map.of(
-            "status", "UP",
-            "service", "NeoMind Backend",
-            "timestamp", System.currentTimeMillis()
+                "status", "UP",
+                "service", "NeoMind Backend",
+                "timestamp", System.currentTimeMillis()
         );
     }
 }

@@ -31,9 +31,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 });
 
         Workspace workspace = new Workspace(
-            request.companyId(),
-            request.name().trim(),
-            request.description() != null ? request.description().trim() : null
+                request.companyId(),
+                request.name().trim(),
+                request.description() != null ? request.description().trim() : null
         );
 
         return repository.save(workspace);
