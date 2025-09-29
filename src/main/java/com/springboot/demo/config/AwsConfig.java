@@ -1,5 +1,5 @@
 // src/main/java/com/springboot/demo/AwsConfig.java
-package com.springboot.demo;
+package com.springboot.demo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

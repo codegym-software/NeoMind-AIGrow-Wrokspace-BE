@@ -31,5 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Environment Variables ###
+.env
+.env.local
+.env.*.local
 src/main/resources/application.properties
-ai-grow-uploads
+/ai-grow-uploads/
