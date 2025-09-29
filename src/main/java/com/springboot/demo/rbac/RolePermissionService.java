@@ -15,7 +15,6 @@ public class RolePermissionService {
     private static final String DELETE_SQL = "DELETE FROM role_permission WHERE role_id = ?";
     private static final String INSERT_SQL = "INSERT INTO role_permission(role_id, permission_id) VALUES(?, ?)";
 
-    /** Xoá toàn bộ permission cũ của role rồi chèn lại danh sách mới (replace-all). */
     @Transactional
     public void replaceRolePermissions(Long roleId, List<Long> permissionIds) {
         jdbc.update(DELETE_SQL, roleId);

@@ -10,12 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-/**
- * AuthorizationManager check quyền theo URL.
- * Dùng trong SecurityConfig:
- *   .requestMatchers(HttpMethod.POST, "/api/projects/**")
- *     .access(ram.require(Scope.project, "project:create", "^/api/projects/([^/]+).*$"))
- */
+
 @Component
 @RequiredArgsConstructor
 public class RequestAuthorizationManager {
