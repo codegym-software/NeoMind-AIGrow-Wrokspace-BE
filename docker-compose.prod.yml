@@ -1,0 +1,16 @@
+services:
+  app:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: "-XX:MaxRAMPercentage=75 -XX:+UseContainerSupport"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    # healthcheck:
+    #   test: ["CMD", "wget", "-qO-", "http://localhost:${SERVER_PORT}/actuator/health"]
+    #   interval: 30s
+    #   timeout: 3s
+    #   retries: 3
+
+  db:
+    ports: []
