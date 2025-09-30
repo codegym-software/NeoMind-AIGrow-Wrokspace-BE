@@ -5,15 +5,16 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${ISSUER_URI:https://cognito-idp.us-east-1.amazonaws.com/us-east-1_DT4Gid44g}
+          issuer-uri: ${ISSUER_URI:https://cognito-idp.us-east-1.amazonaws.com/us-east-1_tW7vcNPwd}
 
 server:
-  port: ${PORT:8088}
+  port: 8088
+
 
 cognito:
-  issuer-uri: ${ISSUER_URI:https://cognito-idp.us-east-1.amazonaws.com/us-east-1_DT4Gid44g}
-  client-id: ${CLIENT_ID:4e4vnk6801iebpftjpu5kudp1d}
-
+  issuer-uri: ${ISSUER_URI:https://cognito-idp.us-east-1.amazonaws.com/us-east-1_tW7vcNPwd}
+  client-id: ${CLIENT_ID:776adgova674q688i3q1euf2f0}
+  
 app:
   cors:
     allowed-origins: ${FRONTEND_ORIGIN:http://localhost:5173}

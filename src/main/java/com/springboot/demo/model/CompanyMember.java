@@ -22,7 +22,7 @@ public class CompanyMember {
     @Column(name = "company_id", length = 36, nullable = false)
     private String companyId;
 
-    @Column(name = "user_id", length = 36, nullable = false)
+    @Column(name = "user_id", length = 36, nullable = true)
     private String userId;
 
     @Column(name = "role_id")
@@ -40,9 +40,5 @@ public class CompanyMember {
     @Column(name = "is_owner", nullable = false)
     private boolean isOwner = false;
 
-    @PrePersist
-    void prePersist() {
-        if (joinedAt == null) joinedAt = LocalDateTime.now();
-    }
+    // joinedAt sẽ được set khi người được mời chấp nhận/join, không auto-set khi tạo lời mời
 }
-

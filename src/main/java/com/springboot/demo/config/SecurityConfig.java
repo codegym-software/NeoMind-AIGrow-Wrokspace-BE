@@ -1,6 +1,9 @@
 package com.springboot.demo.config;
 
+import com.springboot.demo.manager.RequestAuthorizationManager;
+import com.springboot.demo.model.Scope;
 import com.springboot.demo.security.filter.EnsureUserExistsFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,32 +18,35 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final EnsureUserExistsFilter ensureUserExistsFilter;
-
-    public SecurityConfig(EnsureUserExistsFilter ensureUserExistsFilter) {
-        this.ensureUserExistsFilter = ensureUserExistsFilter;
-    }
+    private final RequestAuthorizationManager ram; // nếu dùng cách 5.2
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/health", "/actuator/health").permitAll()
-                        // Allow Swagger/OpenAPI endpoints without auth
-                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
                         .requestMatchers("/api/uploads/**").authenticated()
+
+                        // (Tuỳ chọn) Chặn theo URL với RBAC:
+                        .requestMatchers(HttpMethod.POST, "/api/projects/**")
+                        .access(ram.require(Scope.project, "project:create", "^/api/projects/([^/]+).*$"))
+                        .requestMatchers(HttpMethod.GET, "/api/projects/**")
+                        .access(ram.require(Scope.project, "project:read", "^/api/projects/([^/]+).*$"))
+
                         .anyRequest().authenticated()
                 )
+                // dùng Customizer.withDefaults() để tránh deprecated
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
 
         http.addFilterAfter(ensureUserExistsFilter, AnonymousAuthenticationFilter.class);
-
         return http.build();
     }
 
@@ -48,12 +54,11 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*", "${FRONTEND_ORIGIN}"));
-        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        cfg.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
+        cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
+        cfg.setAllowedHeaders(List.of("Authorization","Content-Type","X-Requested-With","Accept","Origin"));
         cfg.setExposedHeaders(List.of("*"));
         cfg.setAllowCredentials(true);
         cfg.setMaxAge(3600L);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;

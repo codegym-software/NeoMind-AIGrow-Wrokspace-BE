@@ -95,7 +95,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
-
+ <!-- === THÊM DEPENDENCY CHO JAVA MAIL Ở ĐÂY === -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
         <!-- Swagger/OpenAPI 3 -->
         <dependency>
             <groupId>org.springdoc</groupId>
