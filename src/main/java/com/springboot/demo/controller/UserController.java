@@ -20,7 +20,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserRepository userRepository;
     private final AccountService accountService;
     private final UserService userService;
 

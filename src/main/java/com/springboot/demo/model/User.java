@@ -55,6 +55,7 @@ public class User {
     public void prePersist() {
         if (this.id == null) this.id = UUID.randomUUID().toString();
         if (this.createdAt == null) this.createdAt = LocalDateTime.now();
+
         if (this.updatedAt == null) this.updatedAt = LocalDateTime.now();
     }
 
