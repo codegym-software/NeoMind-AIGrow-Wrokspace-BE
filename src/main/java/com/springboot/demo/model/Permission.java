@@ -7,10 +7,10 @@ import lombok.*;
         uniqueConstraints = @UniqueConstraint(name = "uk_perms_scope_code", columnNames = {"scope","code"}))
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Permission {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
 
+    private Long id;
+    
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Scope scope;
