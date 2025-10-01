@@ -33,7 +33,7 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
     private final EmailService emailService;
 
     @Value("${app.defaults.roleId:2}")
-    private Long defaultRoleId;
+    private Integer defaultRoleId;
 
     @Override
     @Transactional(readOnly = true)
@@ -94,7 +94,7 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
 
     @Override
     @Transactional
-    public InviteResponse inviteMemberByEmail(String companyId, String inviterEmail, String invitedEmail, Long roleId) {
+    public InviteResponse inviteMemberByEmail(String companyId, String inviterEmail, String invitedEmail, Integer roleId) {
         var inviterUser = userRepository.findByEmail(inviterEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found. Please login first"));
         var inviter = cmRepo.findByCompanyIdAndUserId(companyId, inviterUser.getId())

@@ -17,7 +17,7 @@ public class CompanyMember {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
     @Column(name = "company_id", length = 36, nullable = false)
     private String companyId;
@@ -26,7 +26,7 @@ public class CompanyMember {
     private String userId;
 
     @Column(name = "role_id")
-    private Long roleId;
+    private Integer roleId;
 
     @Column(name = "invited_email")
     private String invitedEmail;
