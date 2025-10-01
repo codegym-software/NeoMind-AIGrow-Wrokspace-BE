@@ -10,7 +10,6 @@ import java.io.Serializable;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @EqualsAndHashCode
 public class RolePermissionId implements Serializable {
     @Column(name = "role_id")       private Long roleId;
-    @Column(name = "permission_id")
-private Long permissionId;
+    @Column(name = "permission_id")  private Long permissionId;
 
 }
