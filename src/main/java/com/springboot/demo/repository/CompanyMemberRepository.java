@@ -32,4 +32,12 @@ public interface CompanyMemberRepository extends JpaRepository<CompanyMember, Lo
 
     @Query("SELECT m FROM CompanyMember m WHERE m.companyId = :companyId")
     List<CompanyMember> findAllByCompanyId(@Param("companyId") String companyId);
+
+    @Query(value = """
+      SELECT CASE WHEN EXISTS(
+         SELECT 1 FROM company_members
+         WHERE company_id = :companyId AND user_id = :userId AND is_owner = TRUE
+      ) THEN TRUE ELSE FALSE END
+      """, nativeQuery = true)
+    boolean isOwner(@Param("companyId") String companyId, @Param("userId") String userId);
 }

@@ -82,7 +82,6 @@ public class CompanyController {
         service.delete(id);
     }
 
-    // Admin endpoint to get all companies (if needed)
     @GetMapping("/admin/all")
     @Operation(summary = "Get all companies (Admin only)", description = "Retrieve all companies in the system - Admin access required")
     @ApiResponses(value = {

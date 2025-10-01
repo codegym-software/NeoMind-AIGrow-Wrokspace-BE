@@ -1,41 +1,53 @@
 package com.springboot.demo.controller;
 
-import com.springboot.demo.dto.RolePermission.*;
-import jakarta.validation.Valid;
+import com.springboot.demo.dto.RolePermission.CreateRoleReq;
+import com.springboot.demo.dto.RolePermission.RoleDto;
+import com.springboot.demo.dto.RolePermission.UpdateRoleReq;
+import com.springboot.demo.dto.RolePermission.UpsertRolePermissionsReq;
+import com.springboot.demo.service.RoleService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import com.springboot.demo.model.Role;
-import com.springboot.demo.repository.RoleRepository;
-import com.springboot.demo.model.Scope;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/roles")
+@RequestMapping("/api/companies/{companyId}/roles")
 @RequiredArgsConstructor
 public class RoleController {
 
-    private final RoleRepository repo;
+    private final RoleService roleService;
 
     @GetMapping
-    public List<Role> list(@RequestParam String scope) {
-        return repo.findByScope(Scope.parse(scope));
+    @PreAuthorize("@gate.allows('company:role:read', authentication, #companyId)")
+    public List<RoleDto> list(@PathVariable String companyId,
+                              @RequestParam(defaultValue = "true") boolean includeGlobal) {
+        return roleService.listCompanyRoles(companyId, includeGlobal);
     }
 
     @PostMapping
-    public Role create(@Valid @RequestBody CreateRoleReq req) {
-        var scope = Scope.parse(req.scope());
-        if (repo.existsByScopeAndCode(scope, req.code()))
-            throw new IllegalArgumentException("Role code duplicated in scope");
-        var r = Role.builder().scope(scope).code(req.code()).name(req.name()).description(req.description()).build();
-        return repo.save(r);
+    @PreAuthorize("@gate.allows('company:role:create', authentication, #companyId)")
+    public RoleDto create(@PathVariable String companyId, @RequestBody CreateRoleReq req) {
+        return roleService.createCompanyRole(companyId, req);
     }
 
-    @PutMapping("/{id}")
-    public Role update(@PathVariable Long id, @Valid @RequestBody UpdateRoleReq req) {
-        var r = repo.findById(id).orElseThrow();
-        r.setName(req.name());
-        r.setDescription(req.description());
-        return repo.save(r);
+    @PutMapping("/{roleId}")
+    @PreAuthorize("@gate.allows('company:role:update', authentication, #companyId)")
+    public RoleDto update(@PathVariable String companyId, @PathVariable Long roleId, @RequestBody UpdateRoleReq req) {
+        return roleService.updateCompanyRole(companyId, roleId, req);
+    }
+
+    @DeleteMapping("/{roleId}")
+    @PreAuthorize("@gate.allows('company:role:delete', authentication, #companyId)")
+    public void delete(@PathVariable String companyId, @PathVariable Long roleId) {
+        roleService.deleteCompanyRole(companyId, roleId);
+    }
+
+    @PutMapping("/{roleId}/permissions")
+    @PreAuthorize("@gate.allows('company:role:grant_permission', authentication, #companyId)")
+    public void upsertPermissions(@PathVariable String companyId, @PathVariable Long roleId,
+                                  @RequestBody UpsertRolePermissionsReq req) {
+        roleService.replaceRolePermissions(companyId, roleId, req.permissionIds());
     }
 }
+
