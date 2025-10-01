@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface RoleRepository extends JpaRepository<Role, Long> {
-    List<Role> findByScope(Scope scope);
-    boolean existsByScopeAndCode(Scope scope, String code);
+    List<Role> findByScopeAndTargetId(Scope scope, String targetId);
+    List<Role> findByScopeAndTargetIdIsNull(Scope scope); // template roles của scope
+    boolean existsByScopeAndTargetIdAndCode(Scope scope, String targetId, String code);
 }

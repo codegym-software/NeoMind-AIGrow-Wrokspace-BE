@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
 
 @Service
 public class CompanyServiceImpl implements CompanyService {
+
     private final CompanyRepository repo;
     private final CompanyMemberRepository memberRepo;
     private final UserRepository userRepo;
@@ -47,40 +48,27 @@ public class CompanyServiceImpl implements CompanyService {
         c.setLogoUrl(req.logoUrl());
         c = repo.save(c);
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (!(auth instanceof JwtAuthenticationToken jwtAuth)) {
-            throw new IllegalStateException("No authenticated JWT found. Cannot assign company owner.");
-        }
+        User current = resolveCurrentUser();
 
-        Jwt jwt = jwtAuth.getToken();
-        String email = jwt.getClaimAsString("email");
-        if (email == null || email.isBlank()) {
-            email = jwt.getClaimAsString("cognito:username");
-        }
-        if (email == null || email.isBlank()) {
-            throw new IllegalStateException("Cannot resolve current user (no email/username in JWT).");
-        }
-
-        final String finalEmail = email;
-
-        User current = userRepo.findByEmail(finalEmail)
-                .orElseThrow(() -> new IllegalStateException("Current user not found for email: " + finalEmail));
-
+        // Đảm bảo công ty chưa có owner (phòng race condition)
         if (memberRepo.existsByCompanyIdAndIsOwnerTrue(c.getId())) {
             throw new IllegalStateException("Company already has an owner.");
         }
 
+        // Tạo/điều chỉnh membership cho người tạo -> owner=true, role_id=null
         if (!memberRepo.existsByCompanyIdAndUserId(c.getId(), current.getId())) {
             CompanyMember m = new CompanyMember();
             m.setCompanyId(c.getId());
             m.setUserId(current.getId());
-            m.setOwner(true);
+            m.setOwner(true);      // is_owner = true
+            m.setRoleId(null);     // owner => role_id NULL
             m.setJoinedAt(LocalDateTime.now());
             memberRepo.save(m);
         } else {
             CompanyMember m = memberRepo.findByCompanyIdAndUserId(c.getId(), current.getId())
                     .orElseThrow();
             m.setOwner(true);
+            m.setRoleId(null);     // ép về NULL nếu trước đó có role
             memberRepo.save(m);
         }
 
@@ -120,31 +108,15 @@ public class CompanyServiceImpl implements CompanyService {
     @Override
     @Transactional(readOnly = true)
     public Page<Company> searchByCurrentUser(String q, int page, int size) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (!(auth instanceof JwtAuthenticationToken jwtAuth)) {
-            throw new IllegalStateException("No authenticated JWT found.");
-        }
+        User currentUser = resolveCurrentUser();
 
-        Jwt jwt = jwtAuth.getToken();
-        String email = jwt.getClaimAsString("email");
-        if (email == null || email.isBlank()) {
-            email = jwt.getClaimAsString("cognito:username");
-        }
-        if (email == null || email.isBlank()) {
-            throw new IllegalStateException("Cannot resolve current user (no email/username in JWT).");
-        }
-
-        final String finalEmail = email;
-
-        User currentUser = userRepo.findByEmail(finalEmail)
-                .orElseThrow(() -> new IllegalStateException("Current user not found for email: " + finalEmail));
-
-        java.util.List<String> companyIds = memberRepo.findCompanyIdsByUserId(currentUser.getId());
-        if (companyIds == null || companyIds.isEmpty()) {
-            return Page.empty(PageRequest.of(page, size));
-        }
-
+        var companyIds = memberRepo.findCompanyIdsByUserId(currentUser.getId());
         var pageable = PageRequest.of(page, size);
+
+        if (companyIds == null || companyIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
         if (q == null || q.isBlank()) {
             return repo.findByIdIn(companyIds, pageable);
         } else {
@@ -158,8 +130,29 @@ public class CompanyServiceImpl implements CompanyService {
         if (!repo.existsById(id)) {
             throw new NoSuchElementException("Company not found: " + id);
         }
+        // Xoá dữ liệu liên quan trước rồi xoá công ty
         workspaceRepo.deleteByCompanyId(id);
         memberRepo.deleteByCompanyId(id);
         repo.deleteById(id);
+    }
+
+    private User resolveCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (!(auth instanceof JwtAuthenticationToken jwtAuth)) {
+            throw new IllegalStateException("No authenticated JWT found.");
+        }
+        Jwt jwt = jwtAuth.getToken();
+
+        String email = jwt.getClaimAsString("email");
+        if (email == null || email.isBlank()) {
+            email = jwt.getClaimAsString("cognito:username");
+        }
+        if (email == null || email.isBlank()) {
+            throw new IllegalStateException("Cannot resolve current user (no email/username in JWT).");
+        }
+
+        String finalEmail = email;
+        return userRepo.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("Current user not found for email: " + finalEmail));
     }
 }

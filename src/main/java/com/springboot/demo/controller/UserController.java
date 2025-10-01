@@ -1,8 +1,10 @@
 package com.springboot.demo.controller;
 
+import com.springboot.demo.dto.user.ChangePasswordReq;
 import com.springboot.demo.model.User;
 import com.springboot.demo.repository.UserRepository;
 import com.springboot.demo.service.AccountService;
+import com.springboot.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,17 +20,15 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserRepository userRepository;
     private final AccountService accountService;
+    private final UserService userService;
 
     @PostMapping("/session")
     public Map<String, Object> session(Authentication authentication) {
         if (authentication instanceof JwtAuthenticationToken jwtAuth) {
             Jwt jwt = jwtAuth.getToken();
-            String email = jwt.getClaimAsString("email");
-            User u = userRepository.findByEmail(email).orElseThrow(
-                    () -> new RuntimeException("User not ensured (filter missing?)")
-            );
+            User u = userService.ensureFromJwt(jwt);
+
             return Map.of(
                     "id", u.getId(),
                     "email", u.getEmail(),
@@ -46,9 +46,6 @@ public class UserController {
         }
         accountService.changePassword(jwt.getToken(), req.currentPassword(), req.newPassword(), req.accessToken());
         return ResponseEntity.ok(Map.of("message", "Password changed"));
-    }
-
-    public record ChangePasswordReq(String currentPassword, String newPassword, String accessToken) {
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)

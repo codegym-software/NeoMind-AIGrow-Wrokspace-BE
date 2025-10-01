@@ -1,14 +1,16 @@
 package com.springboot.demo.config;
 
 import com.springboot.demo.manager.RequestAuthorizationManager;
-import com.springboot.demo.model.Scope;
 import com.springboot.demo.security.filter.EnsureUserExistsFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -18,11 +20,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
+@EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final EnsureUserExistsFilter ensureUserExistsFilter;
-    private final RequestAuthorizationManager ram; // nếu dùng cách 5.2
+    private final RequestAuthorizationManager ram;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -34,19 +38,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
                         .requestMatchers("/api/uploads/**").authenticated()
-
-                        // (Tuỳ chọn) Chặn theo URL với RBAC:
-                        .requestMatchers(HttpMethod.POST, "/api/projects/**")
-                        .access(ram.require(Scope.project, "project:create", "^/api/projects/([^/]+).*$"))
-                        .requestMatchers(HttpMethod.GET, "/api/projects/**")
-                        .access(ram.require(Scope.project, "project:read", "^/api/projects/([^/]+).*$"))
-
+                        .requestMatchers("/auth/**", "/public/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                // dùng Customizer.withDefaults() để tránh deprecated
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
 
-        http.addFilterAfter(ensureUserExistsFilter, AnonymousAuthenticationFilter.class);
+        http.addFilterAfter(ensureUserExistsFilter, BearerTokenAuthenticationFilter.class);
         return http.build();
     }
 
