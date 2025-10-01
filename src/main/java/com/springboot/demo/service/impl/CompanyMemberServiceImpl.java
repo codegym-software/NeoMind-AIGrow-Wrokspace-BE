@@ -2,13 +2,17 @@ package com.springboot.demo.service.impl;
 
 import com.springboot.demo.dto.company.AddCompanyMemberReq;
 import com.springboot.demo.dto.company.AssignCompanyRoleReq;
+import com.springboot.demo.dto.company.InviteResponse;
 import com.springboot.demo.model.CompanyMember;
 import com.springboot.demo.model.Role;
 import com.springboot.demo.model.Scope;
 import com.springboot.demo.repository.CompanyMemberRepository;
 import com.springboot.demo.repository.RoleRepository;
+import com.springboot.demo.repository.UserRepository;
 import com.springboot.demo.service.AbilityService;
 import com.springboot.demo.service.CompanyMemberService;
+import com.springboot.demo.service.EmailService;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -16,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +29,11 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
     private final CompanyMemberRepository cmRepo;
     private final RoleRepository roleRepo;
     private final AbilityService ability;
+    private final UserRepository userRepository;
+    private final EmailService emailService;
+
+    @Value("${app.defaults.roleId:2}")
+    private Long defaultRoleId;
 
     @Override
     @Transactional(readOnly = true)
@@ -80,6 +90,52 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
 
         target.setRoleId(role.getId());
         cmRepo.save(target);
+    }
+
+    @Override
+    @Transactional
+    public InviteResponse inviteMemberByEmail(String companyId, String inviterEmail, String invitedEmail, Long roleId) {
+        var inviterUser = userRepository.findByEmail(inviterEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found. Please login first"));
+        var inviter = cmRepo.findByCompanyIdAndUserId(companyId, inviterUser.getId())
+                .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc công ty này"));
+
+        String normalized = invitedEmail == null ? null : invitedEmail.trim().toLowerCase();
+        if (normalized == null || normalized.isBlank()) throw new IllegalArgumentException("Email không hợp lệ");
+
+        Optional<com.springboot.demo.model.User> invitedUserOpt = userRepository.findByEmail(normalized);
+        if (invitedUserOpt.isEmpty()) {
+            throw new IllegalArgumentException("Email chưa đăng ký trong hệ thống");
+        }
+
+        String targetUserId = invitedUserOpt.get().getId();
+
+        var existing = cmRepo.findByCompanyIdAndUserId(companyId, targetUserId);
+        if (existing.isPresent()) {
+            return new InviteResponse("already_member", existing.get());
+        }
+
+        // Nếu đã có lời mời trước theo email (case-insensitive), trả existing_invite
+        var existingInvite = cmRepo.findFirstByCompanyIdAndInvitedEmailIgnoreCase(companyId, normalized);
+        if (existingInvite.isPresent()) {
+            return new InviteResponse("existing_invite", existingInvite.get());
+        }
+
+        CompanyMember member = new CompanyMember();
+        member.setCompanyId(companyId);
+        member.setUserId(targetUserId);
+        member.setInvitedEmail(normalized);
+        member.setInvitedBy(inviter.getUserId());
+        member.setRoleId(roleId != null ? roleId : defaultRoleId);
+        member.setOwner(false);
+
+        CompanyMember saved = cmRepo.save(member);
+
+        try {
+            emailService.sendInvitationEmail(normalized, "Company", inviterEmail);
+        } catch (Exception ignore) {}
+
+        return new InviteResponse("created", saved);
     }
 
     private void mustHaveManageUsersPermission(String actorId, String companyId) {

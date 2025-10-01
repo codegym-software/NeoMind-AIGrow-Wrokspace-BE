@@ -1,33 +1,44 @@
-server:
-  port: ${PORT}
-
 spring:
+  profiles:
+    active: dev
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${ISSUER_URI}
+          issuer-uri: ${ISSUER_URI:https://cognito-idp.us-east-1.amazonaws.com/us-east-1_tW7vcNPwd}
   servlet:
     multipart:
-      max-file-size: ${MAX_UPLOAD_SIZE}
-      max-request-size: ${MAX_UPLOAD_SIZE}
+      max-file-size: ${MAX_UPLOAD_SIZE:10MB}
+      max-request-size: ${MAX_UPLOAD_SIZE:10MB}
+
+server:
+  port: ${PORT:8088}
 
 cognito:
-  issuer-uri: ${ISSUER_URI}
-  client-id: ${CLIENT_ID}
+  issuer-uri: ${ISSUER_URI:https://cognito-idp.us-east-1.amazonaws.com/us-east-1_tW7vcNPwd}
+  client-id: ${CLIENT_ID:776adgova674q688i3q1euf2f0}
 
 app:
   cors:
-    allowed-origins: ${FRONTEND_ORIGIN}
-
+    allowed-origins: ${FRONTEND_ORIGIN:http://localhost:5173}
   upload:
-    base-url: ${PUBLIC_FILES_BASE_URL}
-    max-file-size: ${MAX_UPLOAD_SIZE}
+    base-url: ${PUBLIC_FILES_BASE_URL:http://localhost:8088/files}
+    max-file-size: ${MAX_UPLOAD_SIZE:10MB}
 
 file:
   storage:
-    base-dir: ${FILE_STORAGE_BASE}
+    base-dir: ${FILE_STORAGE_BASE:/tmp/uploads}
     buckets:
       company-logo: company-logos
       user-avatar: user-avatars
       temp: temp
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha
+    tryItOutEnabled: true

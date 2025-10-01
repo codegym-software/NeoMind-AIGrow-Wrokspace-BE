@@ -39,3 +39,4 @@ build/
 src/main/resources/application.properties
 /ai-grow-uploads/
 docker-compose.override.yml
+src/main/resources/application.yml

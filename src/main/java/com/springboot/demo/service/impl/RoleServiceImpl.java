@@ -142,10 +142,10 @@ public class RoleServiceImpl implements RoleService {
 
         // Validate permissionIds đều thuộc scope 'company'
         if (permissionIds != null && !permissionIds.isEmpty()) {
-            Integer cnt = jdbc.queryForObject(
+            Long cnt = jdbc.queryForObject(
                     "SELECT COUNT(*) FROM permissions WHERE id IN (:ids) AND scope = 'company'",
                     new MapSqlParameterSource().addValue("ids", permissionIds),
-                    Integer.class
+                    Long.class
             );
             if (cnt == null || cnt != permissionIds.size()) {
                 throw new IllegalArgumentException("Danh sách permission chứa phần tử không thuộc scope company");
