@@ -45,13 +45,6 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
                 .orElseThrow(() -> new NoSuchElementException("Role không tồn tại"));
         if (role.getScope() != Scope.company) throw new IllegalArgumentException("Role không thuộc scope company");
 
-        // Phân cấp: owner > admin > member
-//        int actorRank = rank(actor);
-//        int targetRank = rank(role.getCode());
-
-//        if (actorRank == 1) throw new AccessDeniedException("Member không có quyền thêm thành viên");
-//        if (actorRank == 2 && targetRank != 1) throw new AccessDeniedException("Admin chỉ được thêm role 'member'");
-
         CompanyMember m = new CompanyMember();
         m.setCompanyId(companyId);
         m.setUserId(req.userId());
@@ -85,13 +78,6 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
 
         if (target.isOwner()) throw new AccessDeniedException("Không thể đổi role cho Owner (dùng transfer-ownership)");
 
-//        int actorRank = rank(actor);
-//        int targetRank = rank(role.getCode());
-
-//        if (actorRank == 1) throw new AccessDeniedException("Member không có quyền gán role");
-//        if (actorRank == 2 && targetRank != 1) throw new AccessDeniedException("Admin chỉ gán role 'member'");
-//        if (actorRank == targetRank) throw new AccessDeniedException("Không được gán role bằng cấp của bạn");
-
         target.setRoleId(role.getId());
         cmRepo.save(target);
     }
@@ -101,18 +87,4 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
             throw new AccessDeniedException("Thiếu quyền company:set_user_permissions");
         }
     }
-
-//    private int rank(CompanyMember m) {
-//        if (m.isOwner()) return 3;
-//        var role = (m.getRoleId() == null) ? null : roleRepo.findById(Long.valueOf(m.getRoleId())).orElse(null);
-//        return rank(role == null ? "" : role.getCode());
-//    }
-//    private int rank(String roleCode) {
-//        return switch (roleCode == null ? "" : roleCode.toLowerCase()) {
-//            //case "owner" -> 3;
-//            case "admin" -> 2;
-//            case "member" -> 1;
-//            default -> 0;
-//        };
-//    }
 }

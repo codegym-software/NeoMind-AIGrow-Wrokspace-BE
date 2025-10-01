@@ -28,16 +28,6 @@ public class SecurityConfig {
     private final RequestAuthorizationManager ram;
 
     @Bean
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests(req -> req
-                        .requestMatchers("/auth/**", "/public/**").permitAll()
-                        .anyRequest().authenticated()
-                );
-        return http.build();
-    }
-
-    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
@@ -47,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
                         .requestMatchers("/api/uploads/**").authenticated()
+                        .requestMatchers("/auth/**", "/public/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));

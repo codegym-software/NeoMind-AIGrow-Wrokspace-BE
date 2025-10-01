@@ -1,4 +1,3 @@
-// src/main/java/com/springboot/demo/service/impl/PermissionServiceImpl.java
 package com.springboot.demo.service.impl;
 
 import com.springboot.demo.model.Permission;
@@ -10,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+
+import static com.springboot.demo.util.ScopeUtils.parseScope;
 
 @Service
 @RequiredArgsConstructor
@@ -25,7 +26,7 @@ public class PermissionServiceImpl implements PermissionService {
         }
         Scope scope;
         try {
-            scope = Scope.parse(scopeStr);
+            scope = parseScope(scopeStr);
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid scope: " + scopeStr);
         }

@@ -3,7 +3,7 @@ package com.springboot.demo.dto.RolePermission;
 import com.springboot.demo.model.Role;
 
 public record RoleDto(
-        Long id,
+        Integer id,
         String scope,     // "company" | "workspace" | "project"
         String targetId,  // null = role template theo scope
         String code,

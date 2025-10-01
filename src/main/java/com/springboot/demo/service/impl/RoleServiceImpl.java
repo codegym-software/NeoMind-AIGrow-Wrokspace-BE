@@ -17,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.springboot.demo.util.ScopeUtils.parseScope;
+
 @Service
 @RequiredArgsConstructor
 public class RoleServiceImpl implements RoleService {
@@ -24,11 +26,10 @@ public class RoleServiceImpl implements RoleService {
     private final RoleRepository repo;
     private final NamedParameterJdbcTemplate jdbc;
 
-
     @Override
     @Transactional(readOnly = true)
     public List<RoleDto> list(String scopeStr, String targetId, boolean includeGlobal) {
-        Scope scope = Scope.parse(scopeStr);
+        Scope scope = parseScope(scopeStr);
         var roles = new ArrayList<Role>();
         if (targetId == null || targetId.isBlank()) {
             roles.addAll(repo.findByScopeAndTargetIdIsNull(scope));
@@ -42,7 +43,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional
     public RoleDto create(CreateRoleReq req) {
-        Scope scope = Scope.parse(req.scope());
+        Scope scope = parseScope(req.scope());
         String targetId = (req.targetId() == null || req.targetId().isBlank()) ? null : req.targetId().trim();
         String code = req.code().trim();
 

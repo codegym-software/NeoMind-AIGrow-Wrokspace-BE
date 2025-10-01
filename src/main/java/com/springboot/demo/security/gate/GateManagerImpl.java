@@ -4,11 +4,14 @@ import com.springboot.demo.model.Scope;
 import com.springboot.demo.repository.RbacRepository;
 import com.springboot.demo.repository.CompanyMemberRepository;
 import com.springboot.demo.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import static com.springboot.demo.util.ScopeUtils.parseScope;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
@@ -20,17 +23,18 @@ public class GateManagerImpl implements GateManager {
     private final CompanyMemberRepository companyMemberRepo;
     private final UserRepository userRepo;
 
-    // key = ability (permission code)
-    private final Map<String, BiFunction<AuthCtx, String, Boolean>> dynamicGates = Map.of(
-            "company:transfer_ownership", (ctx, companyId) -> {
-                if (companyId == null || companyId.isBlank()) return false;
+    private final Map<String, BiFunction<AuthCtx, String, Boolean>> dynamicGates = new HashMap<>();
 
-                boolean isOwner = companyMemberRepo.isOwner(companyId, ctx.userId);
-
-                if (isOwner) return true;
-                return rbacRepo.userHasPermissionInScope(ctx.userId, Scope.company, companyId, "company:transfer_ownership");
-            }
-    );
+    @PostConstruct
+    void initGates() {
+        dynamicGates.put("company:transfer_ownership", (ctx, companyId) -> {
+            if (companyId == null || companyId.isBlank()) return false;
+            boolean isOwner = companyMemberRepo.isOwner(companyId, ctx.userId);
+            if (isOwner) return true;
+            return rbacRepo.userHasPermissionInScope(
+                    ctx.userId, Scope.company, companyId, "company:transfer_ownership");
+        });
+    }
 
     @Override
     public boolean allows(String ability, Authentication authentication) {
@@ -59,8 +63,10 @@ public class GateManagerImpl implements GateManager {
 
     private ParsedAbility parseAbility(String ability) {
         // eg: "company:role:create" => scope "company"
+        if (ability == null || ability.isBlank())
+            throw new IllegalArgumentException("ability is null/blank");
         String prefix = ability.split(":", 2)[0];
-        return new ParsedAbility(Scope.parse(prefix), ability);
+        return new ParsedAbility(parseScope(prefix), ability);
     }
 
     private AuthCtx resolveAuth(Authentication authentication) {
