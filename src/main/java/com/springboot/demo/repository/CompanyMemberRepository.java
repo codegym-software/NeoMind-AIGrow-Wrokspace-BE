@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface CompanyMemberRepository extends JpaRepository<CompanyMember, Long> {
+public interface CompanyMemberRepository extends JpaRepository<CompanyMember, Integer> {
 
     boolean existsByCompanyIdAndIsOwnerTrue(String companyId);
 
@@ -40,4 +40,12 @@ public interface CompanyMemberRepository extends JpaRepository<CompanyMember, Lo
       ) THEN TRUE ELSE FALSE END
       """, nativeQuery = true)
     boolean isOwner(@Param("companyId") String companyId, @Param("userId") String userId);
+
+    @Query("SELECT COUNT(m) FROM CompanyMember m WHERE m.companyId = :companyId AND m.isOwner = true")
+    long countOwners(@Param("companyId") String companyId);
+
+    @Modifying
+    @Query("DELETE FROM CompanyMember m WHERE m.companyId = :companyId AND m.userId = :userId")
+    int deleteByCompanyIdAndUserId(@Param("companyId") String companyId, @Param("userId") String userId);
+
 }

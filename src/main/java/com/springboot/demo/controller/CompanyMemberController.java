@@ -6,6 +6,8 @@ import com.springboot.demo.model.CompanyMember;
 import com.springboot.demo.service.CompanyMemberService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,11 +22,13 @@ public class CompanyMemberController {
 
     private final CompanyMemberService service;
 
+    @PreAuthorize("@gate.allows('company:read', authentication, #companyId)")
     @GetMapping
     public List<CompanyMember> list(@PathVariable String companyId) {
         return service.list(companyId);
     }
 
+    @PreAuthorize("@gate.allows('company:set_user_permissions', authentication, #companyId)")
     @PostMapping
     public void add(@PathVariable String companyId,
                     @RequestBody AddCompanyMemberReq req,
@@ -32,6 +36,7 @@ public class CompanyMemberController {
         service.addMember(companyId, req, auth.getName());
     }
 
+    @PreAuthorize("@gate.allows('company:set_user_permissions', authentication, #companyId)")
     @PutMapping("/{memberUserId}/role")
     public void assign(@PathVariable String companyId,
                        @PathVariable String memberUserId,
@@ -40,6 +45,7 @@ public class CompanyMemberController {
         service.assignRole(companyId, memberUserId, req, auth.getName());
     }
 
+    @PreAuthorize("@gate.allows('company:transfer_ownership', authentication, #companyId)")
     @PostMapping("/transfer-ownership")
     public void transferOwnership(@PathVariable String companyId,
                                   @RequestBody Map<String, String> body,
@@ -47,4 +53,14 @@ public class CompanyMemberController {
         service.assignRole(companyId, body.get("toUserId"),
                 new AssignCompanyRoleReq(null, true), auth.getName());
     }
+
+    @DeleteMapping("/{memberUserId}")
+    @PreAuthorize("@gate.allows('company:set_user_permissions', authentication, #companyId)")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void remove(@PathVariable String companyId,
+                       @PathVariable String memberUserId,
+                       Authentication auth) {
+        service.removeMember(companyId, memberUserId, auth.getName());
+    }
+
 }

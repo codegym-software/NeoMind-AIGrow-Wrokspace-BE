@@ -6,6 +6,7 @@ import com.springboot.demo.model.CompanyMember;
 import com.springboot.demo.model.Role;
 import com.springboot.demo.model.Scope;
 import com.springboot.demo.repository.CompanyMemberRepository;
+import com.springboot.demo.repository.MembershipCleanupRepository;
 import com.springboot.demo.repository.RoleRepository;
 import com.springboot.demo.service.AbilityService;
 import com.springboot.demo.service.CompanyMemberService;
@@ -24,6 +25,7 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
     private final CompanyMemberRepository cmRepo;
     private final RoleRepository roleRepo;
     private final AbilityService ability;
+    private final MembershipCleanupRepository membershipCleanup;
 
     @Override
     @Transactional(readOnly = true)
@@ -87,4 +89,27 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
             throw new AccessDeniedException("Thiếu quyền company:set_user_permissions");
         }
     }
+
+    @Override
+    @Transactional
+    public void removeMember(String companyId, String targetUserId, String actorId) {
+        cmRepo.findByCompanyIdAndUserId(companyId, actorId)
+                .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc công ty này"));
+
+        var target = cmRepo.findByCompanyIdAndUserId(companyId, targetUserId)
+                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy thành viên"));
+
+        if (Boolean.TRUE.equals(target.isOwner())) {
+            long owners = cmRepo.countOwners(companyId);
+            if (owners <= 1) {
+                throw new AccessDeniedException("Không thể xóa Owner duy nhất. Hãy chuyển quyền sở hữu trước.");
+            }
+        }
+
+        membershipCleanup.deleteProjectMembershipsByCompanyForUser(companyId, targetUserId);
+        membershipCleanup.deleteWorkspaceMembershipsByCompanyForUser(companyId, targetUserId);
+
+        cmRepo.deleteByCompanyIdAndUserId(companyId, targetUserId);
+    }
+
 }

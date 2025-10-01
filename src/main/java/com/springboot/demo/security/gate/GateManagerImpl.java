@@ -1,6 +1,7 @@
 package com.springboot.demo.security.gate;
 
 import com.springboot.demo.model.Scope;
+import com.springboot.demo.model.User;
 import com.springboot.demo.repository.RbacRepository;
 import com.springboot.demo.repository.CompanyMemberRepository;
 import com.springboot.demo.repository.UserRepository;
@@ -34,6 +35,13 @@ public class GateManagerImpl implements GateManager {
             return rbacRepo.userHasPermissionInScope(
                     ctx.userId, Scope.company, companyId, "company:transfer_ownership");
         });
+
+        dynamicGates.put("system:admin", (ctx, ignore) ->
+                userRepo.findById(ctx.userId)
+                        .map(User::isAdmin)
+                        .orElse(false)
+        );
+
     }
 
     @Override
