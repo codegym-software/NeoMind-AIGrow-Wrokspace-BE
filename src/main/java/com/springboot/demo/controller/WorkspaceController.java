@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -73,12 +72,12 @@ public class WorkspaceController {
     }
 
     @GetMapping
-    public Page<Workspace> list(@RequestParam(required = false) String companyId,
+    public List<Workspace> list(@RequestParam(required = false) String companyId,
                                 @RequestParam(required = false) String q,
                                 @RequestParam(defaultValue = "0") int page,
                                 @RequestParam(defaultValue = "10") int size) {
         if (companyId != null) {
-            return service.searchByCompanyId(companyId, q, page, size);
+            return service.searchByCompanyId(companyId, q);
         }
         throw new IllegalArgumentException("companyId parameter is required");
     }
@@ -89,12 +88,12 @@ public class WorkspaceController {
             @ApiResponse(responseCode = "200", description = "Workspaces retrieved successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public Page<Workspace> getByCompanyId(
+    public List<Workspace> getByCompanyId(
             @Parameter(description = "Company ID") @PathVariable String companyId,
             @Parameter(description = "Search query") @RequestParam(required = false) String q,
             @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size) {
-        return service.searchByCompanyId(companyId, q, page, size);
+        return service.searchByCompanyId(companyId, q);
     }
 
     @GetMapping("/company/{companyId}/all")
@@ -126,11 +125,11 @@ public class WorkspaceController {
     }
 
     @GetMapping("/companies/{companyId}")
-    public Page<Workspace> getByCompanyIdAlt(@PathVariable String companyId,
+    public List<Workspace> getByCompanyIdAlt(@PathVariable String companyId,
                                              @RequestParam(required = false) String q,
                                              @RequestParam(defaultValue = "0") int page,
                                              @RequestParam(defaultValue = "10") int size) {
-        return service.searchByCompanyId(companyId, q, page, size);
+        return service.searchByCompanyId(companyId, q);
     }
 
     @PutMapping("/companies/{companyId}/{id}")

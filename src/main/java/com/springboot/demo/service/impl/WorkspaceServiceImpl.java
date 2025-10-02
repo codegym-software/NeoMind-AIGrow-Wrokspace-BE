@@ -211,19 +211,17 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Workspace> getByCompanyId(String companyId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        return repository.findByCompanyIdAndNotArchived(companyId, pageable);
+    public List<Workspace> getByCompanyId(String companyId) {
+        return repository.findByCompanyIdAndNotArchived(companyId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Workspace> searchByCompanyId(String companyId, String query, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+    public List<Workspace> searchByCompanyId(String companyId, String query) {
         if (query == null || query.trim().isEmpty()) {
-            return getByCompanyId(companyId, page, size);
+            return getByCompanyId(companyId);
         }
-        return repository.searchByCompanyIdAndName(companyId, query.trim(), pageable);
+        return repository.searchByCompanyIdAndName(companyId, query.trim());
     }
 
     @Override

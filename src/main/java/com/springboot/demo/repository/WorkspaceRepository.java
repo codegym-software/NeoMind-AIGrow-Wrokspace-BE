@@ -16,7 +16,7 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
 
     // Find all workspaces by company ID (excluding archived)
     @Query("SELECT w FROM Workspace w WHERE w.companyId = :companyId AND w.archivedAt IS NULL")
-    Page<Workspace> findByCompanyIdAndNotArchived(@Param("companyId") String companyId, Pageable pageable);
+    List<Workspace> findByCompanyIdAndNotArchived(@Param("companyId") String companyId);
 
     // Find all workspaces by company ID (including archived)
     List<Workspace> findByCompanyId(String companyId);
@@ -31,9 +31,8 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
     // Search workspaces by name within a company (excluding archived)
     @Query("SELECT w FROM Workspace w WHERE w.companyId = :companyId AND " +
             "LOWER(w.name) LIKE LOWER(CONCAT('%', :query, '%')) AND w.archivedAt IS NULL")
-    Page<Workspace> searchByCompanyIdAndName(@Param("companyId") String companyId,
-                                             @Param("query") String query,
-                                             Pageable pageable);
+    List<Workspace> searchByCompanyIdAndName(@Param("companyId") String companyId,
+                                             @Param("query") String query);
 
     // Count active workspaces by company
     @Query("SELECT COUNT(w) FROM Workspace w WHERE w.companyId = :companyId AND w.archivedAt IS NULL")
