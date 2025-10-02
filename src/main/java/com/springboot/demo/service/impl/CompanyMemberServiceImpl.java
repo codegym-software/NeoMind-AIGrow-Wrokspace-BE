@@ -26,7 +26,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CompanyMemberServiceImpl implements CompanyMemberService {
 
-    private final CompanyMemberRepository cmRepo;
+    private final CompanyMemberRepository companyMemberRepo;
     private final RoleRepository roleRepo;
     private final AbilityService ability;
     private final UserRepository userRepository;
@@ -38,7 +38,7 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
     @Override
     @Transactional(readOnly = true)
     public List<CompanyMember> list(String companyId) {
-        return cmRepo.findAllByCompanyId(companyId);
+        return companyMemberRepo.findAllByCompanyId(companyId);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
         if (req.userId() == null || req.userId().isBlank()) throw new IllegalArgumentException("userId required");
         if (req.roleId() == null) throw new IllegalArgumentException("roleId required");
 
-        var actor = cmRepo.findByCompanyIdAndUserId(companyId, actorId)
+        var actor = companyMemberRepo.findByCompanyIdAndUserId(companyId, actorId)
                 .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc công ty này"));
         mustHaveManageUsersPermission(actorId, companyId);
 
@@ -61,23 +61,23 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
         m.setOwner(false);
         m.setRoleId(role.getId().longValue());
 
-        cmRepo.save(m);
+        companyMemberRepo.save(m);
     }
 
     @Override
     @Transactional
     public void assignRole(String companyId, String targetUserId, AssignCompanyRoleReq req, String actorId) {
-        var actor = cmRepo.findByCompanyIdAndUserId(companyId, actorId)
+        var actor = companyMemberRepo.findByCompanyIdAndUserId(companyId, actorId)
                 .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc công ty này"));
         mustHaveManageUsersPermission(actorId, companyId);
 
-        var target = cmRepo.findByCompanyIdAndUserId(companyId, targetUserId)
+        var target = companyMemberRepo.findByCompanyIdAndUserId(companyId, targetUserId)
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy thành viên"));
 
         if (Boolean.TRUE.equals(req.makeOwner())) {
             if (!actor.isOwner()) throw new AccessDeniedException("Chỉ Owner được phép chuyển quyền sở hữu");
-            cmRepo.clearOwners(companyId);
-            cmRepo.setOwner(companyId, targetUserId);
+            companyMemberRepo.clearOwners(companyId);
+            companyMemberRepo.setOwner(companyId, targetUserId);
             return;
         }
 
@@ -90,7 +90,7 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
         if (target.isOwner()) throw new AccessDeniedException("Không thể đổi role cho Owner (dùng transfer-ownership)");
 
         target.setRoleId(role.getId().longValue());
-        cmRepo.save(target);
+        companyMemberRepo.save(target);
     }
 
     @Override
@@ -98,7 +98,7 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
     public InviteResponse inviteMemberByEmail(String companyId, String inviterEmail, String invitedEmail, Long roleId) {
         var inviterUser = userRepository.findByEmail(inviterEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found. Please login first"));
-        var inviter = cmRepo.findByCompanyIdAndUserId(companyId, inviterUser.getId())
+        var inviter = companyMemberRepo.findByCompanyIdAndUserId(companyId, inviterUser.getId())
                 .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc công ty này"));
 
         String normalized = invitedEmail == null ? null : invitedEmail.trim().toLowerCase();
@@ -111,13 +111,13 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
 
         String targetUserId = invitedUserOpt.get().getId();
 
-        var existing = cmRepo.findByCompanyIdAndUserId(companyId, targetUserId);
+        var existing = companyMemberRepo.findByCompanyIdAndUserId(companyId, targetUserId);
         if (existing.isPresent()) {
             return new InviteResponse("already_member", existing.get());
         }
 
         // Nếu đã có lời mời trước theo email (case-insensitive), trả existing_invite
-        var existingInvite = cmRepo.findFirstByCompanyIdAndInvitedEmailIgnoreCase(companyId, normalized);
+        var existingInvite = companyMemberRepo.findFirstByCompanyIdAndInvitedEmailIgnoreCase(companyId, normalized);
         if (existingInvite.isPresent()) {
             return new InviteResponse("existing_invite", existingInvite.get());
         }
@@ -130,7 +130,7 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
         member.setRoleId(roleId != null ? roleId : defaultRoleId);
         member.setOwner(false);
 
-        CompanyMember saved = cmRepo.save(member);
+        CompanyMember saved = companyMemberRepo.save(member);
 
         try {
             emailService.sendInvitationEmail(normalized, "Company", inviterEmail);

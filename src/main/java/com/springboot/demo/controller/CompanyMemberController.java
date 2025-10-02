@@ -63,7 +63,7 @@ public class CompanyMemberController {
         service.assignRole(companyId, memberUserId, req, auth.getName());
     }
 
-    @PostMapping("/{companyId}/members/transfer-ownership")
+    @PostMapping("/{companyId}/transfer-ownership/{memberId}")
     public void transferOwnership(@PathVariable String companyId,
                                   @RequestBody Map<String, String> body,
                                   Authentication auth) {
