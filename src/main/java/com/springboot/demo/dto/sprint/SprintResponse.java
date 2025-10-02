@@ -1,0 +1,31 @@
+package com.springboot.demo.dto.sprint;
+
+import com.springboot.demo.model.SprintStatus;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+public record SprintResponse(
+    String id,
+    String projectId,
+    String name,
+    String description,
+    LocalDate startDate,
+    LocalDate endDate,
+    SprintStatus status,
+    String goal,
+    LocalDateTime createdAt,
+    LocalDateTime updatedAt,
+    
+    // Progress tracking fields
+    Integer totalTasks,
+    Integer completedTasks,
+    Double progressPercentage,
+    Integer remainingDays,
+    
+    // Permissions
+    boolean canEdit,
+    boolean canDelete,
+    boolean canView,
+    boolean canManage
+) {}
