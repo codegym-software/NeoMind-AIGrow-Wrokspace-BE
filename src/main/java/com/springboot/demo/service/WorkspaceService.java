@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface WorkspaceService {
     Workspace create(WorkspaceCreateRequest request);
+    Workspace create(WorkspaceCreateRequest request, String creatorUserId);
 
     Workspace getById(String id);
 
