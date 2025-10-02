@@ -33,7 +33,7 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
     private final EmailService emailService;
 
     @Value("${app.defaults.roleId:2}")
-    private Integer defaultRoleId;
+    private Long defaultRoleId;
 
     @Override
     @Transactional(readOnly = true)
@@ -59,7 +59,8 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
         m.setCompanyId(companyId);
         m.setUserId(req.userId());
         m.setOwner(false);
-        m.setRoleId(role.getId());
+        m.setRoleId(role.getId().longValue());
+
         cmRepo.save(m);
     }
 
@@ -88,13 +89,13 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
 
         if (target.isOwner()) throw new AccessDeniedException("Không thể đổi role cho Owner (dùng transfer-ownership)");
 
-        target.setRoleId(role.getId());
+        target.setRoleId(role.getId().longValue());
         cmRepo.save(target);
     }
 
     @Override
     @Transactional
-    public InviteResponse inviteMemberByEmail(String companyId, String inviterEmail, String invitedEmail, Integer roleId) {
+    public InviteResponse inviteMemberByEmail(String companyId, String inviterEmail, String invitedEmail, Long roleId) {
         var inviterUser = userRepository.findByEmail(inviterEmail)
                 .orElseThrow(() -> new IllegalArgumentException("User not found. Please login first"));
         var inviter = cmRepo.findByCompanyIdAndUserId(companyId, inviterUser.getId())

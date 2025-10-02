@@ -151,7 +151,7 @@ public class RoleServiceImpl implements RoleService {
                 throw new IllegalArgumentException("Danh sách permission chứa phần tử không thuộc scope company");
             }
         }
-
+  
         // Thay toàn bộ mapping
         jdbc.update("DELETE FROM role_permission WHERE role_id = :roleId",
                 new MapSqlParameterSource().addValue("roleId", roleId));

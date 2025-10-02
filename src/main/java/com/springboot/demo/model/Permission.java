@@ -9,7 +9,7 @@ import lombok.*;
 public class Permission {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
 
-    private Long id;
+    private long id;
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

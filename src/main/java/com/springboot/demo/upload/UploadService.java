@@ -57,7 +57,7 @@ public class UploadService {
         Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
 
         String publicUrl = "/files/" + props.folderFor(bucket) + "/" + newName;
-        return new StoredFile(newName, contentType, (int) file.getSize(), publicUrl, target.toAbsolutePath().toString());
+        return new StoredFile(newName, contentType,  file.getSize(), publicUrl, target.toAbsolutePath().toString());
     }
 
     private String safeContentType(MultipartFile file) {
@@ -72,6 +72,6 @@ public class UploadService {
         return dot > -1 ? name.substring(dot).toLowerCase() : "";
     }
 
-    public record StoredFile(String filename, String contentType, Long size, String url, String path) {
+    public record StoredFile(String filename, String contentType, long size, String url, String path) {
     }
 }

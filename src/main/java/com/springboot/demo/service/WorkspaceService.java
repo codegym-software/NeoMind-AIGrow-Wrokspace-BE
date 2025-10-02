@@ -30,6 +30,6 @@ public interface WorkspaceService {
 
     List<Workspace> getAllByCompanyId(String companyId);
 
-    Long countByCompanyId(String companyId);
+    long countByCompanyId(String companyId);
 }
 

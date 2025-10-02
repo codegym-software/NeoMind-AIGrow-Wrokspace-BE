@@ -128,7 +128,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
     @Override
     @Transactional(readOnly = true)
-    public Long countByCompanyId(String companyId) {
+    public long countByCompanyId(String companyId) {
         return repository.countByCompanyIdAndNotArchived(companyId);
     }
 }
