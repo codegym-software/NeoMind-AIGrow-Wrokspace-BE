@@ -33,9 +33,6 @@ public interface WorkspaceService {
 
     long countByCompanyId(String companyId);
 
-    Page<WorkspaceDto> listMyWorkspacesInCompany(String companyId,
-                                                 String userId,
-                                                 int page, int size,
-                                                 boolean includeArchived);
+    List<WorkspaceDto> listMyWorkspacesInCompany(String companyId, String userId, boolean includeArchived);
 }
 

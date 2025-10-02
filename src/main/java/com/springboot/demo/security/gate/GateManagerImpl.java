@@ -78,21 +78,32 @@ public class GateManagerImpl implements GateManager {
     }
 
     private AuthCtx resolveAuth(Authentication authentication) {
-        String email = null;
-        String userId = null;
+        if (!(authentication instanceof JwtAuthenticationToken jwt)) {
+            throw new RuntimeException("Cannot resolve email from Authentication");
+        }
+        var token = jwt.getToken();
 
-        if (authentication instanceof JwtAuthenticationToken jwt) {
-            var token = jwt.getToken();
-            // cognito, ưu tiên sub = userId; fallback qua email
-            userId = token.getClaimAsString("sub");
-            email  = token.getClaimAsString("email");
+        final String email = firstNonBlank(
+                token.getClaimAsString("email")
+        );
+        if (email == null || email.isBlank()) {
+            throw new RuntimeException("Missing email in token");
         }
 
-        if ((userId == null || userId.isBlank()) && email != null) {
-            userId = userRepo.findByEmail(email).map(u -> u.getId()).orElse(null);
-        }
-        if (userId == null) throw new RuntimeException("Cannot resolve userId from Authentication");
+        String userId = userRepo.findByEmail(email)
+                .map(User::getId)
+                .orElseThrow(() -> new RuntimeException("User not ensured in DB for email: " + email));
 
         return new AuthCtx(userId, email);
     }
+
+    private static String firstNonBlank(String... vals) {
+        if (vals == null) return null;
+        for (String v : vals) {
+            if (v != null && !v.isBlank()) return v;
+        }
+        return null;
+    }
+
+
 }

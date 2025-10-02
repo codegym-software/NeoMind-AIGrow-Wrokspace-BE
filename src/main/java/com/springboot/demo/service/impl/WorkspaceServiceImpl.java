@@ -135,10 +135,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
 
     @Override
-    public Page<WorkspaceDto> listMyWorkspacesInCompany(String companyId, String userId,
-                                                        int page, int size, boolean includeArchived) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "created_at"));
-        Page<Workspace> p = repository.findMineInCompany(companyId, userId, includeArchived, pageable);
-        return p.map(WorkspaceDto::fromEntity);
+    public List<WorkspaceDto> listMyWorkspacesInCompany(String companyId, String userId, boolean includeArchived) {
+        List<Workspace> list = repository.findMineInCompany(companyId, userId, includeArchived);
+        return list.stream().map(WorkspaceDto::fromEntity).toList();
+
     }
 }

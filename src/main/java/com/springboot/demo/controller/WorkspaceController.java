@@ -4,6 +4,7 @@ import com.springboot.demo.dto.workspace.WorkspaceCreateRequest;
 import com.springboot.demo.dto.workspace.WorkspaceDto;
 import com.springboot.demo.dto.workspace.WorkspaceUpdateRequest;
 import com.springboot.demo.model.Workspace;
+import com.springboot.demo.security.UserIdResolver;
 import com.springboot.demo.service.WorkspaceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,10 +29,13 @@ import java.util.List;
 public class WorkspaceController {
 
     private final WorkspaceService service;
+    private final UserIdResolver userIdResolver;
 
-    public WorkspaceController(WorkspaceService service) {
+    public WorkspaceController(WorkspaceService service, UserIdResolver userIdResolver) {
         this.service = service;
+        this.userIdResolver = userIdResolver;
     }
+
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -129,7 +133,7 @@ public class WorkspaceController {
         return service.searchByCompanyId(companyId, q, page, size);
     }
 
-    @PutMapping("/companies/{companyId}/{id}")
+    @PutMapping("/companies/{companyId}/workspaces/{id}")
     public Workspace updateInCompany(@PathVariable String companyId,
                                      @PathVariable String id,
                                      @Valid @RequestBody WorkspaceUpdateRequest request) {
@@ -144,24 +148,11 @@ public class WorkspaceController {
 
     @PreAuthorize("@gate.allows('company:read', authentication, #companyId)")
     @GetMapping("/my")
-    public Page<WorkspaceDto> listMineInCompany(@PathVariable String companyId,
-                                                @RequestParam(defaultValue = "0") int page,
-                                                @RequestParam(defaultValue = "20") int size,
+    public List<WorkspaceDto> listMineInCompany(@PathVariable String companyId,
                                                 @RequestParam(defaultValue = "false") boolean includeArchived,
                                                 Authentication authentication) {
-        String userId = extractUserId(authentication);
-        return service.listMyWorkspacesInCompany(companyId, userId, page, size, includeArchived);
-    }
-
-    private String extractUserId(Authentication authentication) {
-        Object p = authentication.getPrincipal();
-        if (p instanceof org.springframework.security.oauth2.jwt.Jwt jwt) {
-            String sub = jwt.getClaimAsString("sub");
-            if (sub != null) return sub;
-            String email = jwt.getClaimAsString("email");
-            if (email != null) return email;
-        }
-        return authentication.getName();
+        String userId = userIdResolver.resolveInternalId(authentication);
+        return service.listMyWorkspacesInCompany(companyId, userId, includeArchived);
     }
 }
 
