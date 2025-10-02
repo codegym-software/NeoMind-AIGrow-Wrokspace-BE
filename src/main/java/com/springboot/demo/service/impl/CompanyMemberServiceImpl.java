@@ -32,7 +32,7 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
     private final UserRepository userRepository;
     private final EmailService emailService;
 
-    @Value("${app.defaults.roleId:2}")
+    @Value("${app.defaults.roleId:201}")
     private Long defaultRoleId;
 
     @Override
