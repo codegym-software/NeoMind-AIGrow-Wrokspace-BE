@@ -39,4 +39,4 @@ build/
 src/main/resources/application.properties
 /ai-grow-uploads/
 docker-compose.override.yml
-hs_err_pid31728.log
+hs_err_pid*.log
