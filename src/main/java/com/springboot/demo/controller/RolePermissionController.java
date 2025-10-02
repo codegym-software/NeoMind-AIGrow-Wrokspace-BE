@@ -15,12 +15,12 @@ public class RolePermissionController {
     private final RolePermissionService rolePermissionService;
 
     @GetMapping
-    public List<Long> get(@PathVariable Long roleId) {
+    public List<Integer> get(@PathVariable Integer roleId) {
         return rolePermissionService.getPermissionIdsByRole(roleId);
     }
 
     @PutMapping
-    public void upsert(@PathVariable Long roleId, @RequestBody UpsertRolePermissionsReq req) {
+    public void upsert(@PathVariable Integer roleId, @RequestBody UpsertRolePermissionsReq req) {
         rolePermissionService.replaceRolePermissions(roleId, req.permissionIds());
     }
 }

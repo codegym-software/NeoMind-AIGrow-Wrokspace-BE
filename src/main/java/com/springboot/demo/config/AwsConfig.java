@@ -1,4 +1,3 @@
-// src/main/java/com/springboot/demo/AwsConfig.java
 package com.springboot.demo.config;
 
 import org.slf4j.Logger;

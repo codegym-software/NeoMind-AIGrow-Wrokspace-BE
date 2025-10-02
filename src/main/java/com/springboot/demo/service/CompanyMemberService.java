@@ -9,4 +9,6 @@ public interface CompanyMemberService {
     void addMember(String companyId, AddCompanyMemberReq req, String actorId);
     void assignRole(String companyId, String targetUserId, AssignCompanyRoleReq req, String actorId);
     com.springboot.demo.dto.company.InviteResponse inviteMemberByEmail(String companyId, String inviterEmail, String invitedEmail, Long roleId);
+    void removeMember(String companyId, String memberUserId, String name);
+
 }

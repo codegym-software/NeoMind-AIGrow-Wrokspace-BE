@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -29,6 +30,7 @@ public class CompanyController {
         this.service = service;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create a new company", description = "Create a new company with name and optional logo")
@@ -41,17 +43,20 @@ public class CompanyController {
         return service.create(req);
     }
 
+    @PreAuthorize("@gate.allows('company:read', authentication, #id)")
     @GetMapping("/{id}")
     public Company get(@PathVariable String id) {
         return service.getById(id);
     }
 
+    @PreAuthorize("@gate.allows('company:update', authentication, #id)")
     @PutMapping("/{id}")
     public Company update(@PathVariable String id,
                           @Valid @RequestBody CompanyUpdateRequest req) {
         return service.update(id, req);
     }
 
+    @PreAuthorize("@gate.allows('company:update', authentication, #id)")
     @PatchMapping("/{id}")
     public Company patch(@PathVariable String id, @RequestBody Map<String, Object> p) {
         Company c = service.getById(id);
@@ -76,6 +81,7 @@ public class CompanyController {
         return service.searchByCurrentUser(q, page, size);
     }
 
+    @PreAuthorize("@gate.allows('company:delete', authentication, #id)")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
