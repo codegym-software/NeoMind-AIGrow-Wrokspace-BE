@@ -94,7 +94,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                 
                 if (actualUserId != null) {
                     System.out.println("Checking role exists...");
-                    if (!roleRepository.existsById(200L)) {
+                    if (!roleRepository.existsById(200)) {
                         throw new IllegalArgumentException("Workspace Admin role (ID: 200) does not exist");
                     }
                     System.out.println("Role exists ✓");
@@ -122,7 +122,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                     WorkspaceMember member = new WorkspaceMember(
                             savedWorkspace.getId(),
                             actualUserId,
-                            200L // Workspace Admin role ID
+                            200
                     );
                     workspaceMemberRepository.save(member);
                     System.out.println("Creator added as workspace member ✓");

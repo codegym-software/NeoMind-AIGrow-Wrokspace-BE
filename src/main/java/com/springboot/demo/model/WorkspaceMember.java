@@ -1,35 +1,34 @@
 package com.springboot.demo.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
-@Entity
-@Table(name = "workspace_members")
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@EqualsAndHashCode(of = "id")
+@Entity
+@Table(name = "workspace_members")
 public class WorkspaceMember {
+
     @Id
-    @Column(name = "id", length = 36, nullable = false)
+    @Column(name = "id", columnDefinition = "CHAR(36)")
     private String id;
 
-    @Column(name = "workspace_id", length = 36, nullable = false)
+    @Column(name = "workspace_id", columnDefinition = "CHAR(36)", nullable = false)
     private String workspaceId;
 
-    @Column(name = "user_id", length = 255, nullable = false)
+    @Column(name = "user_id", columnDefinition = "CHAR(36)", nullable = false)
     private String userId;
 
     @Column(name = "role_id", nullable = false)
     private Integer roleId;
 
-    @Column(name = "is_owner", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
-    private boolean isOwner = false;
-
+    public WorkspaceMember(String workspaceId, String userId, Integer roleId) {
+        this();
+        this.workspaceId = workspaceId;
+        this.userId = userId;
+        this.roleId = roleId;
+    }
 }
-

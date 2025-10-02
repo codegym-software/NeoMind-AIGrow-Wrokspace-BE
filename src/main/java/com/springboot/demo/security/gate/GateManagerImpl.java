@@ -2,9 +2,8 @@ package com.springboot.demo.security.gate;
 
 import com.springboot.demo.model.Scope;
 import com.springboot.demo.model.User;
-import com.springboot.demo.repository.RbacRepository;
-import com.springboot.demo.repository.CompanyMemberRepository;
-import com.springboot.demo.repository.UserRepository;
+import com.springboot.demo.repository.*;
+import com.springboot.demo.service.AbilityService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -23,7 +22,9 @@ public class GateManagerImpl implements GateManager {
     private final RbacRepository rbacRepo;
     private final CompanyMemberRepository companyMemberRepo;
     private final UserRepository userRepo;
-
+    private final ProjectRepository projectRepo;
+    private final ProjectMemberRepository pmRepo;
+    private final AbilityService abilityService;
     private final Map<String, BiFunction<AuthCtx, String, Boolean>> dynamicGates = new HashMap<>();
 
     @PostConstruct
@@ -42,6 +43,55 @@ public class GateManagerImpl implements GateManager {
                         .orElse(false)
         );
 
+        dynamicGates.put("project:create", (ctx, target) -> {
+            String workspaceId = (String) target;
+            String userId = ctx.userId();
+
+            return abilityService.hasPermission(userId, Scope.workspace, "project:create", workspaceId)
+                    || abilityService.hasPermission(userId, Scope.workspace, "project:crud", workspaceId)
+                    || abilityService.hasPermission(userId, Scope.workspace, "workspace:update", workspaceId);
+        });
+
+        dynamicGates.put("project:read", (ctx, target) -> {
+            // target: workspaceId (list) — còn xem detail project sẽ đi nhánh "project:read" với projectId (ở fallback DB)
+            String workspaceId = (String) target;
+            String userId = ctx.userId();
+
+            return abilityService.hasPermission(userId, Scope.workspace,"project:read", workspaceId)
+                    || abilityService.hasPermission(userId, Scope.workspace, "project:crud", workspaceId)
+                    || abilityService.hasPermission(userId, Scope.workspace, "workspace:read", workspaceId);
+        });
+
+        dynamicGates.put("project:update", (ctx, target) -> {
+            // target: projectId
+            String projectId = (String) target;
+            String userId = ctx.userId();
+
+            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) return true;
+
+            String wsId = projectRepo.findWorkspaceIdByProjectId(projectId).orElse(null);
+            return abilityService.hasPermission(userId, Scope.project, "project:update", projectId)
+                    || abilityService.hasPermission(userId, Scope.project, "project:crud", projectId)
+                    || (wsId != null && (
+                    abilityService.hasPermission(userId, Scope.project, "project:update", wsId) ||
+                            abilityService.hasPermission(userId, Scope.project, "project:crud", wsId)
+            ));
+        });
+
+        dynamicGates.put("project:delete", (ctx, target) -> {
+            String projectId = (String) target;
+            String userId = ctx.userId();
+
+            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) return true;
+
+            String wsId = projectRepo.findWorkspaceIdByProjectId(projectId).orElse(null);
+            return abilityService.hasPermission(userId, Scope.project,"project:delete", projectId)
+                    || abilityService.hasPermission(userId, Scope.project,"project:crud", projectId)
+                    || (wsId != null && (
+                    abilityService.hasPermission(userId, Scope.workspace,"project:delete", wsId) ||
+                            abilityService.hasPermission(userId, Scope.workspace,"project:crud", wsId)
+            ));
+        });
     }
 
     @Override
