@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
-public interface CompanyMemberRepository extends JpaRepository<CompanyMember, Integer> {
+public interface CompanyMemberRepository extends JpaRepository<CompanyMember, Long> {
 
     boolean existsByCompanyIdAndIsOwnerTrue(String companyId);
 

@@ -96,8 +96,8 @@ public class WorkspaceController {
     }
 
     @GetMapping("/company/{companyId}/count")
-    public ResponseEntity<Integer> countByCompanyId(@PathVariable String companyId) {
-        Integer count = service.countByCompanyId(companyId);
+    public ResponseEntity<Long> countByCompanyId(@PathVariable String companyId) {
+        Long count = service.countByCompanyId(companyId);
         return ResponseEntity.ok(count);
     }
 

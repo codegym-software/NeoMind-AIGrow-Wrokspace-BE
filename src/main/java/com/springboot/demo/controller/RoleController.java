@@ -33,19 +33,19 @@ public class RoleController {
 
     @PutMapping("/{roleId}")
     @PreAuthorize("@gate.allows('company:role:update', authentication, #companyId)")
-    public RoleDto update(@PathVariable String companyId, @PathVariable Integer roleId, @RequestBody UpdateRoleReq req) {
+    public RoleDto update(@PathVariable String companyId, @PathVariable Long roleId, @RequestBody UpdateRoleReq req) {
         return roleService.updateCompanyRole(companyId, roleId, req);
     }
 
     @DeleteMapping("/{roleId}")
     @PreAuthorize("@gate.allows('company:role:delete', authentication, #companyId)")
-    public void delete(@PathVariable String companyId, @PathVariable Integer roleId) {
+    public void delete(@PathVariable String companyId, @PathVariable Long roleId) {
         roleService.deleteCompanyRole(companyId, roleId);
     }
 
     @PutMapping("/{roleId}/permissions")
     @PreAuthorize("@gate.allows('company:role:grant_permission', authentication, #companyId)")
-    public void upsertPermissions(@PathVariable String companyId, @PathVariable Integer roleId,
+    public void upsertPermissions(@PathVariable String companyId, @PathVariable Long roleId,
                                   @RequestBody UpsertRolePermissionsReq req) {
         roleService.replaceRolePermissions(companyId, roleId, req.permissionIds());
     }

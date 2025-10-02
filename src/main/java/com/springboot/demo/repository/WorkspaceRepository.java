@@ -37,7 +37,7 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
 
     // Count active workspaces by company
     @Query("SELECT COUNT(w) FROM Workspace w WHERE w.companyId = :companyId AND w.archivedAt IS NULL")
-    Integer countByCompanyIdAndNotArchived(@Param("companyId") String companyId);
+    Long countByCompanyIdAndNotArchived(@Param("companyId") String companyId);
 
     // Find workspace by name within a company (for duplicate checking)
     @Query("SELECT w FROM Workspace w WHERE w.companyId = :companyId AND w.name = :name AND w.archivedAt IS NULL")

@@ -72,6 +72,6 @@ public class UploadService {
         return dot > -1 ? name.substring(dot).toLowerCase() : "";
     }
 
-    public record StoredFile(String filename, String contentType, Integer size, String url, String path) {
+    public record StoredFile(String filename, String contentType, Long size, String url, String path) {
     }
 }

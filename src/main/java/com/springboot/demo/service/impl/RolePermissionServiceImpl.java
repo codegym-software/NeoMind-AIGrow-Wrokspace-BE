@@ -17,7 +17,7 @@ public class RolePermissionServiceImpl implements RolePermissionService {
     private final RolePermissionRepository rpRepo;
 
     @Override
-    public List<Integer> getPermissionIdsByRole(Integer roleId) {
+    public List<Long> getPermissionIdsByRole(Long roleId) {
         return rpRepo.findByIdRoleId(roleId)
                 .stream()
                 .map(rp -> rp.getId().getPermissionId())
@@ -26,7 +26,7 @@ public class RolePermissionServiceImpl implements RolePermissionService {
 
     @Override
     @Transactional
-    public void replaceRolePermissions(Integer roleId, List<Integer> permissionIds) {
+    public void replaceRolePermissions(Long roleId, List<Long> permissionIds) {
         rpRepo.deleteByIdRoleId(roleId);
 
         List<RolePermission> toSave = permissionIds.stream()
