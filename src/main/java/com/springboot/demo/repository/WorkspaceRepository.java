@@ -16,7 +16,7 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
 
     // Find all workspaces by company ID (excluding archived)
     @Query("SELECT w FROM Workspace w WHERE w.companyId = :companyId AND w.archivedAt IS NULL")
-    Page<Workspace> findByCompanyIdAndNotArchived(@Param("companyId") String companyId, Pageable pageable);
+    List<Workspace> findByCompanyIdAndNotArchived(@Param("companyId") String companyId);
 
     // Find all workspaces by company ID (including archived)
     List<Workspace> findByCompanyId(String companyId);
@@ -31,9 +31,8 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
     // Search workspaces by name within a company (excluding archived)
     @Query("SELECT w FROM Workspace w WHERE w.companyId = :companyId AND " +
             "LOWER(w.name) LIKE LOWER(CONCAT('%', :query, '%')) AND w.archivedAt IS NULL")
-    Page<Workspace> searchByCompanyIdAndName(@Param("companyId") String companyId,
-                                             @Param("query") String query,
-                                             Pageable pageable);
+    List<Workspace> searchByCompanyIdAndName(@Param("companyId") String companyId,
+                                             @Param("query") String query);
 
     // Count active workspaces by company
     @Query("SELECT COUNT(w) FROM Workspace w WHERE w.companyId = :companyId AND w.archivedAt IS NULL")
@@ -43,5 +42,18 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
     @Query("SELECT w FROM Workspace w WHERE w.companyId = :companyId AND w.name = :name AND w.archivedAt IS NULL")
     Optional<Workspace> findByCompanyIdAndNameAndNotArchived(@Param("companyId") String companyId,
                                                              @Param("name") String name);
+
+    @Query(value = """
+        SELECT w.*
+        FROM workspaces w
+        JOIN workspace_members wm ON wm.workspace_id = w.id
+        WHERE w.company_id = :companyId
+          AND wm.user_id = :userId
+          AND (:includeArchived = TRUE OR w.archived_at IS NULL)
+        ORDER BY w.created_at DESC
+        """, nativeQuery = true)
+    List<Workspace> findMineInCompany(@Param("companyId") String companyId,
+                                         @Param("userId") String userId,
+                                         @Param("includeArchived") boolean includeArchived);
 }
 

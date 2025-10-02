@@ -62,7 +62,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
-    public RoleDto update(Long id, UpdateRoleReq req) {
+    public RoleDto update(Integer id, UpdateRoleReq req) {
         Role r = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
         r.setName(req.name().trim());
         r.setDescription(req.description());
@@ -102,7 +102,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
-    public RoleDto updateCompanyRole(String companyId, Long roleId, UpdateRoleReq req) {
+    public RoleDto updateCompanyRole(String companyId, Integer roleId, UpdateRoleReq req) {
         Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
         if (r.getScope() != Scope.company) {
             throw new IllegalArgumentException("Role không thuộc scope company");
@@ -117,7 +117,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
-    public void deleteCompanyRole(String companyId, Long roleId) {
+    public void deleteCompanyRole(String companyId, Integer roleId) {
         Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
         if (r.getScope() != Scope.company) {
             throw new IllegalArgumentException("Role không thuộc scope company");
@@ -130,7 +130,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
-    public void replaceRolePermissions(String companyId, Long roleId, List<Long> permissionIds) {
+    public void replaceRolePermissions(String companyId, Integer roleId, List<Integer> permissionIds) {
         // Validate role thuộc company (hoặc template company)
         Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
         if (r.getScope() != Scope.company) {
@@ -158,7 +158,7 @@ public class RoleServiceImpl implements RoleService {
 
         if (permissionIds != null && !permissionIds.isEmpty()) {
             String sql = "INSERT INTO role_permission(role_id, permission_id) VALUES (:rid, :pid)";
-            for (Long pid : permissionIds) {
+            for (Integer pid : permissionIds) {
                 jdbc.update(sql, new MapSqlParameterSource()
                         .addValue("rid", roleId)
                         .addValue("pid", pid));
