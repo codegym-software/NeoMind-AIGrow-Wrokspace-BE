@@ -1,6 +1,7 @@
 package com.springboot.demo.controller;
 
 import com.springboot.demo.dto.workspace.WorkspaceCreateRequest;
+import com.springboot.demo.dto.workspace.WorkspaceDto;
 import com.springboot.demo.dto.workspace.WorkspaceUpdateRequest;
 import com.springboot.demo.model.Workspace;
 import com.springboot.demo.service.WorkspaceService;
@@ -14,6 +15,8 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -137,6 +140,28 @@ public class WorkspaceController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteInCompany(@PathVariable String companyId, @PathVariable String id) {
         service.deleteByCompanyId(id, companyId);
+    }
+
+    @PreAuthorize("@gate.allows('company:read', authentication, #companyId)")
+    @GetMapping("/my")
+    public Page<WorkspaceDto> listMineInCompany(@PathVariable String companyId,
+                                                @RequestParam(defaultValue = "0") int page,
+                                                @RequestParam(defaultValue = "20") int size,
+                                                @RequestParam(defaultValue = "false") boolean includeArchived,
+                                                Authentication authentication) {
+        String userId = extractUserId(authentication);
+        return service.listMyWorkspacesInCompany(companyId, userId, page, size, includeArchived);
+    }
+
+    private String extractUserId(Authentication authentication) {
+        Object p = authentication.getPrincipal();
+        if (p instanceof org.springframework.security.oauth2.jwt.Jwt jwt) {
+            String sub = jwt.getClaimAsString("sub");
+            if (sub != null) return sub;
+            String email = jwt.getClaimAsString("email");
+            if (email != null) return email;
+        }
+        return authentication.getName();
     }
 }
 
