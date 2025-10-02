@@ -133,7 +133,7 @@ public class WorkspaceController {
         return service.searchByCompanyId(companyId, q, page, size);
     }
 
-    @PutMapping("/companies/{companyId}/workspaces/{id}")
+    @PutMapping("/companies/{companyId}/{id}")
     public Workspace updateInCompany(@PathVariable String companyId,
                                      @PathVariable String id,
                                      @Valid @RequestBody WorkspaceUpdateRequest request) {
