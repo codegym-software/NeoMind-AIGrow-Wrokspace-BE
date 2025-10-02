@@ -1,18 +1,18 @@
 services:
   db:
-    image: mariadb:11.4
+    image: mysql:8.0
     environment:
-      MARIADB_DATABASE: ${MARIADB_DATABASE}
-      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
-      MARIADB_USER: ${MARIADB_USER}
-      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MYSQL_DATABASE: neomind_db
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_USER: neomind
+      MYSQL_PASSWORD: password
     ports:
-      - "3306:3306"
+      - "3308:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./mysql-conf.d/my.cnf:/etc/mysql/conf.d/my.cnf:ro
     healthcheck:
-      test: ["CMD-SHELL", "mariadb-admin ping -h 127.0.0.1 -u\"$MARIADB_USER\" -p\"$MARIADB_PASSWORD\" --silent || mariadb-admin ping -h 127.0.0.1 -uroot -p\"$MARIADB_ROOT_PASSWORD\" --silent"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
       interval: 5s
       timeout: 5s
       retries: 30
@@ -26,18 +26,22 @@ services:
       db:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      SERVER_PORT: ${SERVER_PORT}
+      SPRING_PROFILES_ACTIVE: dev
+      SERVER_PORT: 8080
       # JDBC URL maps to service name 'db'
-      SPRING_DATASOURCE_URL: jdbc:mysql://${DB_HOST:-db}:${DB_PORT:-3306}/${MARIADB_DATABASE}?useSSL=false&serverTimezone=UTC
-      SPRING_DATASOURCE_USERNAME: ${MARIADB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${MARIADB_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/neomind_db?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: neomind
+      SPRING_DATASOURCE_PASSWORD: password
       # Optional overrides
-      ISSUER_URI: ${ISSUER_URI}
-      CLIENT_ID: ${CLIENT_ID}
-      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
+      ISSUER_URI: https://example.com
+      CLIENT_ID: example-client-id
+      FRONTEND_ORIGIN: http://localhost:3000
+      MAX_UPLOAD_SIZE: 10MB
+      PORT: 8080
+      PUBLIC_FILES_BASE_URL: http://localhost:8080/files
+      FILE_STORAGE_BASE: /app/uploads
     ports:
-      - "${SERVER_PORT}:${SERVER_PORT}"
+      - "8080:8080"
     volumes:
       - ./ai-grow-uploads:/app/ai-grow-uploads
 
