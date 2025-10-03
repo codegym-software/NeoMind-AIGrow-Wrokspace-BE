@@ -25,6 +25,7 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
     @Query("SELECT wm.workspaceId FROM WorkspaceMember wm WHERE wm.userId = :userId")
     List<String> findWorkspaceIdsByUserId(@Param("userId") String userId);
 
+
     // Check if user has specific role in workspace
     @Query("SELECT COUNT(wm) > 0 FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.userId = :userId AND wm.roleId = :roleId")
     boolean existsByWorkspaceIdAndUserIdAndRoleId(@Param("workspaceId") String workspaceId, 

@@ -21,6 +21,7 @@ public class GateManagerImpl implements GateManager {
 
     private final RbacRepository rbacRepo;
     private final CompanyMemberRepository companyMemberRepo;
+    private final WorkspaceMemberRepository workspaceMemberRepo;
     private final UserRepository userRepo;
     private final ProjectRepository projectRepo;
     private final ProjectMemberRepository pmRepo;
@@ -120,14 +121,31 @@ public class GateManagerImpl implements GateManager {
 
     @Override
     public boolean allows(String ability, Authentication authentication, String targetId) {
-        var parsed = parseAbility(ability);            // lấy scope từ tiền tố ability
-        var ctx = resolveAuth(authentication);         // trích userId từ token/email
+        var scope = parse_scope(ability);
+        var ctx   = resolveAuth(authentication);
+
+        if (isOwner(scope, targetId, ctx.userId)) return true;
+
         var dyn = dynamicGates.get(ability);
-        if (dyn != null) {
-            if (!dyn.apply(ctx, targetId)) return false;
-            return true; // nếu qua gate phức tạp => OK
-        }
-        return rbacRepo.userHasPermissionInScope(ctx.userId, parsed.scope, targetId, ability);
+        if (dyn != null && dyn.apply(ctx, targetId)) return true;
+
+        return rbacRepo.userHasPermissionInScope(ctx.userId, scope, targetId, ability);
+    }
+
+    private Scope parse_scope(String ability) {
+        int i = ability.indexOf(':');
+        if (i < 0) throw new IllegalArgumentException("Invalid ability: " + ability);
+        return Scope.valueOf(ability.substring(0, i));
+    }
+
+    private boolean isOwner(Scope scope, String targetId, String userId) {
+        return switch (scope) {
+            case company   -> companyMemberRepo.isOwner(targetId, userId);
+//            case workspace -> workspaceMemberRepo.isOwner(targetId, userId);
+//            case project   -> pmRepo.isOwner(targetId, userId);
+            case workspace -> false;
+            case project -> false;
+        };
     }
 
     private record ParsedAbility(Scope scope, String code) {}
