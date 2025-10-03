@@ -36,7 +36,7 @@ public class BacklogServiceImpl implements BacklogService {
             Task t = byId.get(id);
             if (t != null) items.add(toDto(t));
         }
-        // thêm những task chưa có trong order (hiếm)
+
         for (Task t : tasks) {
             if (state.orderedTaskIds().contains(t.getId())) continue;
             items.add(toDto(t));
