@@ -6,17 +6,16 @@ import com.springboot.demo.repository.*;
 import com.springboot.demo.service.AbilityService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import static com.springboot.demo.util.ScopeUtils.parseScope;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-import static com.springboot.demo.util.ScopeUtils.parseScope;
-
-@Component("gate") // dùng @PreAuthorize("@gate.allows(...)")
+@Component("gate")
 @RequiredArgsConstructor
 public class GateManagerImpl implements GateManager {
 
@@ -93,6 +92,22 @@ public class GateManagerImpl implements GateManager {
                             abilityService.hasPermission(userId, Scope.workspace, "project:crud", wsId)
             ));
         });
+
+        dynamicGates.put("project:task:read", (ctx, target) -> {
+            String projectId = (String) target;
+            // Chủ dự án hoặc có bất kỳ quyền đọc liên quan
+            return abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "task:read")
+                    || abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:read")
+                    || abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:crud");
+        });
+
+        dynamicGates.put("project:task:update", (ctx, target) -> {
+            String projectId = (String) target;
+            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "task:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:crud");
+        });
     }
 
     @Override
@@ -107,13 +122,11 @@ public class GateManagerImpl implements GateManager {
     public boolean allows(String ability, Authentication authentication, String targetId) {
         var parsed = parseAbility(ability);            // lấy scope từ tiền tố ability
         var ctx = resolveAuth(authentication);         // trích userId từ token/email
-        // gate dynamic trước
         var dyn = dynamicGates.get(ability);
         if (dyn != null) {
             if (!dyn.apply(ctx, targetId)) return false;
             return true; // nếu qua gate phức tạp => OK
         }
-        // gate thường -> hỏi DB
         return rbacRepo.userHasPermissionInScope(ctx.userId, parsed.scope, targetId, ability);
     }
 
