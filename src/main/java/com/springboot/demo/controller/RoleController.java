@@ -12,38 +12,38 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/roles")
+@RequestMapping("/api/companies/{companyId}/roles")
 @RequiredArgsConstructor
 public class RoleController {
 
     private final RoleService roleService;
 
-    @GetMapping("/companies/{companyId}")
+    @GetMapping
     @PreAuthorize("@gate.allows('company:role:read', authentication, #companyId)")
     public List<RoleDto> list(@PathVariable String companyId,
                               @RequestParam(defaultValue = "true") boolean includeGlobal) {
         return roleService.listCompanyRoles(companyId, includeGlobal);
     }
 
-    @PostMapping("/companies/{companyId}")
+    @PostMapping
     @PreAuthorize("@gate.allows('company:role:create', authentication, #companyId)")
     public RoleDto create(@PathVariable String companyId, @RequestBody CreateRoleReq req) {
         return roleService.createCompanyRole(companyId, req);
     }
 
-    @PutMapping("/companies/{companyId}/{roleId}")
+    @PutMapping("/{roleId}")
     @PreAuthorize("@gate.allows('company:role:update', authentication, #companyId)")
     public RoleDto update(@PathVariable String companyId, @PathVariable Long roleId, @RequestBody UpdateRoleReq req) {
         return roleService.updateCompanyRole(companyId, roleId, req);
     }
 
-    @DeleteMapping("/companies/{companyId}/{roleId}")
+    @DeleteMapping("/{roleId}")
     @PreAuthorize("@gate.allows('company:role:delete', authentication, #companyId)")
     public void delete(@PathVariable String companyId, @PathVariable Long roleId) {
         roleService.deleteCompanyRole(companyId, roleId);
     }
 
-    @PutMapping("/companies/{companyId}/{roleId}/permissions")
+    @PutMapping("/{roleId}/permissions")
     @PreAuthorize("@gate.allows('company:role:grant_permission', authentication, #companyId)")
     public void upsertPermissions(@PathVariable String companyId,
                                   @PathVariable Long roleId,
