@@ -24,9 +24,8 @@ import java.util.List;
 @EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
-
-    private final EnsureUserExistsFilter ensureUserExistsFilter;
-    private final RequestAuthorizationManager ram;
+  private final EnsureUserExistsFilter ensureUserExistsFilter;
+//    private final RequestAuthorizationManager ram;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -46,6 +45,15 @@ public class SecurityConfig {
         http.addFilterAfter(ensureUserExistsFilter, BearerTokenAuthenticationFilter.class);
         return http.build();
     }
+
+    private static final String[] SWAGGER_WHITELIST = {
+            "/swagger-resources/**",
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/webjars/**"
+    };
+
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
