@@ -69,36 +69,11 @@ public class CompanyController {
         return service.save(c);
     }
 
-    @GetMapping
-    @Operation(summary = "Get companies for current user", description = "Retrieve companies where the current user is a member")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Companies retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
-    })
-    public Page<Company> list(@Parameter(description = "Search query") @RequestParam(required = false) String q,
-                              @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-                              @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size) {
-        return service.searchByCurrentUser(q, page, size);
-    }
-
     @PreAuthorize("@gate.allows('company:delete', authentication, #id)")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
         service.delete(id);
-    }
-
-    @GetMapping("/admin/all")
-    @Operation(summary = "Get all companies (Admin only)", description = "Retrieve all companies in the system - Admin access required")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "All companies retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "403", description = "Forbidden - Admin access required")
-    })
-    public Page<Company> listAll(@Parameter(description = "Search query") @RequestParam(required = false) String q,
-                                 @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-                                 @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size) {
-        return service.search(q, page, size);
     }
 }
 
