@@ -1,189 +1,117 @@
 package com.springboot.demo.service.impl;
 
-import com.springboot.demo.dto.project.ProjectCreateRequest;
-import com.springboot.demo.dto.project.ProjectUpdateRequest;
+import com.springboot.demo.dto.project.*;
 import com.springboot.demo.model.Project;
-import com.springboot.demo.enums.ProjectStatus;
-import com.springboot.demo.repository.ProjectRepository;
+import com.springboot.demo.model.ProjectMember;
+import com.springboot.demo.model.ProjectStatus;
+import com.springboot.demo.model.Role;
+import com.springboot.demo.repository.*;
 import com.springboot.demo.service.ProjectService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class ProjectServiceImpl implements ProjectService {
 
-    private final ProjectRepository repository;
+    private final ProjectRepository projectRepo;
+    private final ProjectMemberRepository pmRepo;
+    private final RoleRepository roleRepo;
+    private final WorkspaceRepository workspaceRepo;
 
-    public ProjectServiceImpl(ProjectRepository repository) {
-        this.repository = repository;
+    private ProjectDto toDto(Project p) {
+        return new ProjectDto(
+                p.getId(), p.getWorkspaceId(), p.getName(), p.getDescription(),
+                p.getColor(), p.getStatus(),
+                p.getCreatedAt() == null ? null : p.getCreatedAt().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime(),
+                p.getUpdatedAt() == null ? null : p.getUpdatedAt().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime(),
+                p.getArchivedAt() == null ? null : p.getArchivedAt().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()
+        );
     }
 
     @Override
-    public Project create(ProjectCreateRequest request) {
-        // Check for duplicate project name in the same workspace
-        repository.findByWorkspaceIdAndNameAndNotArchived(request.workspaceId(), request.name())
-                .ifPresent(existing -> {
-                    throw new IllegalArgumentException("Project with name '" + request.name() + "' already exists in this workspace");
-                });
+    @Transactional
+    public ProjectDto create(String workspaceId, CreateProjectReq req, String currentUserId) {
+        workspaceRepo.findById(workspaceId).orElseThrow(() -> new IllegalArgumentException("Workspace not found"));
 
-        Project project = new Project();
-        project.setWorkspaceId(request.workspaceId());
-        project.setName(request.name().trim());
-        project.setDescription(request.description());
+        Project p = Project.builder()
+                .id(UUID.randomUUID().toString())
+                .workspaceId(workspaceId)
+                .name(req.name() == null ? "Untitled Project" : req.name().trim())
+                .description(req.description())
+                .color(req.color())
+                .status(ProjectStatus.active)
+                .build();
 
-        if (request.status() != null) {
-            project.setStatus(request.status());
-        }
-        project.setColor(request.color());
+        projectRepo.save(p);
 
-        return repository.save(project);
-    }
+        // Gắn owner (is_owner = true). role_id là role(scope='project', code='admin')
+        Integer adminRoleId = roleRepo.findByScopeAndCode("project", "admin")
+                .map(Role::getId)
+                .orElseThrow(() -> new IllegalStateException("Missing seed role: scope=project, code=admin"));
 
-    @Override
-    @Transactional(readOnly = true)
-    public Project getById(String id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + id));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Project getByIdAndWorkspaceId(String id, String workspaceId) {
-        return repository.findByIdAndWorkspaceIdAndNotArchived(id, workspaceId)
-                .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + id + " in workspace: " + workspaceId));
-    }
-
-    @Override
-    public Project update(String id, ProjectUpdateRequest request) {
-        Project project = getById(id);
-        return updateProject(project, request);
-    }
-
-    @Override
-    public Project updateByWorkspaceId(String id, String workspaceId, ProjectUpdateRequest request) {
-        Project project = getByIdAndWorkspaceId(id, workspaceId);
-        return updateProject(project, request);
-    }
-
-    private Project updateProject(Project project, ProjectUpdateRequest request) {
-        // Check for duplicate name if name is being changed
-        if (request.name() != null && !request.name().equals(project.getName())) {
-            repository.findByWorkspaceIdAndNameAndNotArchived(project.getWorkspaceId(), request.name())
-                    .ifPresent(existing -> {
-                        if (!existing.getId().equals(project.getId())) {
-                            throw new IllegalArgumentException("Project with name '" + request.name() + "' already exists in this workspace");
-                        }
-                    });
-            project.setName(request.name().trim());
+        if (!pmRepo.existsByProjectIdAndUserId(p.getId(), currentUserId)) {
+            pmRepo.save(ProjectMember.builder()
+                    .projectId(p.getId())
+                    .userId(currentUserId)
+                    .roleId(adminRoleId)
+                    .owner(true)
+                    .build());
         }
 
-        if (request.description() != null) {
-            project.setDescription(request.description().trim());
+        return toDto(p);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProjectDto> listInWorkspace(String workspaceId, boolean includeArchived, String keyword) {
+        List<Project> list = includeArchived
+                ? projectRepo.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId)
+                : projectRepo.findByWorkspaceIdAndStatusOrderByCreatedAtDesc(workspaceId, ProjectStatus.active);
+
+        if (keyword != null && !keyword.isBlank()) {
+            final String k = keyword.toLowerCase();
+            list = list.stream()
+                    .filter(p -> p.getName().toLowerCase().contains(k)
+                            || (p.getDescription() != null && p.getDescription().toLowerCase().contains(k)))
+                    .toList();
         }
-        if (request.status() != null) {
-            project.setStatus(request.status());
-        }
-        if (request.color() != null) {
-            project.setColor(request.color());
-        }
-
-        return repository.save(project);
+        return list.stream().map(this::toDto).toList();
     }
 
     @Override
-    public void delete(String id) {
-        Project project = getById(id);
-        repository.delete(project);
+    @Transactional
+    public ProjectDto rename(String projectId, String newName) {
+        Project p = projectRepo.findById(projectId).orElseThrow(() -> new IllegalArgumentException("Project not found"));
+        p.setName(newName == null ? "Untitled Project" : newName.trim());
+        projectRepo.save(p);
+        return toDto(p);
     }
 
     @Override
-    public void deleteByWorkspaceId(String id, String workspaceId) {
-        Project project = getByIdAndWorkspaceId(id, workspaceId);
-        repository.delete(project);
-    }
-
-    @Override
-    public Project archive(String id) {
-        Project project = getById(id);
-        project.archive();
-        return repository.save(project);
-    }
-
-    @Override
-    public Project archiveByWorkspaceId(String id, String workspaceId) {
-        Project project = getByIdAndWorkspaceId(id, workspaceId);
-        project.archive();
-        return repository.save(project);
-    }
-
-    @Override
-    public Project restore(String id) {
-        Project project = repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + id));
-        project.unarchive();
-        return repository.save(project);
-    }
-
-    @Override
-    public Project restoreByWorkspaceId(String id, String workspaceId) {
-        Project project = repository.findById(id)
-                .filter(p -> p.getWorkspaceId().equals(workspaceId))
-                .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + id + " in workspace: " + workspaceId));
-        project.unarchive();
-        return repository.save(project);
+    @Transactional
+    public void delete(String projectId) {
+        Project p = projectRepo.findById(projectId).orElseThrow(() -> new IllegalArgumentException("Project not found"));
+        p.setStatus(ProjectStatus.archived);
+        p.setArchivedAt(LocalDateTime.now());
+        projectRepo.save(p);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Project> getByWorkspaceId(String workspaceId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return repository.findByWorkspaceIdAndNotArchived(workspaceId, pageable);
-    }
+    public List<ProjectDto> listMine(String workspaceId, String currentUserId) {
+        List<Project> list = (workspaceId == null || workspaceId.isBlank())
+                ? projectRepo.findAllByMember(currentUserId)
+                : projectRepo.findAllByMemberInWorkspace(currentUserId, workspaceId);
 
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Project> searchByWorkspaceId(String workspaceId, String query, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return repository.searchByWorkspaceIdAndName(workspaceId, query, pageable);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Project> getByWorkspaceIdAndStatus(String workspaceId, ProjectStatus status, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return repository.findByWorkspaceIdAndStatus(workspaceId, status, pageable);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Project> getAllByWorkspaceId(String workspaceId) {
-        return repository.findByWorkspaceId(workspaceId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Project> getActiveProjectsByWorkspaceId(String workspaceId) {
-        return repository.findActiveProjectsByWorkspaceId(workspaceId);
-    }
-
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countByWorkspaceId(String workspaceId) {
-        return repository.countByWorkspaceIdAndNotArchived(workspaceId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countByWorkspaceIdAndStatus(String workspaceId, ProjectStatus status) {
-        return repository.countByWorkspaceIdAndStatus(workspaceId, status);
+        return list.stream()
+                .filter(p -> p.getStatus() == ProjectStatus.active)
+                .map(this::toDto)
+                .toList();
     }
 }
-
