@@ -8,3 +8,21 @@ spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 
 server.port=${PORT}
+
+
+# ===============================
+# ✉️ Email SMTP Configuration
+# ===============================
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=your_email@gmail.com
+spring.mail.password=YOUR_APP_PASSWORD
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+# ===============================
+# 📬 Email Template Config (EmailService đọc)
+# ===============================
+app.email.from=noreply@ai-grow.com
+app.email.subject=📩 Bạn được mời tham gia công ty
+app.url=https://ai-grow.com

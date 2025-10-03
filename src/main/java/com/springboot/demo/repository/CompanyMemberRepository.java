@@ -33,6 +33,9 @@ public interface CompanyMemberRepository extends JpaRepository<CompanyMember, In
     @Query("SELECT m FROM CompanyMember m WHERE m.companyId = :companyId")
     List<CompanyMember> findAllByCompanyId(@Param("companyId") String companyId);
 
+    boolean existsByCompanyIdAndInvitedEmailIgnoreCase(String companyId, String invitedEmail);
+    Optional<CompanyMember> findFirstByCompanyIdAndInvitedEmailIgnoreCase(String companyId, String invitedEmail);
+
     @Query(value = """
       SELECT CASE WHEN EXISTS(
          SELECT 1 FROM company_members

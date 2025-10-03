@@ -26,7 +26,7 @@ public class CompanyMember {
     private String userId;
 
     @Column(name = "role_id")
-    private Integer roleId;
+    private Long roleId;
 
     @Column(name = "invited_email")
     private String invitedEmail;
@@ -52,17 +52,18 @@ public class CompanyMember {
     }
 
     private void enforceOwnerRoleRule() {
-        if (isOwner) {
-            // Owner => null role_id
-            // (tránh trường hợp ở nơi khác vô tình set role cho owner)
-            try {
-                var f = this.getClass().getDeclaredField("roleId");
-                f.setAccessible(true);
-                f.set(this, null);
-            } catch (Exception ignore) {}
-        } else {
+    if (isOwner) {
+        // Owner => roleId phải là null
+        try {
+            var f = this.getClass().getDeclaredField("roleId");
+            f.setAccessible(true);
+            f.set(this, null);
+        } catch (Exception ignore) {}
+    } else {
+        // Non-owner => roleId bắt buộc != null
+        if (this.roleId == null) {
             throw new IllegalStateException("Non-owner company member must have a role_id");
         }
     }
 }
-
+}

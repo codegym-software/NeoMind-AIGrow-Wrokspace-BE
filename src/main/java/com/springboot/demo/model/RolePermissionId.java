@@ -11,4 +11,5 @@ import java.io.Serializable;
 public class RolePermissionId implements Serializable {
     @Column(name = "role_id")       private Integer roleId;
     @Column(name = "permission_id") private Integer permissionId;
+
 }

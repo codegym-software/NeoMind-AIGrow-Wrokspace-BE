@@ -110,6 +110,32 @@ docker compose up -d --build
 > Lưu ý: Ứng dụng đọc một số cấu hình qua `application.yml` bằng placeholder env (ISSUER_URI, CLIENT_ID, FRONTEND_ORIGIN). Bạn có thể override qua env trong Compose nếu cần.
 
 ---
+## 📧 Cấu hình Email SMTP & lấy App Password
+Dự án sử dụng Gmail để gửi email (ví dụ: thông báo, invite user). Gmail không cho phép sử dụng mật khẩu chính trực tiếp, bạn cần tạo App Password.  
+
+### Bật 2-Step Verification cho Gmail
+-Truy cập Google Account Security
+
+
+-Trong mục “Signing in to Google”, bật 2-Step Verification.
+
+-Hoàn tất các bước xác minh (qua điện thoại, Authenticator App, v.v.).
+
+### Tạo App Password
+1. Sau khi bật 2-Step Verification, vào App Passwords:
+https://myaccount.google.com/apppasswords
+
+2. Chọn:
+- App: Mail
+- Device: Other (tên tuỳ ý, ví dụ AI-Grow Backend)
+
+3. Nhấn Generate.
+
+4. Copy app password và paste vào file `application.properties`:
+```properties
+spring.mail.username=your_email@gmail.com
+spring.mail.password=YOUR_APP_PASSWORD
+```
 
 ## 👨‍💻 Nhóm phát triển
 _**NeoMind Team**_ – AIGrow Workspace Backend
