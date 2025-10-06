@@ -1,6 +1,7 @@
 package com.springboot.demo.model;
 
 import jakarta.persistence.*;
+
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -76,4 +77,5 @@ public class Task {
 
     @Column(name = "archived_at")
     private LocalDateTime archivedAt;
+
 }

@@ -15,12 +15,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-@Component("gate") // dùng @PreAuthorize("@gate.allows(...)")
+@Component("gate")
 @RequiredArgsConstructor
 public class GateManagerImpl implements GateManager {
 
     private final RbacRepository rbacRepo;
     private final CompanyMemberRepository companyMemberRepo;
+    private final WorkspaceMemberRepository workspaceMemberRepo;
     private final UserRepository userRepo;
     private final ProjectRepository projectRepo;
     private final ProjectMemberRepository pmRepo;
@@ -92,6 +93,22 @@ public class GateManagerImpl implements GateManager {
                             abilityService.hasPermission(userId, Scope.workspace,"project:crud", wsId)
             ));
         });
+
+        dynamicGates.put("project:task:read", (ctx, target) -> {
+            String projectId = (String) target;
+            // Chủ dự án hoặc có bất kỳ quyền đọc liên quan
+            return abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "task:read")
+                    || abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:read")
+                    || abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:crud");
+        });
+
+        dynamicGates.put("project:task:update", (ctx, target) -> {
+            String projectId = (String) target;
+            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "task:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:crud");
+        });
     }
 
     @Override
@@ -104,16 +121,31 @@ public class GateManagerImpl implements GateManager {
 
     @Override
     public boolean allows(String ability, Authentication authentication, String targetId) {
-        var parsed = parseAbility(ability);            // lấy scope từ tiền tố ability
-        var ctx = resolveAuth(authentication);         // trích userId từ token/email
-        // gate dynamic trước
+        var scope = parse_scope(ability);
+        var ctx   = resolveAuth(authentication);
+
+        if (isOwner(scope, targetId, ctx.userId)) return true;
+
         var dyn = dynamicGates.get(ability);
-        if (dyn != null) {
-            if (!dyn.apply(ctx, targetId)) return false;
-            return true; // nếu qua gate phức tạp => OK
-        }
-        // gate thường -> hỏi DB
-        return rbacRepo.userHasPermissionInScope(ctx.userId, parsed.scope, targetId, ability);
+        if (dyn != null && dyn.apply(ctx, targetId)) return true;
+
+        return rbacRepo.userHasPermissionInScope(ctx.userId, scope, targetId, ability);
+    }
+
+    private Scope parse_scope(String ability) {
+        int i = ability.indexOf(':');
+        if (i < 0) throw new IllegalArgumentException("Invalid ability: " + ability);
+        return Scope.valueOf(ability.substring(0, i));
+    }
+
+    private boolean isOwner(Scope scope, String targetId, String userId) {
+        return switch (scope) {
+            case company   -> companyMemberRepo.isOwner(targetId, userId);
+//            case workspace -> workspaceMemberRepo.isOwner(targetId, userId);
+//            case project   -> pmRepo.isOwner(targetId, userId);
+            case workspace -> false;
+            case project -> false;
+        };
     }
 
     private record ParsedAbility(Scope scope, String code) {}
