@@ -1,6 +1,6 @@
 package com.springboot.demo.service;
 
-import com.springboot.demo.model.Scope;
+import com.springboot.demo.model.Enum.Scope;
 
 public interface AbilityService {
     /**

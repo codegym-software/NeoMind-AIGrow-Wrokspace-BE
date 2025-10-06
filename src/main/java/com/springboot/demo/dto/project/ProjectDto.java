@@ -1,8 +1,8 @@
 package com.springboot.demo.dto.project;
 
-import com.springboot.demo.model.ProjectStatus;
-
 import java.time.LocalDateTime;
+
+import com.springboot.demo.model.Enum.ProjectStatus;
 
 public record ProjectDto(
         String id,

@@ -1,8 +1,8 @@
 package com.springboot.demo.repository;
 
-import com.springboot.demo.model.Scope;
-
 import java.util.Set;
+
+import com.springboot.demo.model.Enum.Scope;
 
 public interface RbacRepository {
 

@@ -5,6 +5,10 @@ import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.springboot.demo.model.Enum.TaskPriority;
+import com.springboot.demo.model.Enum.TaskStatus;
+import com.springboot.demo.model.Enum.TaskType;
+
 @Getter
 @Setter
 @NoArgsConstructor

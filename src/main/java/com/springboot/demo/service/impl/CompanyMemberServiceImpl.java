@@ -4,7 +4,7 @@ import com.springboot.demo.dto.company.AddCompanyMemberReq;
 import com.springboot.demo.dto.company.AssignCompanyRoleReq;
 import com.springboot.demo.model.CompanyMember;
 import com.springboot.demo.model.Role;
-import com.springboot.demo.model.Scope;
+import com.springboot.demo.model.Enum.Scope;
 import com.springboot.demo.repository.CompanyMemberRepository;
 import com.springboot.demo.repository.MembershipCleanupRepository;
 import com.springboot.demo.repository.RoleRepository;
@@ -40,12 +40,12 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
         if (req.roleId() == null) throw new IllegalArgumentException("roleId required");
 
         var actor = cmRepo.findByCompanyIdAndUserId(companyId, actorId)
-                .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc công ty này"));
+                .orElseThrow(() -> new AccessDeniedException("You are not a member of this company"));
         mustHaveManageUsersPermission(actorId, companyId);
 
         Role role = roleRepo.findById(req.roleId())
-                .orElseThrow(() -> new NoSuchElementException("Role không tồn tại"));
-        if (role.getScope() != Scope.company) throw new IllegalArgumentException("Role không thuộc scope company");
+                .orElseThrow(() -> new NoSuchElementException("Role not found"));
+        if (role.getScope() != Scope.company) throw new IllegalArgumentException("Role does not belong to company scope");
 
         CompanyMember m = new CompanyMember();
         m.setCompanyId(companyId);
@@ -59,14 +59,14 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
     @Transactional
     public void assignRole(String companyId, String targetUserId, AssignCompanyRoleReq req, String actorId) {
         var actor = cmRepo.findByCompanyIdAndUserId(companyId, actorId)
-                .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc công ty này"));
+                .orElseThrow(() -> new AccessDeniedException("You are not a member of this company"));
         mustHaveManageUsersPermission(actorId, companyId);
 
         var target = cmRepo.findByCompanyIdAndUserId(companyId, targetUserId)
-                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy thành viên"));
+                .orElseThrow(() -> new NoSuchElementException("Member not found"));
 
         if (Boolean.TRUE.equals(req.makeOwner())) {
-            if (!actor.isOwner()) throw new AccessDeniedException("Chỉ Owner được phép chuyển quyền sở hữu");
+            if (!actor.isOwner()) throw new AccessDeniedException("Only the owner can transfer ownership");
             cmRepo.clearOwners(companyId);
             cmRepo.setOwner(companyId, targetUserId);
             return;
@@ -75,10 +75,10 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
         if (req.roleId() == null) throw new IllegalArgumentException("roleId required");
 
         Role role = roleRepo.findById(req.roleId())
-                .orElseThrow(() -> new NoSuchElementException("Role không tồn tại"));
-        if (role.getScope() != Scope.company) throw new IllegalArgumentException("Role không thuộc scope company");
+                .orElseThrow(() -> new NoSuchElementException("Role not found"));
+        if (role.getScope() != Scope.company) throw new IllegalArgumentException("Role does not belong to company scope");
 
-        if (target.isOwner()) throw new AccessDeniedException("Không thể đổi role cho Owner (dùng transfer-ownership)");
+        if (target.isOwner()) throw new AccessDeniedException("Cannot change role of the owner. Transfer ownership first.");
 
         target.setRoleId(role.getId());
         cmRepo.save(target);
@@ -86,7 +86,7 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
 
     private void mustHaveManageUsersPermission(String actorId, String companyId) {
         if (!ability.hasPermission(actorId, Scope.company, companyId, "company:set_user_permissions")) {
-            throw new AccessDeniedException("Thiếu quyền company:set_user_permissions");
+            throw new AccessDeniedException("You do not have permission to manage users in this company");
         }
     }
 
@@ -94,15 +94,15 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
     @Transactional
     public void removeMember(String companyId, String targetUserId, String actorId) {
         cmRepo.findByCompanyIdAndUserId(companyId, actorId)
-                .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc công ty này"));
+                .orElseThrow(() -> new AccessDeniedException("You are not a member of this company"));
 
         var target = cmRepo.findByCompanyIdAndUserId(companyId, targetUserId)
-                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy thành viên"));
+                .orElseThrow(() -> new NoSuchElementException("Member not found"));
 
         if (Boolean.TRUE.equals(target.isOwner())) {
             long owners = cmRepo.countOwners(companyId);
             if (owners <= 1) {
-                throw new AccessDeniedException("Không thể xóa Owner duy nhất. Hãy chuyển quyền sở hữu trước.");
+                throw new AccessDeniedException("Cannot remove the only owner of the company. Transfer ownership first.");
             }
         }
 
