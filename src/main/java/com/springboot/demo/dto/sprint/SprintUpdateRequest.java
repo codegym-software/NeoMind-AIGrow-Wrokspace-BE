@@ -10,13 +10,15 @@ public record SprintUpdateRequest(
     @Size(max = 255, message = "Sprint name must not exceed 255 characters")
     String name,
     
-    String description,
+    // removed description (not in DB)
     
     LocalDate startDate,
     
     LocalDate endDate,
     
     SprintStatus status,
+    
+    Boolean isBacklog,
     
     String goal
 ) {}

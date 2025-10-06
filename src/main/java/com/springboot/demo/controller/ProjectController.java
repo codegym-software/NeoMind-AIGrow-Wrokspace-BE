@@ -16,11 +16,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/workspaces/{workspaceId}/projects")
@@ -45,8 +42,7 @@ public class ProjectController {
     public ProjectResponse create(@PathVariable String workspaceId, @Valid @RequestBody ProjectCreateRequest request) {
         // Override workspaceId from path variable
         ProjectCreateRequest requestWithWorkspaceId = new ProjectCreateRequest(
-                workspaceId, request.name(), request.description(), request.status(),
-                request.priority(), request.startDate(), request.endDate(), request.color()
+                workspaceId, request.name(), request.description(), request.status(), request.color()
         );
         Project project = service.create(requestWithWorkspaceId);
         return ProjectResponse.from(project);

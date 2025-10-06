@@ -1,6 +1,5 @@
 package com.springboot.demo.config;
 
-import com.springboot.demo.manager.RequestAuthorizationManager;
 import com.springboot.demo.security.filter.EnsureUserExistsFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

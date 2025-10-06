@@ -2,7 +2,6 @@ package com.springboot.demo.service;
 
 import com.springboot.demo.dto.sprint.SprintCreateRequest;
 import com.springboot.demo.dto.sprint.SprintProgressResponse;
-import com.springboot.demo.dto.sprint.SprintResponse;
 import com.springboot.demo.dto.sprint.SprintUpdateRequest;
 import com.springboot.demo.model.Sprint;
 import com.springboot.demo.model.SprintStatus;
@@ -13,17 +12,13 @@ public interface SprintService {
     
     Sprint create(String projectId, SprintCreateRequest request);
     
-    Sprint getById(String id);
+    Sprint getById(Integer id);
     
-    Sprint getByIdAndProjectId(String id, String projectId);
+    Sprint getByIdAndProjectId(Integer id, String projectId);
     
-    Sprint update(String id, SprintUpdateRequest request);
+    Sprint update(Integer id, SprintUpdateRequest request);
     
-    Sprint updateByProjectId(String id, String projectId, SprintUpdateRequest request);
-    
-    void delete(String id);
-    
-    void deleteByProjectId(String id, String projectId);
+    void delete(Integer id);
     
     List<Sprint> getSprintsByProject(String projectId);
     
@@ -31,17 +26,14 @@ public interface SprintService {
     
     Sprint getActiveSprintByProject(String projectId);
     
-    SprintProgressResponse getSprintProgress(String sprintId);
+    SprintProgressResponse getSprintProgress(Integer sprintId);
     
     SprintProgressResponse getActiveSprintProgress(String projectId);
+
+    Sprint startSprint(Integer sprintId);
     
-    List<Sprint> getOverdueSprints();
+    Sprint completeSprint(Integer sprintId);
     
-    List<Sprint> getSprintsEndingSoon();
+    Sprint cancelSprint(Integer sprintId);
     
-    Sprint startSprint(String sprintId);
-    
-    Sprint completeSprint(String sprintId);
-    
-    Sprint cancelSprint(String sprintId);
 }
