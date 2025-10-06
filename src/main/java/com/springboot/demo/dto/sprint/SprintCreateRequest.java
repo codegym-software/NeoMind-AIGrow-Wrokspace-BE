@@ -13,7 +13,7 @@ public record SprintCreateRequest(
     @Size(max = 255, message = "Sprint name must not exceed 255 characters")
     String name,
     
-    String description,
+    // removed description (not in DB)
     
     @NotNull(message = "Start date is required")
     LocalDate startDate,
@@ -22,6 +22,8 @@ public record SprintCreateRequest(
     LocalDate endDate,
     
     SprintStatus status,
+    
+    Boolean isBacklog,
     
     String goal
 ) {}

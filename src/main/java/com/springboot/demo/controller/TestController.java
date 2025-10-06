@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/test")
@@ -32,16 +31,11 @@ public class TestController {
             project.getName(),
             project.getDescription(),
             project.getStatus(),
-            project.getPriority(),
-            project.getStartDate(),
-            project.getEndDate(),
             project.getColor(),
             project.getCreatedAt(),
             project.getUpdatedAt(),
-            false, // canEdit
-            false, // canDelete
-            false, // canView
-            false  // canManage
+            project.isArchived(),
+            project.isActive()
         );
         return ResponseEntity.ok(response);
     }

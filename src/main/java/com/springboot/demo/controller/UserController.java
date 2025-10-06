@@ -2,7 +2,6 @@ package com.springboot.demo.controller;
 
 import com.springboot.demo.dto.user.ChangePasswordReq;
 import com.springboot.demo.model.User;
-import com.springboot.demo.repository.UserRepository;
 import com.springboot.demo.service.AccountService;
 import com.springboot.demo.service.UserService;
 import lombok.RequiredArgsConstructor;

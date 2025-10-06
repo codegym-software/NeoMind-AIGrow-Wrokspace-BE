@@ -1,7 +1,6 @@
 package com.springboot.demo.controller;
 
 import com.springboot.demo.dto.sprint.SprintCreateRequest;
-import com.springboot.demo.dto.sprint.SprintProgressResponse;
 import com.springboot.demo.dto.sprint.SprintResponse;
 import com.springboot.demo.dto.sprint.SprintUpdateRequest;
 import com.springboot.demo.model.Sprint;
@@ -52,7 +51,7 @@ public class SprintController {
     })
     public ResponseEntity<SprintResponse> getSprintById(
             @PathVariable String projectId,
-            @Parameter(description = "Sprint ID") @PathVariable String id) {
+            @Parameter(description = "Sprint ID") @PathVariable Integer id) {
         
         Sprint sprint = sprintService.getByIdAndProjectId(id, projectId);
         SprintResponse response = mapToResponse(sprint);
@@ -103,10 +102,10 @@ public class SprintController {
     })
     public ResponseEntity<SprintResponse> updateSprint(
             @PathVariable String projectId,
-            @Parameter(description = "Sprint ID") @PathVariable String id,
+            @Parameter(description = "Sprint ID") @PathVariable Integer id,
             @Valid @RequestBody SprintUpdateRequest request) {
         
-        Sprint sprint = sprintService.updateByProjectId(id, projectId, request);
+        Sprint sprint = sprintService.update(id, request);
         SprintResponse response = mapToResponse(sprint);
         return ResponseEntity.ok(response);
     }
@@ -121,7 +120,7 @@ public class SprintController {
     })
     public ResponseEntity<SprintResponse> startSprint(
             @PathVariable String projectId,
-            @Parameter(description = "Sprint ID") @PathVariable String id) {
+            @Parameter(description = "Sprint ID") @PathVariable Integer id) {
         
         Sprint sprint = sprintService.startSprint(id);
         SprintResponse response = mapToResponse(sprint);
@@ -137,7 +136,7 @@ public class SprintController {
     })
     public ResponseEntity<SprintResponse> completeSprint(
             @PathVariable String projectId,
-            @Parameter(description = "Sprint ID") @PathVariable String id) {
+            @Parameter(description = "Sprint ID") @PathVariable Integer id) {
         
         Sprint sprint = sprintService.completeSprint(id);
         SprintResponse response = mapToResponse(sprint);
@@ -152,22 +151,22 @@ public class SprintController {
     })
     public ResponseEntity<Void> deleteSprint(
             @PathVariable String projectId,
-            @Parameter(description = "Sprint ID") @PathVariable String id) {
+            @Parameter(description = "Sprint ID") @PathVariable Integer id) {
         
-        sprintService.deleteByProjectId(id, projectId);
+        sprintService.delete(id);
         return ResponseEntity.noContent().build();
     }
     
     
     private SprintResponse mapToResponse(Sprint sprint) {
         return new SprintResponse(
-            sprint.getId(),
+            sprint.getId().toString(),
             sprint.getProjectId(),
             sprint.getName(),
-            sprint.getDescription(),
             sprint.getStartDate(),
             sprint.getEndDate(),
             sprint.getStatus(),
+            sprint.getIsBacklog(),
             sprint.getGoal(),
             sprint.getCreatedAt(),
             sprint.getUpdatedAt(),
