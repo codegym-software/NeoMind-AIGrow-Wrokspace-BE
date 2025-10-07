@@ -9,6 +9,8 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.springboot.demo.model.Enum.UserStatus;
+
 @Getter
 @Setter
 @NoArgsConstructor

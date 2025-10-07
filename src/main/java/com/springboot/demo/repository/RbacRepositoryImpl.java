@@ -1,10 +1,11 @@
 package com.springboot.demo.repository;
 
-import com.springboot.demo.model.Scope;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+
+import com.springboot.demo.model.Enum.Scope;
 
 import java.util.HashSet;
 import java.util.Set;

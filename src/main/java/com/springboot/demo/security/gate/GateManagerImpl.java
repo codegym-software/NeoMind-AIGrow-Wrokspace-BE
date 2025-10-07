@@ -1,7 +1,7 @@
 package com.springboot.demo.security.gate;
 
-import com.springboot.demo.model.Scope;
 import com.springboot.demo.model.User;
+import com.springboot.demo.model.Enum.Scope;
 import com.springboot.demo.repository.*;
 import com.springboot.demo.service.AbilityService;
 import jakarta.annotation.PostConstruct;

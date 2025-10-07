@@ -1,7 +1,7 @@
 package com.springboot.demo.service.impl;
 
 import com.springboot.demo.model.Permission;
-import com.springboot.demo.model.Scope;
+import com.springboot.demo.model.Enum.Scope;
 import com.springboot.demo.repository.PermissionRepository;
 import com.springboot.demo.service.PermissionService;
 import lombok.RequiredArgsConstructor;

@@ -3,8 +3,8 @@ package com.springboot.demo.service.impl;
 import com.springboot.demo.dto.RolePermission.CreateRoleReq;
 import com.springboot.demo.dto.RolePermission.UpdateRoleReq;
 import com.springboot.demo.dto.RolePermission.RoleDto;
-import com.springboot.demo.model.Scope;
 import com.springboot.demo.model.Role;
+import com.springboot.demo.model.Enum.Scope;
 import com.springboot.demo.repository.RoleRepository;
 import com.springboot.demo.service.RoleService;
 
@@ -48,7 +48,7 @@ public class RoleServiceImpl implements RoleService {
         String code = req.code().trim();
 
         if (repo.existsByScopeAndTargetIdAndCode(scope, targetId, code)) {
-            throw new IllegalArgumentException("Role code đã tồn tại trong scope/target này");
+            throw new IllegalArgumentException("Role code already exists");
         }
 
         Role r = new Role();
@@ -63,7 +63,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional
     public RoleDto update(Integer id, UpdateRoleReq req) {
-        Role r = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
+        Role r = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Role not found"));
         r.setName(req.name().trim());
         r.setDescription(req.description());
         return RoleDto.from(repo.save(r));
@@ -88,7 +88,7 @@ public class RoleServiceImpl implements RoleService {
         String code = req.code().trim();
 
         if (repo.existsByScopeAndTargetIdAndCode(scope, companyId, code)) {
-            throw new IllegalArgumentException("Role code đã tồn tại trong company này");
+            throw new IllegalArgumentException("The role code already exists in this company.");
         }
 
         Role r = new Role();
@@ -105,10 +105,10 @@ public class RoleServiceImpl implements RoleService {
     public RoleDto updateCompanyRole(String companyId, Integer roleId, UpdateRoleReq req) {
         Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
         if (r.getScope() != Scope.company) {
-            throw new IllegalArgumentException("Role không thuộc scope company");
+            throw new IllegalArgumentException("Role does not belong to company scope");
         }
         if (r.getTargetId() != null && !r.getTargetId().equals(companyId)) {
-            throw new IllegalArgumentException("Role không thuộc company này");
+            throw new IllegalArgumentException("Role does not belong to this company");
         }
         r.setName(req.name().trim());
         r.setDescription(req.description());
@@ -118,12 +118,12 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional
     public void deleteCompanyRole(String companyId, Integer roleId) {
-        Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
+        Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role not found"));
         if (r.getScope() != Scope.company) {
-            throw new IllegalArgumentException("Role không thuộc scope company");
+            throw new IllegalArgumentException("Role does not belong to company scope");
         }
         if (r.getTargetId() != null && !r.getTargetId().equals(companyId)) {
-            throw new IllegalArgumentException("Role không thuộc company này");
+            throw new IllegalArgumentException("Role does not belong to this company");
         }
         repo.delete(r);
     }
@@ -132,12 +132,12 @@ public class RoleServiceImpl implements RoleService {
     @Transactional
     public void replaceRolePermissions(String companyId, Integer roleId, List<Integer> permissionIds) {
         // Validate role thuộc company (hoặc template company)
-        Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
+        Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role not found"));
         if (r.getScope() != Scope.company) {
-            throw new IllegalArgumentException("Role không thuộc scope company");
+            throw new IllegalArgumentException("Role does not belong to company scope");
         }
         if (r.getTargetId() != null && !r.getTargetId().equals(companyId)) {
-            throw new IllegalArgumentException("Role không thuộc company này");
+            throw new IllegalArgumentException("Role does not belong to this company");
         }
 
         // Validate permissionIds đều thuộc scope 'company'
@@ -148,7 +148,7 @@ public class RoleServiceImpl implements RoleService {
                     Integer.class
             );
             if (cnt == null || cnt != permissionIds.size()) {
-                throw new IllegalArgumentException("Danh sách permission chứa phần tử không thuộc scope company");
+                throw new IllegalArgumentException("Invalid permission ids");
             }
         }
 
