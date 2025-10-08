@@ -8,7 +8,6 @@ import lombok.*;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Permission {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-  
     private Integer id;
     
     @Enumerated(EnumType.STRING)
