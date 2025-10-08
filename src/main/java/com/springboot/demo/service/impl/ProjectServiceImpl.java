@@ -3,7 +3,7 @@ package com.springboot.demo.service.impl;
 import com.springboot.demo.dto.project.ProjectCreateRequest;
 import com.springboot.demo.dto.project.ProjectUpdateRequest;
 import com.springboot.demo.model.Project;
-import com.springboot.demo.model.ProjectStatus;
+import com.springboot.demo.enums.ProjectStatus;
 import com.springboot.demo.repository.ProjectRepository;
 import com.springboot.demo.service.ProjectService;
 import org.springframework.data.domain.Page;
@@ -13,7 +13,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -34,26 +33,14 @@ public class ProjectServiceImpl implements ProjectService {
                     throw new IllegalArgumentException("Project with name '" + request.name() + "' already exists in this workspace");
                 });
 
-        // Validate date range
-        if (request.startDate() != null && request.endDate() != null && 
-            request.startDate().isAfter(request.endDate())) {
-            throw new IllegalArgumentException("Start date cannot be after end date");
-        }
-
-        Project project = new Project(
-                request.workspaceId(),
-                request.name().trim(),
-                request.description() != null ? request.description().trim() : null
-        );
+        Project project = new Project();
+        project.setWorkspaceId(request.workspaceId());
+        project.setName(request.name().trim());
+        project.setDescription(request.description());
 
         if (request.status() != null) {
             project.setStatus(request.status());
         }
-        if (request.priority() != null) {
-            project.setPriority(request.priority());
-        }
-        project.setStartDate(request.startDate());
-        project.setEndDate(request.endDate());
         project.setColor(request.color());
 
         return repository.save(project);
@@ -103,23 +90,8 @@ public class ProjectServiceImpl implements ProjectService {
         if (request.status() != null) {
             project.setStatus(request.status());
         }
-        if (request.priority() != null) {
-            project.setPriority(request.priority());
-        }
-        if (request.startDate() != null) {
-            project.setStartDate(request.startDate());
-        }
-        if (request.endDate() != null) {
-            project.setEndDate(request.endDate());
-        }
         if (request.color() != null) {
             project.setColor(request.color());
-        }
-
-        // Validate date range after updates
-        if (project.getStartDate() != null && project.getEndDate() != null && 
-            project.getStartDate().isAfter(project.getEndDate())) {
-            throw new IllegalArgumentException("Start date cannot be after end date");
         }
 
         return repository.save(project);
@@ -201,19 +173,6 @@ public class ProjectServiceImpl implements ProjectService {
         return repository.findActiveProjectsByWorkspaceId(workspaceId);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<Project> getOverdueProjectsByWorkspaceId(String workspaceId) {
-        return repository.findOverdueProjectsByWorkspaceId(workspaceId, LocalDate.now());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Project> getProjectsEndingSoon(String workspaceId, int days) {
-        LocalDate today = LocalDate.now();
-        LocalDate endDate = today.plusDays(days);
-        return repository.findProjectsEndingSoon(workspaceId, today, endDate);
-    }
 
     @Override
     @Transactional(readOnly = true)

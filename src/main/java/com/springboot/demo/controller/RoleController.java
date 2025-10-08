@@ -47,7 +47,7 @@ public class RoleController {
     @PreAuthorize("@gate.allows('company:role:grant_permission', authentication, #companyId)")
     public void upsertPermissions(@PathVariable String companyId, @PathVariable Long roleId,
                                   @RequestBody UpsertRolePermissionsReq req) {
-        roleService.replaceRolePermissions(companyId, roleId, req.permissionIds());
+        roleService.replaceCompanyRolePermissions(companyId, roleId, req.permissionIds());
     }
 }
 

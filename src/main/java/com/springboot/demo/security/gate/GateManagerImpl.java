@@ -3,6 +3,7 @@ package com.springboot.demo.security.gate;
 import com.springboot.demo.model.Scope;
 import com.springboot.demo.repository.RbacRepository;
 import com.springboot.demo.repository.CompanyMemberRepository;
+import com.springboot.demo.repository.WorkspaceMemberRepository;
 import com.springboot.demo.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -21,18 +22,29 @@ public class GateManagerImpl implements GateManager {
 
     private final RbacRepository rbacRepo;
     private final CompanyMemberRepository companyMemberRepo;
+    private final WorkspaceMemberRepository workspaceMemberRepo;
     private final UserRepository userRepo;
 
     private final Map<String, BiFunction<AuthCtx, String, Boolean>> dynamicGates = new HashMap<>();
 
     @PostConstruct
     void initGates() {
+        // Company transfer ownership
         dynamicGates.put("company:transfer_ownership", (ctx, companyId) -> {
             if (companyId == null || companyId.isBlank()) return false;
             boolean isOwner = companyMemberRepo.isOwner(companyId, ctx.userId);
             if (isOwner) return true;
             return rbacRepo.userHasPermissionInScope(
                     ctx.userId, Scope.company, companyId, "company:transfer_ownership");
+        });
+
+        // Workspace transfer ownership
+        dynamicGates.put("workspace:transfer_ownership", (ctx, workspaceId) -> {
+            if (workspaceId == null || workspaceId.isBlank()) return false;
+            boolean isOwner = workspaceMemberRepo.isOwner(workspaceId, ctx.userId);
+            if (isOwner) return true;
+            return rbacRepo.userHasPermissionInScope(
+                    ctx.userId, Scope.workspace, workspaceId, "workspace:transfer_ownership");
         });
     }
 

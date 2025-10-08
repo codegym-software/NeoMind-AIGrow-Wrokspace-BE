@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8088
 
 spring:
   datasource:
@@ -47,7 +47,7 @@ app:
       max-request-size: 10MB
 
   upload:
-    base-url: http://localhost:8080/files
+    base-url: http://localhost:8088/files
     max-file-size: 10MB
 
 file:

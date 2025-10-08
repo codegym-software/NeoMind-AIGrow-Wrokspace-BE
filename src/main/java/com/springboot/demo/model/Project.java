@@ -1,5 +1,6 @@
 package com.springboot.demo.model;
 
+import com.springboot.demo.enums.ProjectStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -9,7 +10,6 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -31,18 +31,8 @@ public class Project {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, columnDefinition = "ENUM('PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED') DEFAULT 'PLANNING'")
-    private ProjectStatus status = ProjectStatus.PLANNING;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "priority", nullable = false, columnDefinition = "ENUM('LOW', 'MEDIUM', 'HIGH', 'URGENT') DEFAULT 'MEDIUM'")
-    private ProjectPriority priority = ProjectPriority.MEDIUM;
-
-    @Column(name = "start_date")
-    private LocalDate startDate;
-
-    @Column(name = "end_date")
-    private LocalDate endDate;
+    @Column(name = "status", nullable = false)
+    private ProjectStatus status = ProjectStatus.ACTIVE;
 
     @Column(name = "color", length = 7) // For hex color codes like #FF5733
     private String color;
@@ -61,13 +51,6 @@ public class Project {
     // Constructors
     public Project() {
         this.id = UUID.randomUUID().toString();
-    }
-
-    public Project(String workspaceId, String name, String description) {
-        this();
-        this.workspaceId = workspaceId;
-        this.name = name;
-        this.description = description;
     }
 
     // Getters and Setters
@@ -111,29 +94,7 @@ public class Project {
         this.status = status;
     }
 
-    public ProjectPriority getPriority() {
-        return priority;
-    }
-
-    public void setPriority(ProjectPriority priority) {
-        this.priority = priority;
-    }
-
-    public LocalDate getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(LocalDate startDate) {
-        this.startDate = startDate;
-    }
-
-    public LocalDate getEndDate() {
-        return endDate;
-    }
-
-    public void setEndDate(LocalDate endDate) {
-        this.endDate = endDate;
-    }
+    // removed priority/start_date/end_date to match DB
 
     public String getColor() {
         return color;
@@ -182,14 +143,6 @@ public class Project {
 
     public boolean isActive() {
         return status == ProjectStatus.ACTIVE && !isArchived();
-    }
-
-    public boolean isCompleted() {
-        return status == ProjectStatus.COMPLETED;
-    }
-
-    public boolean isOverdue() {
-        return endDate != null && endDate.isBefore(LocalDate.now()) && !isCompleted();
     }
 }
 

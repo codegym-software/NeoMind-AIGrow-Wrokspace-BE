@@ -1,6 +1,6 @@
 package com.springboot.demo.dto.sprint;
 
-import com.springboot.demo.model.SprintStatus;
+import com.springboot.demo.enums.SprintStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -9,10 +9,10 @@ public record SprintResponse(
     String id,
     String projectId,
     String name,
-    String description,
     LocalDate startDate,
     LocalDate endDate,
     SprintStatus status,
+    Boolean isBacklog,
     String goal,
     LocalDateTime createdAt,
     LocalDateTime updatedAt,

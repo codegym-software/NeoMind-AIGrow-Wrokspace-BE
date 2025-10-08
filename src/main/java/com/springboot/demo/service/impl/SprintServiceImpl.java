@@ -2,12 +2,11 @@ package com.springboot.demo.service.impl;
 
 import com.springboot.demo.dto.sprint.SprintCreateRequest;
 import com.springboot.demo.dto.sprint.SprintProgressResponse;
-import com.springboot.demo.dto.sprint.SprintResponse;
 import com.springboot.demo.dto.sprint.SprintUpdateRequest;
 import com.springboot.demo.model.Sprint;
-import com.springboot.demo.model.SprintStatus;
+import com.springboot.demo.enums.SprintStatus;
 import com.springboot.demo.model.Task;
-import com.springboot.demo.model.TaskStatus;
+import com.springboot.demo.enums.TaskStatus;
 import com.springboot.demo.repository.SprintRepository;
 import com.springboot.demo.repository.TaskRepository;
 import com.springboot.demo.service.SprintService;
@@ -18,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,18 +29,17 @@ public class SprintServiceImpl implements SprintService {
     @Override
     public Sprint create(String projectId, SprintCreateRequest request) {
         // Check if there's already an active sprint
-        if (sprintRepository.existsByProjectIdAndStatusAndArchivedAtIsNull(projectId, SprintStatus.ACTIVE)) {
+        if (sprintRepository.existsByProjectIdAndStatus(projectId, SprintStatus.ACTIVE)) {
             throw new RuntimeException("Project already has an active sprint");
         }
         
         Sprint sprint = new Sprint();
-        sprint.setId(UUID.randomUUID().toString());
         sprint.setProjectId(projectId);
         sprint.setName(request.name());
-        sprint.setDescription(request.description());
         sprint.setStartDate(request.startDate());
         sprint.setEndDate(request.endDate());
-        sprint.setStatus(request.status() != null ? request.status() : SprintStatus.PLANNING);
+        sprint.setStatus(request.status() != null ? request.status() : SprintStatus.PLANNED);
+        sprint.setIsBacklog(request.isBacklog());
         sprint.setGoal(request.goal());
         
         return sprintRepository.save(sprint);
@@ -50,7 +47,7 @@ public class SprintServiceImpl implements SprintService {
     
     @Override
     @Transactional(readOnly = true)
-    public Sprint getById(String id) {
+    public Sprint getById(Integer id) {
         Sprint sprint = sprintRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Sprint not found with id: " + id));
         
@@ -59,7 +56,7 @@ public class SprintServiceImpl implements SprintService {
     
     @Override
     @Transactional(readOnly = true)
-    public Sprint getByIdAndProjectId(String id, String projectId) {
+    public Sprint getByIdAndProjectId(Integer id, String projectId) {
         Sprint sprint = sprintRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Sprint not found with id: " + id));
             
@@ -71,7 +68,7 @@ public class SprintServiceImpl implements SprintService {
     }
     
     @Override
-    public Sprint update(String id, SprintUpdateRequest request) {
+    public Sprint update(Integer id, SprintUpdateRequest request) {
         Sprint sprint = sprintRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Sprint not found with id: " + id));
             
@@ -79,30 +76,19 @@ public class SprintServiceImpl implements SprintService {
         return sprintRepository.save(sprint);
     }
     
-    @Override
-    public Sprint updateByProjectId(String id, String projectId, SprintUpdateRequest request) {
-        Sprint sprint = getByIdAndProjectId(id, projectId);
-        updateSprintFields(sprint, request);
-        return sprintRepository.save(sprint);
-    }
     
     @Override
-    public void delete(String id) {
+    public void delete(Integer id) {
         Sprint sprint = sprintRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Sprint not found with id: " + id));
         sprintRepository.delete(sprint);
     }
     
-    @Override
-    public void deleteByProjectId(String id, String projectId) {
-        Sprint sprint = getByIdAndProjectId(id, projectId);
-        sprintRepository.delete(sprint);
-    }
     
     @Override
     @Transactional(readOnly = true)
     public List<Sprint> getSprintsByProject(String projectId) {
-        List<Sprint> sprints = sprintRepository.findByProjectIdAndArchivedAtIsNull(projectId);
+        List<Sprint> sprints = sprintRepository.findByProjectId(projectId);
         return sprints.stream()
             .map(this::enrichSprintWithProgress)
             .toList();
@@ -111,7 +97,7 @@ public class SprintServiceImpl implements SprintService {
     @Override
     @Transactional(readOnly = true)
     public List<Sprint> getSprintsByProjectAndStatus(String projectId, SprintStatus status) {
-        List<Sprint> sprints = sprintRepository.findByProjectIdAndStatusAndArchivedAtIsNull(projectId, status);
+        List<Sprint> sprints = sprintRepository.findByProjectIdAndStatus(projectId, status);
         return sprints.stream()
             .map(this::enrichSprintWithProgress)
             .toList();
@@ -120,7 +106,7 @@ public class SprintServiceImpl implements SprintService {
     @Override
     @Transactional(readOnly = true)
     public Sprint getActiveSprintByProject(String projectId) {
-        Sprint sprint = sprintRepository.findFirstByProjectIdAndStatusAndArchivedAtIsNull(projectId, SprintStatus.ACTIVE)
+        Sprint sprint = sprintRepository.findFirstByProjectIdAndStatus(projectId, SprintStatus.ACTIVE)
             .orElseThrow(() -> new RuntimeException("No active sprint found for project: " + projectId));
         
         return enrichSprintWithProgress(sprint);
@@ -128,7 +114,7 @@ public class SprintServiceImpl implements SprintService {
     
     @Override
     @Transactional(readOnly = true)
-    public SprintProgressResponse getSprintProgress(String sprintId) {
+    public SprintProgressResponse getSprintProgress(Integer sprintId) {
         Sprint sprint = getById(sprintId);
         return buildProgressResponse(sprint);
     }
@@ -140,30 +126,17 @@ public class SprintServiceImpl implements SprintService {
         return buildProgressResponse(sprint);
     }
     
-    @Override
-    @Transactional(readOnly = true)
-    public List<Sprint> getOverdueSprints() {
-        return sprintRepository.findOverdueSprints(LocalDate.now());
-    }
     
     @Override
-    @Transactional(readOnly = true)
-    public List<Sprint> getSprintsEndingSoon() {
-        LocalDate now = LocalDate.now();
-        LocalDate threeDaysLater = now.plusDays(3);
-        return sprintRepository.findSprintsEndingSoon(now, threeDaysLater);
-    }
-    
-    @Override
-    public Sprint startSprint(String sprintId) {
+    public Sprint startSprint(Integer sprintId) {
         Sprint sprint = getById(sprintId);
         
-        if (sprint.getStatus() != SprintStatus.PLANNING) {
-            throw new RuntimeException("Only planning sprints can be started");
+        if (sprint.getStatus() != SprintStatus.PLANNED) {
+            throw new RuntimeException("Only planned sprints can be started");
         }
         
         // Check if project already has active sprint
-        if (sprintRepository.existsByProjectIdAndStatusAndArchivedAtIsNull(sprint.getProjectId(), SprintStatus.ACTIVE)) {
+        if (sprintRepository.existsByProjectIdAndStatus(sprint.getProjectId(), SprintStatus.ACTIVE)) {
             throw new RuntimeException("Project already has an active sprint");
         }
         
@@ -172,7 +145,7 @@ public class SprintServiceImpl implements SprintService {
     }
     
     @Override
-    public Sprint completeSprint(String sprintId) {
+    public Sprint completeSprint(Integer sprintId) {
         Sprint sprint = getById(sprintId);
         
         if (sprint.getStatus() != SprintStatus.ACTIVE) {
@@ -184,7 +157,7 @@ public class SprintServiceImpl implements SprintService {
     }
     
     @Override
-    public Sprint cancelSprint(String sprintId) {
+    public Sprint cancelSprint(Integer sprintId) {
         Sprint sprint = getById(sprintId);
         
         if (sprint.getStatus() == SprintStatus.COMPLETED) {
@@ -199,9 +172,6 @@ public class SprintServiceImpl implements SprintService {
         if (request.name() != null) {
             sprint.setName(request.name());
         }
-        if (request.description() != null) {
-            sprint.setDescription(request.description());
-        }
         if (request.startDate() != null) {
             sprint.setStartDate(request.startDate());
         }
@@ -211,13 +181,16 @@ public class SprintServiceImpl implements SprintService {
         if (request.status() != null) {
             sprint.setStatus(request.status());
         }
+        if (request.isBacklog() != null) {
+            sprint.setIsBacklog(request.isBacklog());
+        }
         if (request.goal() != null) {
             sprint.setGoal(request.goal());
         }
     }
     
     private Sprint enrichSprintWithProgress(Sprint sprint) {
-        List<Task> sprintTasks = taskRepository.findBySprintIdAndArchivedAtIsNull(sprint.getId());
+        List<Task> sprintTasks = taskRepository.findBySprintId(sprint.getId().toString());
         
         int totalTasks = sprintTasks.size();
         int completedTasks = (int) sprintTasks.stream()
@@ -238,7 +211,7 @@ public class SprintServiceImpl implements SprintService {
     }
     
     private SprintProgressResponse buildProgressResponse(Sprint sprint) {
-        List<Task> sprintTasks = taskRepository.findBySprintIdAndArchivedAtIsNull(sprint.getId());
+        List<Task> sprintTasks = taskRepository.findBySprintId(sprint.getId().toString());
         
         int totalTasks = sprintTasks.size();
         int completedTasks = (int) sprintTasks.stream()
@@ -266,7 +239,7 @@ public class SprintServiceImpl implements SprintService {
         String statusMessage = buildStatusMessage(sprint, isOverdue, isEndingSoon, remainingDays, progressPercentage);
         
         return new SprintProgressResponse(
-            sprint.getId(),
+            sprint.getId().toString(),
             sprint.getName(),
             sprint.getStatus(),
             sprint.getStartDate(),
@@ -294,7 +267,7 @@ public class SprintServiceImpl implements SprintService {
         if (sprint.getStatus() == SprintStatus.CANCELLED) {
             return "Sprint was cancelled";
         }
-        if (sprint.getStatus() == SprintStatus.PLANNING) {
+        if (sprint.getStatus() == SprintStatus.PLANNED) {
             return "Sprint is in planning phase";
         }
         if (isOverdue) {

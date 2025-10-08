@@ -1,6 +1,5 @@
 package com.springboot.demo.config;
 
-import com.springboot.demo.manager.RequestAuthorizationManager;
 import com.springboot.demo.security.filter.EnsureUserExistsFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -12,7 +11,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -36,8 +34,11 @@ public class SecurityConfig {
                         .requestMatchers("/health", "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
+                        .requestMatchers("/api/test/public").permitAll()
+                        .requestMatchers("/api/auth/mock-login", "/api/auth/mock-user").permitAll()
                         .requestMatchers("/api/uploads/**").authenticated()
                         .requestMatchers("/auth/**", "/public/**").permitAll()
+                        .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
