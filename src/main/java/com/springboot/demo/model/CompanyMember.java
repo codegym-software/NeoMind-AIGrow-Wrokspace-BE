@@ -26,7 +26,7 @@ public class CompanyMember {
     private String userId;
 
     @Column(name = "role_id")
-    private Long roleId;
+    private Integer roleId;
 
     @Column(name = "invited_email")
     private String invitedEmail;

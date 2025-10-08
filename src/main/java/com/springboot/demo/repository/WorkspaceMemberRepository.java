@@ -29,5 +29,5 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
     @Query("SELECT COUNT(wm) > 0 FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.userId = :userId AND wm.roleId = :roleId")
     boolean existsByWorkspaceIdAndUserIdAndRoleId(@Param("workspaceId") String workspaceId, 
                                                   @Param("userId") String userId, 
-                                                  @Param("roleId") Long roleId);
+                                                  @Param("roleId") Integer roleId);
 }
