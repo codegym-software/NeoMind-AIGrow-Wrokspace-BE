@@ -30,7 +30,7 @@ public class CompanyMemberController {
 
 
     @GetMapping("/{companyId}/members")
-    // @PreAuthorize("@gate.allows('company:read', authentication, #companyId)")
+    @PreAuthorize("@gate.allows('company:read', authentication, #companyId)")
     public List<CompanyMember> list(@PathVariable String companyId) {
         return service.list(companyId);
     }
