@@ -4,7 +4,7 @@ import com.springboot.demo.dto.sprint.SprintCreateRequest;
 import com.springboot.demo.dto.sprint.SprintProgressResponse;
 import com.springboot.demo.dto.sprint.SprintUpdateRequest;
 import com.springboot.demo.model.Sprint;
-import com.springboot.demo.model.SprintStatus;
+import com.springboot.demo.enums.SprintStatus;
 
 import java.util.List;
 

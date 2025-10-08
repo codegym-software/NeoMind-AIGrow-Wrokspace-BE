@@ -4,7 +4,7 @@ import com.springboot.demo.dto.sprint.SprintCreateRequest;
 import com.springboot.demo.dto.sprint.SprintResponse;
 import com.springboot.demo.dto.sprint.SprintUpdateRequest;
 import com.springboot.demo.model.Sprint;
-import com.springboot.demo.model.SprintStatus;
+import com.springboot.demo.enums.SprintStatus;
 import com.springboot.demo.service.SprintService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

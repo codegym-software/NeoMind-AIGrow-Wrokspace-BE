@@ -1,6 +1,6 @@
 package com.springboot.demo.dto.sprint;
 
-import com.springboot.demo.model.SprintStatus;
+import com.springboot.demo.enums.SprintStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

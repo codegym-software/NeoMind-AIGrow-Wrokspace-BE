@@ -1,7 +1,7 @@
 package com.springboot.demo.repository;
 
 import com.springboot.demo.model.Sprint;
-import com.springboot.demo.model.SprintStatus;
+import com.springboot.demo.enums.SprintStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

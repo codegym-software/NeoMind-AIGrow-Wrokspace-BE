@@ -1,6 +1,6 @@
 package com.springboot.demo.dto.project;
 
-import com.springboot.demo.model.ProjectStatus;
+import com.springboot.demo.enums.ProjectStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;

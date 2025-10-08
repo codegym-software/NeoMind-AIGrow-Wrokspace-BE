@@ -3,7 +3,7 @@ package com.springboot.demo.service;
 import com.springboot.demo.dto.project.ProjectCreateRequest;
 import com.springboot.demo.dto.project.ProjectUpdateRequest;
 import com.springboot.demo.model.Project;
-import com.springboot.demo.model.ProjectStatus;
+import com.springboot.demo.enums.ProjectStatus;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -41,9 +41,6 @@ public interface ProjectService {
 
     List<Project> getActiveProjectsByWorkspaceId(String workspaceId);
 
-    List<Project> getOverdueProjectsByWorkspaceId(String workspaceId);
-
-    List<Project> getProjectsEndingSoon(String workspaceId, int days);
 
     long countByWorkspaceId(String workspaceId);
 

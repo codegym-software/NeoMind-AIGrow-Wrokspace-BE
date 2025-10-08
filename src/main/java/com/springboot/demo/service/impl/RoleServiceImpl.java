@@ -129,8 +129,68 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<RoleDto> listWorkspaceRoles(String workspaceId, boolean includeGlobal) {
+        Scope scope = Scope.workspace;
+        var roles = new ArrayList<Role>();
+        roles.addAll(repo.findByScopeAndTargetId(scope, workspaceId));
+        if (includeGlobal) {
+            roles.addAll(repo.findByScopeAndTargetIdIsNull(scope));
+        }
+        return roles.stream().map(RoleDto::from).toList();
+    }
+
+    @Override
+    @Transactional
+    public RoleDto createWorkspaceRole(String workspaceId, CreateRoleReq req) {
+        Scope scope = Scope.workspace;
+        String code = req.code().trim();
+
+        if (repo.existsByScopeAndTargetIdAndCode(scope, workspaceId, code)) {
+            throw new IllegalArgumentException("Role code đã tồn tại trong workspace này");
+        }
+
+        Role r = new Role();
+        r.setScope(scope);
+        r.setTargetId(workspaceId);
+        r.setCode(code);
+        r.setName(req.name().trim());
+        r.setDescription(req.description());
+        return RoleDto.from(repo.save(r));
+    }
+
+    @Override
+    @Transactional
+    public RoleDto updateWorkspaceRole(String workspaceId, Long roleId, UpdateRoleReq req) {
+        Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
+        if (r.getScope() != Scope.workspace) {
+            throw new IllegalArgumentException("Role không thuộc scope workspace");
+        }
+        if (r.getTargetId() != null && !r.getTargetId().equals(workspaceId)) {
+            throw new IllegalArgumentException("Role không thuộc workspace này");
+        }
+        r.setName(req.name().trim());
+        r.setDescription(req.description());
+        return RoleDto.from(repo.save(r));
+    }
+
+    @Override
     @Transactional
     public void replaceRolePermissions(String companyId, Integer roleId, List<Integer> permissionIds) {
+    public void deleteWorkspaceRole(String workspaceId, Long roleId) {
+        Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
+        if (r.getScope() != Scope.workspace) {
+            throw new IllegalArgumentException("Role không thuộc scope workspace");
+        }
+        if (r.getTargetId() != null && !r.getTargetId().equals(workspaceId)) {
+            throw new IllegalArgumentException("Role không thuộc workspace này");
+        }
+        repo.delete(r);
+    }
+
+    @Override
+    @Transactional
+    public void replaceCompanyRolePermissions(String companyId, Long roleId, List<Long> permissionIds) {
         // Validate role thuộc company (hoặc template company)
         Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
         if (r.getScope() != Scope.company) {
@@ -151,18 +211,44 @@ public class RoleServiceImpl implements RoleService {
                 throw new IllegalArgumentException("Danh sách permission chứa phần tử không thuộc scope company");
             }
         }
-  
+
+
         // Thay toàn bộ mapping
         jdbc.update("DELETE FROM role_permission WHERE role_id = :roleId",
                 new MapSqlParameterSource().addValue("roleId", roleId));
 
         if (permissionIds != null && !permissionIds.isEmpty()) {
             String sql = "INSERT INTO role_permission(role_id, permission_id) VALUES (:rid, :pid)";
-            for (Integer pid : permissionIds) {
+            for (Long pid : permissionIds) {
                 jdbc.update(sql, new MapSqlParameterSource()
                         .addValue("rid", roleId)
                         .addValue("pid", pid));
             }
         }
     }
+
+    @Override
+    @Transactional
+    public void replaceWorkspaceRolePermissions(String workspaceId, Long roleId, List<Long> permissionIds) {
+        // Validate role thuộc workspace (hoặc template workspace)
+        Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
+        if (r.getScope() != Scope.workspace) {
+            throw new IllegalArgumentException("Role không thuộc scope workspace");
+        }
+        if (r.getTargetId() != null && !r.getTargetId().equals(workspaceId)) {
+            throw new IllegalArgumentException("Role không thuộc workspace này");
+        }
+
+        // Validate permissionIds đều thuộc scope 'workspace'
+        if (permissionIds != null && !permissionIds.isEmpty()) {
+            Integer cnt = jdbc.queryForObject(
+                    "SELECT COUNT(*) FROM permissions WHERE id IN (:ids) AND scope = 'workspace'",
+                    new MapSqlParameterSource().addValue("ids", permissionIds),
+                    Integer.class
+            );
+            if (cnt == null || cnt != permissionIds.size()) {
+                throw new IllegalArgumentException("Danh sách permission chứa phần tử không thuộc scope workspace");
+            }
+        }
+
 }

@@ -1,6 +1,6 @@
-package com.springboot.demo.model;
+package com.springboot.demo.enums;
 
-public enum TaskPriority {
+public enum ProjectPriority {
     LOW("Low", 1),
     MEDIUM("Medium", 2),
     HIGH("High", 3),
@@ -9,7 +9,7 @@ public enum TaskPriority {
     private final String displayName;
     private final int level;
 
-    TaskPriority(String displayName, int level) {
+    ProjectPriority(String displayName, int level) {
         this.displayName = displayName;
         this.level = level;
     }
