@@ -1,6 +1,6 @@
 package com.springboot.demo.dto.sprint;
 
-import com.springboot.demo.model.SprintStatus;
+import com.springboot.demo.enums.SprintStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

@@ -5,7 +5,7 @@ import com.springboot.demo.dto.project.ProjectResponse;
 import com.springboot.demo.dto.project.ProjectSummaryResponse;
 import com.springboot.demo.dto.project.ProjectUpdateRequest;
 import com.springboot.demo.model.Project;
-import com.springboot.demo.model.ProjectStatus;
+import com.springboot.demo.enums.ProjectStatus;
 import com.springboot.demo.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

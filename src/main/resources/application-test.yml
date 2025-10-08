@@ -47,7 +47,7 @@ app:
     allowed-origins: http://localhost:3000
 
   upload:
-    base-url: http://localhost:8080/files
+    base-url: http://localhost:8088/files
     max-file-size: 10MB
 
 file:

@@ -1,5 +1,7 @@
 package com.springboot.demo.model;
 
+import com.springboot.demo.enums.TaskPriority;
+import com.springboot.demo.enums.TaskStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

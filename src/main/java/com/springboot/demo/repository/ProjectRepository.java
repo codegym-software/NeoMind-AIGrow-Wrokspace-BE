@@ -1,7 +1,7 @@
 package com.springboot.demo.repository;
 
 import com.springboot.demo.model.Project;
-import com.springboot.demo.model.ProjectStatus;
+import com.springboot.demo.enums.ProjectStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,18 +43,6 @@ public interface ProjectRepository extends JpaRepository<Project, String> {
                                            @Param("status") ProjectStatus status,
                                            Pageable pageable);
 
-    // Find overdue projects within a workspace
-    @Query("SELECT p FROM Project p WHERE p.workspaceId = :workspaceId AND " +
-            "p.endDate < :currentDate AND p.status != 'COMPLETED' AND p.archivedAt IS NULL")
-    List<Project> findOverdueProjectsByWorkspaceId(@Param("workspaceId") String workspaceId,
-                                                  @Param("currentDate") LocalDate currentDate);
-
-    // Find projects ending soon within a workspace
-    @Query("SELECT p FROM Project p WHERE p.workspaceId = :workspaceId AND " +
-            "p.endDate BETWEEN :startDate AND :endDate AND p.status != 'COMPLETED' AND p.archivedAt IS NULL")
-    List<Project> findProjectsEndingSoon(@Param("workspaceId") String workspaceId,
-                                       @Param("startDate") LocalDate startDate,
-                                       @Param("endDate") LocalDate endDate);
 
     // Count active projects by workspace
     @Query("SELECT COUNT(p) FROM Project p WHERE p.workspaceId = :workspaceId AND p.archivedAt IS NULL")

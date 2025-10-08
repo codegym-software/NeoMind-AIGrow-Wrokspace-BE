@@ -34,8 +34,11 @@ public class SecurityConfig {
                         .requestMatchers("/health", "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
+                        .requestMatchers("/api/test/public").permitAll()
+                        .requestMatchers("/api/auth/mock-login", "/api/auth/mock-user").permitAll()
                         .requestMatchers("/api/uploads/**").authenticated()
                         .requestMatchers("/auth/**", "/public/**").permitAll()
+                        .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));

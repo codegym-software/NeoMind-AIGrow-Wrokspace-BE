@@ -1,5 +1,6 @@
 package com.springboot.demo.model;
 
+import com.springboot.demo.enums.SprintStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
