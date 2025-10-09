@@ -21,6 +21,7 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
+@org.springframework.context.annotation.Profile("!no-auth")
 public class SecurityConfig {
   private final EnsureUserExistsFilter ensureUserExistsFilter;
 //    private final RequestAuthorizationManager ram;
