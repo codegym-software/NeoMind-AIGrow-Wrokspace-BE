@@ -26,7 +26,6 @@ public class UploadController {
     @PreAuthorize("isAuthenticated()")
     public Map<String, Object> upload(@PathVariable String bucket, @RequestParam("file") MultipartFile file)
             throws IOException {
-
         UploadBucket b = UploadBucket.from(bucket);
         var stored = service.store(file, b);
 
