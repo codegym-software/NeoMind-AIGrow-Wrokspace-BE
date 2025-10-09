@@ -5,5 +5,5 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
 public record UpsertRolePermissionsReq(
-        @NotEmpty List<Integer> permissionIds
+        @NotEmpty List<Long> permissionIds
 ) {}

@@ -15,8 +15,8 @@ public interface RoleService {
 
     List<RoleDto> listCompanyRoles(String companyId, boolean includeGlobal);
     RoleDto createCompanyRole(String companyId, CreateRoleReq req);
-    RoleDto updateCompanyRole(String companyId, Integer roleId, UpdateRoleReq req);
-    void deleteCompanyRole(String companyId, Integer roleId);
+    RoleDto updateCompanyRole(String companyId, Long roleId, UpdateRoleReq req);
+    void deleteCompanyRole(String companyId, Long roleId);
 
     List<RoleDto> listWorkspaceRoles(String workspaceId, boolean includeGlobal);
     RoleDto createWorkspaceRole(String workspaceId, CreateRoleReq req);
