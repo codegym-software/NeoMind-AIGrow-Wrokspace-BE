@@ -1,0 +1,65 @@
+server:
+  port: 8088
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:devdb
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: true
+  
+  # Minimal security config for dev
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://dev.example.com
+  
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
+
+# Dev configuration
+cognito:
+  issuer-uri: https://dev.example.com
+  client-id: dev-client-id
+
+app:
+  cors:
+    allowed-origins: http://localhost:3000,http://localhost:3001
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  upload:
+    base-url: http://localhost:8088/files
+    max-file-size: 10MB
+
+file:
+  storage:
+    base-dir: ./dev-uploads
+    buckets:
+      company-logo: company-logos
+      user-avatar: user-avatars
+      temp: temp
+
+# Logging
+logging:
+  level:
+    com.springboot.demo: DEBUG
+    org.springframework.security: INFO

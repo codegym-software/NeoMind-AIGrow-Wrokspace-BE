@@ -16,7 +16,7 @@ FROM eclipse-temurin:17-jre
 
 ENV JAVA_OPTS=""
 ENV SPRING_PROFILES_ACTIVE=dev
-ENV SERVER_PORT=8080
+ENV SERVER_PORT=8088
 
 WORKDIR /app
 
@@ -24,6 +24,6 @@ WORKDIR /app
 COPY --from=builder /app/target/*.jar /app/app.jar
 
 # Expose port configured by SERVER_PORT
-EXPOSE 8080
+EXPOSE 8088
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${SERVER_PORT} -jar /app/app.jar"]
