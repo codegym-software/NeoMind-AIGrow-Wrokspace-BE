@@ -41,4 +41,5 @@ src/main/resources/application.properties
 docker-compose.override.yml
 src/main/resources/application.yml
 hs_err_pid*.log
-
+.env.myenv
+srcBE.zip
