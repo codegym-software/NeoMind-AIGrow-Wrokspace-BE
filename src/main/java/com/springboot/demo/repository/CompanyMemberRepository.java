@@ -45,6 +45,7 @@ public interface CompanyMemberRepository extends JpaRepository<CompanyMember, In
         return isOwnerRaw(companyId, userId) == 1;
     }
 
+
     @Query("SELECT COUNT(m) FROM CompanyMember m WHERE m.companyId = :companyId AND m.isOwner = true")
     long countOwners(@Param("companyId") String companyId);
 

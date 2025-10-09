@@ -1,13 +1,17 @@
 package com.springboot.demo.service;
 
 import com.springboot.demo.dto.company.CompanyCreateRequest;
+import com.springboot.demo.dto.company.CompanyDto;
 import com.springboot.demo.dto.company.CompanyUpdateRequest;
 import com.springboot.demo.model.Company;
 import org.springframework.data.domain.Page;
 
+import java.util.List;
+
 public interface CompanyService {
     Company create(CompanyCreateRequest req);
 
+    // show list company liên quan đến user, check company_member
     Company getById(String id);
 
     Company update(String id, CompanyUpdateRequest req);
@@ -19,5 +23,6 @@ public interface CompanyService {
     Page<Company> searchByCurrentUser(String q, int page, int size);
 
     void delete(String id);
+
 }
 
