@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Cache Maven dependencies first
 COPY pom.xml .
-RUN --mount=type=cache,target=/root/.m2 mvn -B -e -q -DskipTests dependency:go-offline
+# RUN --mount=type=cache,target=/root/.m2 mvn -B -e -q -DskipTests dependency:go-offline
 
 # Copy source and build
 COPY src ./src
