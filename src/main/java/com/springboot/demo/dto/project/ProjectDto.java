@@ -1,6 +1,6 @@
 package com.springboot.demo.dto.project;
 
-import com.springboot.demo.model.ProjectStatus;
+import com.springboot.demo.model.enums.ProjectStatus;
 
 import java.time.LocalDateTime;
 

@@ -1,6 +1,6 @@
 package com.springboot.demo.util;
 
-import com.springboot.demo.model.Scope;
+import com.springboot.demo.model.enums.Scope;
 
 public final class ScopeUtils {
 

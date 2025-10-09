@@ -3,7 +3,7 @@ package com.springboot.demo.service.impl;
 import com.springboot.demo.dto.project.*;
 import com.springboot.demo.model.Project;
 import com.springboot.demo.model.ProjectMember;
-import com.springboot.demo.model.ProjectStatus;
+import com.springboot.demo.model.enums.ProjectStatus;
 import com.springboot.demo.model.Role;
 import com.springboot.demo.repository.*;
 import com.springboot.demo.service.ProjectService;

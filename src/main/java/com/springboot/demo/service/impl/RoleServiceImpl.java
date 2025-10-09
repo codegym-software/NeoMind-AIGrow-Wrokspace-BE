@@ -3,7 +3,7 @@ package com.springboot.demo.service.impl;
 import com.springboot.demo.dto.RolePermission.CreateRoleReq;
 import com.springboot.demo.dto.RolePermission.UpdateRoleReq;
 import com.springboot.demo.dto.RolePermission.RoleDto;
-import com.springboot.demo.model.Scope;
+import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.model.Role;
 import com.springboot.demo.repository.RoleRepository;
 import com.springboot.demo.service.RoleService;

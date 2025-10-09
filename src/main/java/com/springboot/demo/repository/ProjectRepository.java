@@ -1,7 +1,7 @@
 package com.springboot.demo.repository;
 
 import com.springboot.demo.model.Project;
-import com.springboot.demo.model.ProjectStatus;
+import com.springboot.demo.model.enums.ProjectStatus;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
