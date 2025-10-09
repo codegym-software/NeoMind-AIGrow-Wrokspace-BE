@@ -1,7 +1,10 @@
 package com.springboot.demo.model;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -9,7 +12,10 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "workspace_members")
+@Table(name = "workspace_members",
+        indexes = {
+                @Index(name = "idx_workspace_user", columnList = "workspace_id,user_id")
+        })
 public class WorkspaceMember {
 
     @Id
@@ -30,5 +36,33 @@ public class WorkspaceMember {
         this.workspaceId = workspaceId;
         this.userId = userId;
         this.roleId = roleId;
+    }
+
+    @Column(name = "is_owner", nullable = false)
+    private boolean isOwner = false;
+
+    @PrePersist
+    void prePersist() {
+        if (id == null) {
+            id = UUID.randomUUID().toString();
+        }
+        enforceOwnerRoleRule();
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        enforceOwnerRoleRule();
+    }
+
+    private void enforceOwnerRoleRule() {
+        if (isOwner) {
+            // Owner => null role_id (tương tự CompanyMember)
+            try {
+                var f = this.getClass().getDeclaredField("roleId");
+                f.setAccessible(true);
+                f.set(this, null);
+            } catch (Exception ignore) {
+            }
+        }
     }
 }

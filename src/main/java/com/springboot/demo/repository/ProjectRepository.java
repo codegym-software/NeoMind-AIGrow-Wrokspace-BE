@@ -1,26 +1,62 @@
 package com.springboot.demo.repository;
 
 import com.springboot.demo.model.Project;
-import com.springboot.demo.model.ProjectStatus;
-import org.springframework.data.jpa.repository.*;
+import com.springboot.demo.enums.ProjectStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface ProjectRepository extends JpaRepository<Project, String> {
 
-    List<Project> findByWorkspaceIdAndStatusOrderByCreatedAtDesc(String workspaceId, ProjectStatus status);
+    // Find all projects by workspace ID (excluding archived)
+    @Query("SELECT p FROM Project p WHERE p.workspaceId = :workspaceId AND p.archivedAt IS NULL")
+    Page<Project> findByWorkspaceIdAndNotArchived(@Param("workspaceId") String workspaceId, Pageable pageable);
 
-    List<Project> findByWorkspaceIdOrderByCreatedAtDesc(String workspaceId);
+    // Find all projects by workspace ID (including archived)
+    List<Project> findByWorkspaceId(String workspaceId);
 
-    @Query("select p from Project p where p.id in (select pm.projectId from ProjectMember pm where pm.userId = :userId)")
-    List<Project> findAllByMember(@Param("userId") String userId);
+    // Find project by ID and workspace ID (excluding archived)
+    @Query("SELECT p FROM Project p WHERE p.id = :id AND p.workspaceId = :workspaceId AND p.archivedAt IS NULL")
+    Optional<Project> findByIdAndWorkspaceIdAndNotArchived(@Param("id") String id, @Param("workspaceId") String workspaceId);
 
-    @Query("select p from Project p where p.workspaceId = :workspaceId " +
-            "and p.id in (select pm.projectId from ProjectMember pm where pm.userId = :userId)")
-    List<Project> findAllByMemberInWorkspace(@Param("userId") String userId, @Param("workspaceId") String workspaceId);
+    // Find project by name and workspace ID (excluding archived) - for duplicate check
+    @Query("SELECT p FROM Project p WHERE p.workspaceId = :workspaceId AND LOWER(p.name) = LOWER(:name) AND p.archivedAt IS NULL")
+    Optional<Project> findByWorkspaceIdAndNameAndNotArchived(@Param("workspaceId") String workspaceId, @Param("name") String name);
 
-    @Query("select p.workspaceId from Project p where p.id = :projectId")
-    Optional<String> findWorkspaceIdByProjectId(@Param("projectId") String projectId);
+    // Search projects by name within a workspace (excluding archived)
+    @Query("SELECT p FROM Project p WHERE p.workspaceId = :workspaceId AND " +
+            "LOWER(p.name) LIKE LOWER(CONCAT('%', :query, '%')) AND p.archivedAt IS NULL")
+    Page<Project> searchByWorkspaceIdAndName(@Param("workspaceId") String workspaceId,
+                                           @Param("query") String query,
+                                           Pageable pageable);
+
+    // Find projects by status within a workspace (excluding archived)
+    @Query("SELECT p FROM Project p WHERE p.workspaceId = :workspaceId AND p.status = :status AND p.archivedAt IS NULL")
+    Page<Project> findByWorkspaceIdAndStatus(@Param("workspaceId") String workspaceId,
+                                           @Param("status") ProjectStatus status,
+                                           Pageable pageable);
+
+
+    // Count active projects by workspace
+    @Query("SELECT COUNT(p) FROM Project p WHERE p.workspaceId = :workspaceId AND p.archivedAt IS NULL")
+    long countByWorkspaceIdAndNotArchived(@Param("workspaceId") String workspaceId);
+
+    // Count projects by status within a workspace
+    @Query("SELECT COUNT(p) FROM Project p WHERE p.workspaceId = :workspaceId AND p.status = :status AND p.archivedAt IS NULL")
+    long countByWorkspaceIdAndStatus(@Param("workspaceId") String workspaceId, @Param("status") ProjectStatus status);
+
+    // Hard delete all projects by workspace ID
+    void deleteByWorkspaceId(String workspaceId);
+
+    // Find all active projects (not archived, status is ACTIVE)
+    @Query("SELECT p FROM Project p WHERE p.workspaceId = :workspaceId AND p.status = 'ACTIVE' AND p.archivedAt IS NULL")
+    List<Project> findActiveProjectsByWorkspaceId(@Param("workspaceId") String workspaceId);
 }
+

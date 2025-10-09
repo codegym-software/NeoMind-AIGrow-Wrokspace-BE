@@ -67,7 +67,7 @@ server.port=8081
 ```bash
 mvn spring-boot:run
 ```
-Mặc định ứng dụng sẽ chạy tại: http://localhost:8080
+Mặc định ứng dụng sẽ chạy tại: http://localhost:8088
 
 ---
 

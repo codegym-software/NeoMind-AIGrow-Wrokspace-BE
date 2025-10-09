@@ -1,5 +1,6 @@
 package com.springboot.demo.model;
 
+import com.springboot.demo.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
