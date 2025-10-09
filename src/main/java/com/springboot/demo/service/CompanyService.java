@@ -1,12 +1,9 @@
 package com.springboot.demo.service;
 
 import com.springboot.demo.dto.company.CompanyCreateRequest;
-import com.springboot.demo.dto.company.CompanyDto;
 import com.springboot.demo.dto.company.CompanyUpdateRequest;
 import com.springboot.demo.model.Company;
 import org.springframework.data.domain.Page;
-
-import java.util.List;
 
 public interface CompanyService {
     Company create(CompanyCreateRequest req);

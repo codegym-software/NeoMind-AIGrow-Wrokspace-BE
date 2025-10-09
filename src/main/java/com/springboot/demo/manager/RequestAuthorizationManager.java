@@ -1,6 +1,6 @@
 package com.springboot.demo.manager;
 
-import com.springboot.demo.model.Scope;
+import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.service.AbilityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authorization.AuthorizationDecision;

@@ -5,7 +5,7 @@ import com.springboot.demo.dto.company.AssignCompanyRoleReq;
 import com.springboot.demo.dto.company.InviteResponse;
 import com.springboot.demo.model.CompanyMember;
 import com.springboot.demo.model.Role;
-import com.springboot.demo.model.Scope;
+import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.repository.CompanyMemberRepository;
 import com.springboot.demo.repository.MembershipCleanupRepository;
 import com.springboot.demo.repository.RoleRepository;
