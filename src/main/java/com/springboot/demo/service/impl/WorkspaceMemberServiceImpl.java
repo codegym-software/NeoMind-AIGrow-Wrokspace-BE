@@ -40,7 +40,7 @@ public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
                     User user = userRepo.findById(member.getUserId())
                             .orElseThrow(() -> new NoSuchElementException("User không tồn tại"));
                     String roleName = member.getRoleId() != null ? 
-                            roleRepo.findById(member.getRoleId().longValue())
+                            roleRepo.findById(member.getRoleId())
                                     .map(Role::getName)
                                     .orElse("Unknown Role") : "Owner";
                     
@@ -74,7 +74,7 @@ public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
         }
 
         // Kiểm tra role
-        Role role = roleRepo.findById(req.roleId().longValue())
+        Role role = roleRepo.findById(req.roleId())
                 .orElseThrow(() -> new NoSuchElementException("Role không tồn tại"));
         if (role.getScope() != Scope.workspace) {
             throw new IllegalArgumentException("Role không thuộc scope workspace");
@@ -126,7 +126,7 @@ public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
             throw new AccessDeniedException("Không thể đổi role cho Owner (dùng transfer-ownership)");
         }
 
-        Role role = roleRepo.findById(req.roleId().longValue())
+        Role role = roleRepo.findById(req.roleId())
                 .orElseThrow(() -> new NoSuchElementException("Role không tồn tại"));
         if (role.getScope() != Scope.workspace) {
             throw new IllegalArgumentException("Role không thuộc scope workspace");

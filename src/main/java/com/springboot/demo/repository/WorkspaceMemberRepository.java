@@ -15,9 +15,6 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
 
     List<WorkspaceMember> findAllByWorkspaceId(String workspaceId);
 
-    Optional<WorkspaceMember> findByWorkspaceIdAndUserId(String workspaceId, String userId);
-
-    // Check if user is already a member of workspace
     boolean existsByWorkspaceIdAndUserId(String workspaceId, String userId);
 
     @Query("SELECT wm FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.isOwner = true")
@@ -25,24 +22,28 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
 
     @Query("SELECT COUNT(wm) > 0 FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.userId = :userId AND wm.isOwner = true")
     boolean isOwner(@Param("workspaceId") String workspaceId, @Param("userId") String userId);
+
     // Find workspace member by workspace and user
     Optional<WorkspaceMember> findByWorkspaceIdAndUserId(String workspaceId, String userId);
 
     @Modifying
     @Query("UPDATE WorkspaceMember wm SET wm.isOwner = false WHERE wm.workspaceId = :workspaceId")
     void clearOwners(@Param("workspaceId") String workspaceId);
+
     // Find all members of a workspace
     List<WorkspaceMember> findByWorkspaceId(String workspaceId);
 
     @Modifying
     @Query("UPDATE WorkspaceMember wm SET wm.isOwner = true WHERE wm.workspaceId = :workspaceId AND wm.userId = :userId")
     void setOwner(@Param("workspaceId") String workspaceId, @Param("userId") String userId);
+
     // Find all workspaces where user is a member
     @Query("SELECT wm.workspaceId FROM WorkspaceMember wm WHERE wm.userId = :userId")
     List<String> findWorkspaceIdsByUserId(@Param("userId") String userId);
 
     @Query("SELECT wm FROM WorkspaceMember wm WHERE wm.userId = :userId")
     List<WorkspaceMember> findAllByUserId(@Param("userId") String userId);
+
     // Check if user has specific role in workspace
     @Query("SELECT COUNT(wm) > 0 FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.userId = :userId AND wm.roleId = :roleId")
     boolean existsByWorkspaceIdAndUserIdAndRoleId(@Param("workspaceId") String workspaceId,

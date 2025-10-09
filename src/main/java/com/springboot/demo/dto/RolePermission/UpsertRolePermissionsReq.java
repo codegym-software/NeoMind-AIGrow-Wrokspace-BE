@@ -6,4 +6,5 @@ import java.util.List;
 
 public record UpsertRolePermissionsReq(
         @NotEmpty List<Long> permissionIds
-) {}
+) {
+}

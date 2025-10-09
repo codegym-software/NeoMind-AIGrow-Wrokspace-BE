@@ -58,5 +58,9 @@ public interface ProjectRepository extends JpaRepository<Project, String> {
     // Find all active projects (not archived, status is ACTIVE)
     @Query("SELECT p FROM Project p WHERE p.workspaceId = :workspaceId AND p.status = 'ACTIVE' AND p.archivedAt IS NULL")
     List<Project> findActiveProjectsByWorkspaceId(@Param("workspaceId") String workspaceId);
+
+    @Query("select p.workspaceId from Project p where p.id = :projectId")
+    Optional<String> findWorkspaceIdByProjectId(@Param("projectId") String projectId);
+
 }
 

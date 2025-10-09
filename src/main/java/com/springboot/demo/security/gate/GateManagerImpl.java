@@ -6,14 +6,15 @@ import com.springboot.demo.repository.*;
 import com.springboot.demo.service.AbilityService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
-import static com.springboot.demo.util.ScopeUtils.parseScope;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
+
+import static com.springboot.demo.util.ScopeUtils.parseScope;
 
 @Component("gate") // dùng @PreAuthorize("@gate.allows(...)")
 @RequiredArgsConstructor
@@ -57,7 +58,7 @@ public class GateManagerImpl implements GateManager {
             String workspaceId = (String) target;
             String userId = ctx.userId();
 
-            return abilityService.hasPermission(userId, Scope.workspace,"project:read", workspaceId)
+            return abilityService.hasPermission(userId, Scope.workspace, "project:read", workspaceId)
                     || abilityService.hasPermission(userId, Scope.workspace, "project:crud", workspaceId)
                     || abilityService.hasPermission(userId, Scope.workspace, "workspace:read", workspaceId);
         });
@@ -85,11 +86,11 @@ public class GateManagerImpl implements GateManager {
             if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) return true;
 
             String wsId = projectRepo.findWorkspaceIdByProjectId(projectId).orElse(null);
-            return abilityService.hasPermission(userId, Scope.project,"project:delete", projectId)
-                    || abilityService.hasPermission(userId, Scope.project,"project:crud", projectId)
+            return abilityService.hasPermission(userId, Scope.project, "project:delete", projectId)
+                    || abilityService.hasPermission(userId, Scope.project, "project:crud", projectId)
                     || (wsId != null && (
-                    abilityService.hasPermission(userId, Scope.workspace,"project:delete", wsId) ||
-                            abilityService.hasPermission(userId, Scope.workspace,"project:crud", wsId)
+                    abilityService.hasPermission(userId, Scope.workspace, "project:delete", wsId) ||
+                            abilityService.hasPermission(userId, Scope.workspace, "project:crud", wsId)
             ));
         });
     }
@@ -116,8 +117,11 @@ public class GateManagerImpl implements GateManager {
         return rbacRepo.userHasPermissionInScope(ctx.userId, parsed.scope, targetId, ability);
     }
 
-    private record ParsedAbility(Scope scope, String code) {}
-    private record AuthCtx(String userId, String email) {}
+    private record ParsedAbility(Scope scope, String code) {
+    }
+
+    private record AuthCtx(String userId, String email) {
+    }
 
     private ParsedAbility parseAbility(String ability) {
         // eg: "company:role:create" => scope "company"
