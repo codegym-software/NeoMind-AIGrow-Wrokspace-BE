@@ -6,6 +6,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
@@ -13,19 +15,18 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Entity
 @Table(name = "tasks")
 public class Task {
 
     @Id
-    @Column(name = "id", columnDefinition = "CHAR(36)")
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(name = "project_id", columnDefinition = "CHAR(36)", nullable = false)
     private String projectId;
-    
+
     @Column(name = "sprint_id", columnDefinition = "CHAR(36)")
     private String sprintId;
 
@@ -77,22 +78,21 @@ public class Task {
 
     // Constructors
     public Task() {
-        this.id = UUID.randomUUID().toString();
+        // Để trống, database sẽ tự tạo ID
     }
 
     public Task(String projectId, String title, String description) {
-        this();
         this.projectId = projectId;
         this.title = title;
         this.description = description;
     }
 
     // Getters and Setters
-    public String getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -102,6 +102,14 @@ public class Task {
 
     public void setProjectId(String projectId) {
         this.projectId = projectId;
+    }
+
+    public String getSprintId() {
+        return sprintId;
+    }
+
+    public void setSprintId(String sprintId) {
+        this.sprintId = sprintId;
     }
 
     public String getAssignedTo() {
@@ -251,4 +259,3 @@ public class Task {
         return assignedTo != null;
     }
 }
-

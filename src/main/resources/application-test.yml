@@ -1,65 +1,65 @@
-server:
-  port: 8080
+# server:
+#   port: 8088
 
-spring:
-  datasource:
-    url: jdbc:h2:mem:testdb
-    username: sa
-    password: 
-    driver-class-name: org.h2.Driver
+# spring:
+#   datasource:
+#     url: jdbc:h2:mem:testdb
+#     username: sa
+#     password: 
+#     driver-class-name: org.h2.Driver
   
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+#   h2:
+#     console:
+#       enabled: true
+#       path: /h2-console
   
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    database-platform: org.hibernate.dialect.H2Dialect
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
+#   jpa:
+#     hibernate:
+#       ddl-auto: create-drop
+#     database-platform: org.hibernate.dialect.H2Dialect
+#     show-sql: true
+#     properties:
+#       hibernate:
+#         format_sql: true
   
-  # Disable security for testing
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: https://example.com
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
+#   # Disable security for testing
+#   security:
+#     oauth2:
+#       resourceserver:
+#         jwt:
+#           issuer-uri: https://example.com
+#   autoconfigure:
+#     exclude:
+#       - org.springframework.boot.autoconfigure.security.oauth2.resource.servlet.OAuth2ResourceServerAutoConfiguration
   
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+#   servlet:
+#     multipart:
+#       max-file-size: 10MB
+#       max-request-size: 10MB
 
-# Test configuration
-cognito:
-  issuer-uri: https://example.com
-  client-id: test-client-id
+# # Test configuration
+# cognito:
+#   issuer-uri: https://example.com
+#   client-id: test-client-id
 
-app:
-  cors:
-    allowed-origins: http://localhost:3000
+# app:
+#   cors:
+#     allowed-origins: http://localhost:3000
 
-  upload:
-    base-url: http://localhost:8088/files
-    max-file-size: 10MB
+#   upload:
+#     base-url: http://localhost:8088/files
+#     max-file-size: 10MB
 
-file:
-  storage:
-    base-dir: ./uploads
-    buckets:
-      company-logo: company-logos
-      user-avatar: user-avatars
-      temp: temp
+# file:
+#   storage:
+#     base-dir: ./uploads
+#     buckets:
+#       company-logo: company-logos
+#       user-avatar: user-avatars
+#       temp: temp
 
-# Logging for debugging
-logging:
-  level:
-    com.springboot.demo: DEBUG
-    org.springframework.security: DEBUG
+# # Logging for debugging
+# logging:
+#   level:
+#     com.springboot.demo: DEBUG
+#     org.springframework.security: DEBUG

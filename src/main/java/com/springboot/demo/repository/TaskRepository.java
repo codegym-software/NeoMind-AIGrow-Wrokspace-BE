@@ -24,6 +24,8 @@ public interface TaskRepository extends JpaRepository<Task, String> {
     
     List<Task> findByAssignedToAndArchivedAtIsNull(String assignedTo);
     
+    List<Task> findByProjectId(String projectId);
+    
     @Query("SELECT COUNT(t) FROM Task t WHERE t.sprintId = :sprintId AND t.status = :status AND t.archivedAt IS NULL")
     long countBySprintIdAndStatus(@Param("sprintId") String sprintId, @Param("status") TaskStatus status);
     
