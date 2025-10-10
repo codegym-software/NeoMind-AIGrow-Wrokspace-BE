@@ -11,9 +11,11 @@ import com.springboot.demo.repository.RoleRepository;
 import com.springboot.demo.service.AbilityService;
 import com.springboot.demo.service.CompanyMemberService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -41,7 +43,6 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
 
         var actor = cmRepo.findByCompanyIdAndUserId(companyId, actorId)
                 .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc công ty này"));
-        mustHaveManageUsersPermission(actorId, companyId);
 
         Role role = roleRepo.findById(req.roleId())
                 .orElseThrow(() -> new NoSuchElementException("Role không tồn tại"));
@@ -60,35 +61,27 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
     public void assignRole(String companyId, String targetUserId, AssignCompanyRoleReq req, String actorId) {
         var actor = cmRepo.findByCompanyIdAndUserId(companyId, actorId)
                 .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc công ty này"));
-        mustHaveManageUsersPermission(actorId, companyId);
 
         var target = cmRepo.findByCompanyIdAndUserId(companyId, targetUserId)
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy thành viên"));
 
-        if (Boolean.TRUE.equals(req.makeOwner())) {
-            if (!actor.isOwner()) throw new AccessDeniedException("Chỉ Owner được phép chuyển quyền sở hữu");
-            cmRepo.clearOwners(companyId);
-            cmRepo.setOwner(companyId, targetUserId);
-            return;
+        if (target.isOwner()) {
+            throw new AccessDeniedException("Không thể đổi role cho Owner (dùng transfer-ownership)");
         }
-
-        if (req.roleId() == null) throw new IllegalArgumentException("roleId required");
-
+        if (req.roleId() == null) {
+            throw new IllegalArgumentException("roleId required");
+        }
         Role role = roleRepo.findById(req.roleId())
                 .orElseThrow(() -> new NoSuchElementException("Role không tồn tại"));
-        if (role.getScope() != Scope.company) throw new IllegalArgumentException("Role không thuộc scope company");
-
-        if (target.isOwner()) throw new AccessDeniedException("Không thể đổi role cho Owner (dùng transfer-ownership)");
+        if (role.getScope() != Scope.company) {
+            throw new IllegalArgumentException("Role không thuộc scope company");
+        }
 
         target.setRoleId(role.getId());
         cmRepo.save(target);
+
     }
 
-    private void mustHaveManageUsersPermission(String actorId, String companyId) {
-        if (!ability.hasPermission(actorId, Scope.company, companyId, "company:set_user_permissions")) {
-            throw new AccessDeniedException("Thiếu quyền company:set_user_permissions");
-        }
-    }
 
     @Override
     @Transactional
@@ -112,4 +105,38 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
         cmRepo.deleteByCompanyIdAndUserId(companyId, targetUserId);
     }
 
+    @Override
+    @Transactional
+    public void transferOwnership(String companyId, String toUserId, Integer downgradeRoleId, String actorId) {
+        if (toUserId == null || toUserId.isBlank())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "toUserId required");
+        if (downgradeRoleId == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "downgradeRoleId required");
+
+        var actor = cmRepo.findByCompanyIdAndUserId(companyId, actorId)
+                .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc công ty này"));
+        if (!Boolean.TRUE.equals(actor.isOwner()))
+            throw new AccessDeniedException("Chỉ Owner mới được chuyển quyền sở hữu");
+
+        var target = cmRepo.findByCompanyIdAndUserId(companyId, toUserId)
+                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy thành viên được chuyển"));
+
+        Role downgradeRole = roleRepo.findById(downgradeRoleId)
+                .orElseThrow(() -> new NoSuchElementException("Role downgrade không tồn tại"));
+        if (downgradeRole.getScope() != Scope.company)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role downgrade phải thuộc scope=company");
+        if (downgradeRole.getTargetId() != null && !companyId.equals(downgradeRole.getTargetId()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role downgrade không thuộc company này");
+
+        if (actor.getUserId().equals(target.getUserId()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Owner hiện tại đã là Owner");
+
+        actor.setRoleId(downgradeRole.getId());
+        actor.setOwner(false);
+        cmRepo.save(actor);
+
+        target.setOwner(true);
+        target.setRoleId(null);
+        cmRepo.save(target);
+    }
 }
