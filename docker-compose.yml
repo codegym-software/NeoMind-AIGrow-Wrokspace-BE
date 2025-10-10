@@ -6,8 +6,6 @@ services:
       MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MARIADB_USER: ${MARIADB_USER}
       MARIADB_PASSWORD: ${MARIADB_PASSWORD}
-    ports:
-      - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./mysql-conf.d/my.cnf:/etc/mysql/conf.d/my.cnf:ro
@@ -26,8 +24,10 @@ services:
       db:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      SERVER_PORT: ${SERVER_PORT}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      SERVER_PORT: ${SERVER_PORT:-8081}
+      LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+      JAVA_OPTS: ${JAVA_OPTS:-}
       # JDBC URL maps to service name 'db'
       SPRING_DATASOURCE_URL: jdbc:mysql://${DB_HOST:-db}:${DB_PORT:-3306}/${MARIADB_DATABASE}?useSSL=false&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: ${MARIADB_USER}
@@ -36,10 +36,9 @@ services:
       ISSUER_URI: ${ISSUER_URI}
       CLIENT_ID: ${CLIENT_ID}
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN}
-    ports:
-      - "${SERVER_PORT}:${SERVER_PORT}"
     volumes:
       - ./ai-grow-uploads:/app/ai-grow-uploads
+      - ~/.m2:/root/.m2
 
 volumes:
   db_data:
