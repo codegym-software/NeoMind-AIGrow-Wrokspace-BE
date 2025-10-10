@@ -1,10 +1,25 @@
-spring.application.name=NeoMind_BE
-spring.datasource.url=${DB_URL}
-spring.datasource.username=${DB_USERNAME}
-spring.datasource.password=${DB_PASSWORD}
+spring.application.name=NeoMind_BE_struc
+spring.datasource.url=${DB_URL:jdbc:mysql://localhost:3306/ai-grow?useSSL=false&serverTimezone=UTC}
+spring.datasource.username=${DB_USERNAME:app}
+spring.datasource.password=${DB_PASSWORD:app}
 
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect
 
-server.port=${PORT}
+server.port=${PORT:8081}
+spring.security.oauth2.resourceserver.jwt.issuer-uri=${ISSUER_URI:https://cognito-idp.ap-southeast-2.amazonaws.com/ap-southeast-2_TespiMS7C}
+spring.servlet.multipart.max-file-size=${MAX_UPLOAD_SIZE:10MB}
+spring.servlet.multipart.max-request-size=${MAX_UPLOAD_SIZE:10MB}
+
+# Cognito
+app.cors.allowed-origins=${FRONTEND_ORIGIN:http://localhost:3000}
+app.upload.base-url=${PUBLIC_FILES_BASE_URL:http://localhost:8081/files}
+app.upload.max-file-size=${MAX_UPLOAD_SIZE:10MB}
+
+# File storage
+file.storage.base-dir=${FILE_STORAGE_BASE:./ai-grow-uploads}
+file.storage.buckets.company-logo=company-logos
+file.storage.buckets.user-avatar=user-avatars
+file.storage.buckets.temp=temp
