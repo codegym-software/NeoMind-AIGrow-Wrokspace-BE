@@ -2,6 +2,7 @@ package com.springboot.demo.controller;
 
 import com.springboot.demo.dto.company.AddCompanyMemberReq;
 import com.springboot.demo.dto.company.AssignCompanyRoleReq;
+import com.springboot.demo.dto.company.TransferOwnershipReq;
 import com.springboot.demo.model.CompanyMember;
 import com.springboot.demo.security.UserIdResolver;
 import com.springboot.demo.service.CompanyMemberService;
@@ -24,13 +25,13 @@ public class CompanyMemberController {
     private final CompanyMemberService service;
     private final UserIdResolver userIdResolver;
 
-    @PreAuthorize("@gate.allows('company:read', authentication, #companyId)")
     @GetMapping
+    @PreAuthorize("@gate.allows('company:member:read', authentication, #companyId)")
     public List<CompanyMember> list(@PathVariable String companyId) {
         return service.list(companyId);
     }
 
-    @PreAuthorize("@gate.allows('company:set_user_permissions', authentication, #companyId)")
+    @PreAuthorize("@gate.allows('company:member:set_user_permissions', authentication, #companyId)")
     @PostMapping
     public void add(@PathVariable String companyId,
                     @RequestBody AddCompanyMemberReq req,
@@ -39,8 +40,8 @@ public class CompanyMemberController {
         service.addMember(companyId, req, actorId);
     }
 
-    @PreAuthorize("@gate.allows('company:set_user_permissions', authentication, #companyId)")
     @PutMapping("/{memberUserId}/role")
+    @PreAuthorize("@gate.allows('company:member:set_user_permissions', authentication, #companyId)")
     public void assign(@PathVariable String companyId,
                        @PathVariable String memberUserId,
                        @RequestBody AssignCompanyRoleReq req,
@@ -49,18 +50,18 @@ public class CompanyMemberController {
         service.assignRole(companyId, memberUserId, req, actorId);
     }
 
-    @PreAuthorize("@gate.allows('company:transfer_ownership', authentication, #companyId)")
     @PostMapping("/transfer-ownership")
+    @PreAuthorize("@gate.allows('company:member:transfer_ownership', authentication, #companyId)")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void transferOwnership(@PathVariable String companyId,
-                                  @RequestBody Map<String, String> body,
+                                  @RequestBody TransferOwnershipReq req,
                                   Authentication auth) {
         String actorId = userIdResolver.resolveInternalId(auth);
-        service.assignRole(companyId, body.get("toUserId"),
-                new AssignCompanyRoleReq(null, true), actorId);
+        service.transferOwnership(companyId, req.toUserId(), req.downgradeRoleId(), actorId);
     }
 
     @DeleteMapping("/{memberUserId}")
-    @PreAuthorize("@gate.allows('company:set_user_permissions', authentication, #companyId)")
+    @PreAuthorize("@gate.allows('company:member:set_user_permissions', authentication, #companyId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void remove(@PathVariable String companyId,
                        @PathVariable String memberUserId,

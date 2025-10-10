@@ -43,26 +43,6 @@ public class CompanyMember {
     @PrePersist
     void prePersist() {
         if (joinedAt == null) joinedAt = LocalDateTime.now();
-        enforceOwnerRoleRule();
-    }
-
-    @PreUpdate
-    void preUpdate() {
-        enforceOwnerRoleRule();
-    }
-
-    private void enforceOwnerRoleRule() {
-        if (isOwner) {
-            // Owner => null role_id
-            // (tránh trường hợp ở nơi khác vô tình set role cho owner)
-            try {
-                var f = this.getClass().getDeclaredField("roleId");
-                f.setAccessible(true);
-                f.set(this, null);
-            } catch (Exception ignore) {}
-        } else {
-            throw new IllegalStateException("Non-owner company member must have a role_id");
-        }
     }
 }
 
