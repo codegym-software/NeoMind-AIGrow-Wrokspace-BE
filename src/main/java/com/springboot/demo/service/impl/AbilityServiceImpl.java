@@ -1,6 +1,6 @@
 package com.springboot.demo.service.impl;
 
-import com.springboot.demo.model.Scope;
+import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.repository.RbacRepository;
 import com.springboot.demo.service.AbilityService;
 import lombok.RequiredArgsConstructor;

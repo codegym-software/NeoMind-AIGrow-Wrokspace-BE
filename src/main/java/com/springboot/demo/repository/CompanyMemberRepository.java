@@ -37,12 +37,17 @@ public interface CompanyMemberRepository extends JpaRepository<CompanyMember, In
     Optional<CompanyMember> findFirstByCompanyIdAndInvitedEmailIgnoreCase(String companyId, String invitedEmail);
 
     @Query(value = """
-      SELECT CASE WHEN EXISTS(
-         SELECT 1 FROM company_members
-         WHERE company_id = :companyId AND user_id = :userId AND is_owner = TRUE
-      ) THEN TRUE ELSE FALSE END
-      """, nativeQuery = true)
-    boolean isOwner(@Param("companyId") String companyId, @Param("userId") String userId);
+        SELECT CASE WHEN EXISTS(
+           SELECT 1 FROM company_members
+           WHERE company_id = :companyId AND user_id = :userId AND is_owner = 1
+        ) THEN 1 ELSE 0 END
+        """, nativeQuery = true)
+    int isOwnerRaw(@Param("companyId") String companyId, @Param("userId") String userId);
+
+    default boolean isOwner(String companyId, String userId) {
+        return isOwnerRaw(companyId, userId) == 1;
+    }
+
 
     @Query("SELECT COUNT(m) FROM CompanyMember m WHERE m.companyId = :companyId AND m.isOwner = true")
     long countOwners(@Param("companyId") String companyId);

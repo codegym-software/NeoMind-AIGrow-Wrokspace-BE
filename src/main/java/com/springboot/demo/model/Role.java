@@ -1,5 +1,6 @@
 package com.springboot.demo.model;
 
+import com.springboot.demo.model.enums.Scope;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,8 +18,8 @@ public class Role {
     private Integer id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable=false, length=20)
-    private Scope scope; // company|workspace|project
+    @Column(nullable=false, columnDefinition="ENUM('company','workspace','project')")
+    private Scope scope;
 
     @Column(name = "target_id", length = 36)
     private String targetId; // null = role template toàn cục cho scope

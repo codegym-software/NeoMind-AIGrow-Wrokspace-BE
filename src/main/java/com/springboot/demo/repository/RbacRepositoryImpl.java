@@ -1,6 +1,6 @@
 package com.springboot.demo.repository;
 
-import com.springboot.demo.model.Scope;
+import com.springboot.demo.model.enums.Scope;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;

@@ -12,6 +12,7 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, In
 
     boolean existsByProjectIdAndUserIdAndOwnerIsTrue(String projectId, String userId);
 
+
     @Query("select pm from ProjectMember pm where pm.projectId = :projectId and pm.userId = :userId")
     Optional<ProjectMember> findOneByProjectIdAndUserId(@Param("projectId") String projectId,
                                                         @Param("userId") String userId);

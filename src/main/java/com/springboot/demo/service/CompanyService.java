@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 public interface CompanyService {
     Company create(CompanyCreateRequest req);
 
+    // show list company liên quan đến user, check company_member
     Company getById(String id);
 
     Company update(String id, CompanyUpdateRequest req);
@@ -19,5 +20,6 @@ public interface CompanyService {
     Page<Company> searchByCurrentUser(String q, int page, int size);
 
     void delete(String id);
+
 }
 

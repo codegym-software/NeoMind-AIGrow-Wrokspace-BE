@@ -1,29 +1,21 @@
-# ---------- Build stage ----------
-FROM maven:3.9.9-eclipse-temurin-17 AS builder
+FROM maven:3.9.9-eclipse-temurin-17
 
 WORKDIR /app
-
-# Cache Maven dependencies first
-COPY pom.xml .
-# RUN --mount=type=cache,target=/root/.m2 mvn -B -e -q -DskipTests dependency:go-offline
-
-# Copy source and build
-COPY src ./src
-RUN --mount=type=cache,target=/root/.m2 mvn -B -DskipTests clean package
-
-# ---------- Runtime stage ----------
-FROM eclipse-temurin:17-jre
 
 ENV JAVA_OPTS=""
 ENV SPRING_PROFILES_ACTIVE=dev
-ENV SERVER_PORT=8088
+ENV SERVER_PORT=8081
+ENV LOG_LEVEL=DEBUG
 
-WORKDIR /app
+# Copy pom for Maven context (no prefetch step)
+COPY pom.xml .
 
-# Copy jar from builder stage
-COPY --from=builder /app/target/*.jar /app/app.jar
+# Copy source
+COPY src ./src
 
-# Expose port configured by SERVER_PORT
-EXPOSE 8088
+# Expose default dev port
+EXPOSE 8081
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${SERVER_PORT} -jar /app/app.jar"]
+# Run Spring Boot in dev mode using Maven
+# Pass server.port via run arguments and JVM opts via spring-boot.run.jvmArguments
+ENTRYPOINT ["sh", "-c", "mvn -B -DskipTests spring-boot:run -Dspring-boot.run.arguments=\"--server.port=${SERVER_PORT}\""]
