@@ -1,5 +1,6 @@
 package com.springboot.demo.config;
 
+import com.springboot.demo.manager.RequestAuthorizationManager;
 import com.springboot.demo.security.filter.EnsureUserExistsFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -21,10 +22,10 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
-@org.springframework.context.annotation.Profile("!no-auth")
 public class SecurityConfig {
-  private final EnsureUserExistsFilter ensureUserExistsFilter;
-//    private final RequestAuthorizationManager ram;
+
+    private final EnsureUserExistsFilter ensureUserExistsFilter;
+    private final RequestAuthorizationManager ram;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -35,11 +36,8 @@ public class SecurityConfig {
                         .requestMatchers("/health", "/actuator/health").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
-                        .requestMatchers("/api/test/public").permitAll()
-                        .requestMatchers("/api/auth/mock-login", "/api/auth/mock-user").permitAll()
                         .requestMatchers("/api/uploads/**").authenticated()
                         .requestMatchers("/auth/**", "/public/**").permitAll()
-                        .requestMatchers(SWAGGER_WHITELIST).permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
@@ -47,15 +45,6 @@ public class SecurityConfig {
         http.addFilterAfter(ensureUserExistsFilter, BearerTokenAuthenticationFilter.class);
         return http.build();
     }
-
-    private static final String[] SWAGGER_WHITELIST = {
-            "/swagger-resources/**",
-            "/swagger-ui.html",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/webjars/**"
-    };
-
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

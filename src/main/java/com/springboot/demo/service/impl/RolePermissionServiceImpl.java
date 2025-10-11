@@ -4,7 +4,6 @@ import com.springboot.demo.model.RolePermission;
 import com.springboot.demo.model.RolePermissionId;
 import com.springboot.demo.repository.RolePermissionRepository;
 import com.springboot.demo.service.RolePermissionService;
-import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +26,7 @@ public class RolePermissionServiceImpl implements RolePermissionService {
 
     @Override
     @Transactional
-    public void replaceRolePermissions(Integer roleId, @NotEmpty List<Integer> permissionIds) {
+    public void replaceRolePermissions(Integer roleId, List<Integer> permissionIds) {
         rpRepo.deleteByIdRoleId(roleId);
 
         List<RolePermission> toSave = permissionIds.stream()

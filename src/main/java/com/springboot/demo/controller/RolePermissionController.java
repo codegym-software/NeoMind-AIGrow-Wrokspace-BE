@@ -21,8 +21,6 @@ public class RolePermissionController {
 
     @PutMapping
     public void upsert(@PathVariable Integer roleId, @RequestBody UpsertRolePermissionsReq req) {
-        // Convert List<Long> from DTO to List<Integer> expected by service
-        List<Integer> permissionIds = req.permissionIds().stream().map(Long::intValue).toList();
-        rolePermissionService.replaceRolePermissions(roleId, permissionIds);
+        rolePermissionService.replaceRolePermissions(roleId, req.permissionIds());
     }
 }

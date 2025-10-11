@@ -58,7 +58,7 @@ public class GateManagerImpl implements GateManager {
             String workspaceId = (String) target;
             String userId = ctx.userId();
 
-            return abilityService.hasPermission(userId, Scope.workspace, "project:read", workspaceId)
+            return abilityService.hasPermission(userId, Scope.workspace,"project:read", workspaceId)
                     || abilityService.hasPermission(userId, Scope.workspace, "project:crud", workspaceId)
                     || abilityService.hasPermission(userId, Scope.workspace, "workspace:read", workspaceId);
         });
@@ -86,11 +86,11 @@ public class GateManagerImpl implements GateManager {
             if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) return true;
 
             String wsId = projectRepo.findWorkspaceIdByProjectId(projectId).orElse(null);
-            return abilityService.hasPermission(userId, Scope.project, "project:delete", projectId)
-                    || abilityService.hasPermission(userId, Scope.project, "project:crud", projectId)
+            return abilityService.hasPermission(userId, Scope.project,"project:delete", projectId)
+                    || abilityService.hasPermission(userId, Scope.project,"project:crud", projectId)
                     || (wsId != null && (
-                    abilityService.hasPermission(userId, Scope.workspace, "project:delete", wsId) ||
-                            abilityService.hasPermission(userId, Scope.workspace, "project:crud", wsId)
+                    abilityService.hasPermission(userId, Scope.workspace,"project:delete", wsId) ||
+                            abilityService.hasPermission(userId, Scope.workspace,"project:crud", wsId)
             ));
         });
 
@@ -148,11 +148,8 @@ public class GateManagerImpl implements GateManager {
         };
     }
 
-    private record ParsedAbility(Scope scope, String code) {
-    }
-
-    private record AuthCtx(String userId, String email) {
-    }
+    private record ParsedAbility(Scope scope, String code) {}
+    private record AuthCtx(String userId, String email) {}
 
     private ParsedAbility parseAbility(String ability) {
         // eg: "company:role:create" => scope "company"
