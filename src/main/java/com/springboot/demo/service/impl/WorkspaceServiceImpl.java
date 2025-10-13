@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.UUID;
 
 import java.util.List;
 
@@ -103,8 +104,8 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
             System.out.println("Creating workspace entity...");
             Workspace workspace = new Workspace(
+                     UUID.randomUUID().toString(),
                     request.companyId(),
-                    actualUserId, // Use the resolved user ID
                     request.name().trim(),
                     request.description() != null ? request.description().trim() : null
             );

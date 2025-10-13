@@ -46,7 +46,7 @@ public class Workspace {
 
 
     public Workspace(String id, String companyId, String name, String description) {
-        this.id = UUID.randomUUID().toString();
+        this.id = id;
         this.companyId = companyId;
         this.name = name;
         this.description = description;
