@@ -1,32 +1,32 @@
 server:
-  port: ${PORT}
+  port: 8088
 
 spring:
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${ISSUER_URI}
+          issuer-uri: https://cognito-idp.ap-southeast-2.amazonaws.com/ap-southeast-2_TespiMS7C
   servlet:
     multipart:
-      max-file-size: ${MAX_UPLOAD_SIZE}
-      max-request-size: ${MAX_UPLOAD_SIZE}
+      max-file-size: 5 MB
+      max-request-size: 5 MB
 
 cognito:
-  issuer-uri: ${ISSUER_URI}
-  client-id: ${CLIENT_ID}
+  issuer-uri: https://cognito-idp.ap-southeast-2.amazonaws.com/ap-southeast-2_TespiMS7C
+  client-id: 1eg6hhsgee31ha8hh6lg2kjn9p
 
 app:
   cors:
-    allowed-origins: ${FRONTEND_ORIGIN}
+    allowed-origins: http://localhost:3000
 
   upload:
-    base-url: ${PUBLIC_FILES_BASE_URL}
-    max-file-size: ${MAX_UPLOAD_SIZE}
+    base-url: ./ai-grow-uploads
+    max-file-size: 5 MB
 
 file:
   storage:
-    base-dir: ${FILE_STORAGE_BASE}
+    base-dir: ./ai-grow-uploads
     buckets:
       company-logo: company-logos
       user-avatar: user-avatars
