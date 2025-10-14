@@ -3,10 +3,12 @@ package com.springboot.demo.security.gate;
 import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.model.User;
 import com.springboot.demo.repository.*;
-import com.springboot.demo.security.CurrentUserService;
+import com.springboot.demo.security.CognitoUserInfoService;
 import com.springboot.demo.service.AbilityService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -27,7 +29,7 @@ public class GateManagerImpl implements GateManager {
     private final ProjectRepository projectRepo;
     private final ProjectMemberRepository pmRepo;
     private final AbilityService abilityService;
-    private final CurrentUserService currentUserService;
+    private final CognitoUserInfoService  cognitoUserInfoService;
     private final Map<String, BiFunction<AuthCtx, String, Boolean>> dynamicGates = new HashMap<>();
 
     @PostConstruct
@@ -160,14 +162,29 @@ public class GateManagerImpl implements GateManager {
     }
 
     private AuthCtx resolveAuth(Authentication authentication) {
-        if (!(authentication instanceof JwtAuthenticationToken)) {
+        if (!(authentication instanceof JwtAuthenticationToken jwtAuth)) {
             throw new RuntimeException("Unauthenticated");
         }
 
-        User me = currentUserService.resolveCurrentUser();
-        if (me == null || me.getId() == null) {
-            throw new RuntimeException("Cannot resolve current user");
+        Jwt jwt = (Jwt) jwtAuth.getToken();
+        String emailResolved = jwt.getClaimAsString("email");
+        if (emailResolved == null || emailResolved.isBlank()) {
+            try {
+                Map<String, Object> info = cognitoUserInfoService.fetch(jwt.getTokenValue());
+                Object e = info.get("email");
+                if (e instanceof String s && !s.isBlank()) emailResolved = s;
+            } catch (Exception ignored) {}
         }
-        return new AuthCtx(me.getId(), me.getEmail());
+
+        if (emailResolved == null || emailResolved.isBlank()) {
+            throw new IllegalStateException("Cannot resolve current user (no email/username in JWT).");
+        }
+
+        String email = emailResolved;
+        String userId = userRepo.findByEmail(emailResolved)
+                .orElseThrow(() -> new AccessDeniedException("User not ensured in DB for email" + email))
+                .getId();
+
+        return new AuthCtx(userId, email);
     }
 }
