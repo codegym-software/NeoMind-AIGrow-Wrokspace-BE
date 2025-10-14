@@ -27,7 +27,6 @@ public class CompanyServiceImpl implements CompanyService {
     private final UserRepository userRepo;
     private final WorkspaceRepository workspaceRepo;
     private final CognitoUserInfoService cognitoUserInfoService;
-    private final CurrentUserService currentUserService;
 
     public CompanyServiceImpl(CompanyRepository repo,
                               CompanyMemberRepository memberRepo,
@@ -38,7 +37,6 @@ public class CompanyServiceImpl implements CompanyService {
         this.userRepo = userRepo;
         this.workspaceRepo = workspaceRepo;
         this.cognitoUserInfoService = cognitoUserInfoService;
-        this.currentUserService = currentUserService;
     }
 
     @Override
@@ -49,7 +47,7 @@ public class CompanyServiceImpl implements CompanyService {
         c.setLogoUrl(req.logoUrl());
         c = repo.save(c);
 
-        User current = currentUserService.resolveCurrentUser();
+        User current = resolveCurrentUser();
 
         // Đảm bảo công ty chưa có owner (phòng race condition)
         if (memberRepo.existsByCompanyIdAndIsOwnerTrue(c.getId())) {
@@ -109,7 +107,7 @@ public class CompanyServiceImpl implements CompanyService {
     @Override
     @Transactional(readOnly = true)
     public Page<Company> searchByCurrentUser(String q, int page, int size) {
-        User currentUser = currentUserService.resolveCurrentUser();
+        User currentUser = resolveCurrentUser()();
 
         var companyIds = memberRepo.findCompanyIdsByUserId(currentUser.getId());
         var pageable = PageRequest.of(page, size);
