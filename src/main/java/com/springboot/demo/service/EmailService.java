@@ -4,12 +4,9 @@ import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.Nullable;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import jakarta.mail.internet.MimeMessage;
-import org.springframework.mail.javamail.MimeMessageHelper;
 
 @Service
 public class EmailService {
@@ -31,28 +28,28 @@ public class EmailService {
     }
 
     public void sendInvitationEmail(String toEmail, String companyName, String inviterName) {
-    if (mailSender == null) {
-        System.out.println("[EMAIL] Mail sender not configured, skipping email send");
-        return;
-    }
-    try {
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
-        helper.setTo(toEmail);
-        helper.setSubject(subject + " " + companyName);
-        helper.setFrom(from);
+        if (mailSender == null) {
+            System.out.println("[EMAIL] Mail sender not configured, skipping email send");
+            return;
+        }
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            helper.setTo(toEmail);
+            helper.setSubject(subject + " " + companyName);
+            helper.setFrom(from);
 
-        String body = "Xin chào!\n\n" +
-                inviterName + " đã mời bạn tham gia công ty " + companyName + ".\n\n" +
-                "Đăng nhập tại: " + appUrl + " với email: " + toEmail + "\n\n" +
-                "AI-Grow Workspace";
+            String body = "Xin chào!\n\n" +
+                    inviterName + " đã mời bạn tham gia công ty " + companyName + ".\n\n" +
+                    "Đăng nhập tại: " + appUrl + " với email: " + toEmail + "\n\n" +
+                    "AI-Grow Workspace";
 
-        helper.setText(body, false); // false = plain text
-        mailSender.send(message);
-    } catch (Exception e) {
-        System.err.println("[EMAIL] Failed to send invitation: " + e.getMessage());
+            helper.setText(body, false); // false = plain text
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("[EMAIL] Failed to send invitation: " + e.getMessage());
+        }
     }
-}
 }
 
 
