@@ -2,6 +2,7 @@ package com.springboot.demo.controller;
 
 import com.springboot.demo.dto.company.*;
 import com.springboot.demo.model.CompanyMember;
+import com.springboot.demo.security.CognitoUserInfoService;
 import com.springboot.demo.security.UserIdResolver;
 import com.springboot.demo.service.CompanyMemberService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,6 +26,7 @@ public class CompanyMemberController {
 
     private final CompanyMemberService service;
     private final UserIdResolver userIdResolver;
+    private final CognitoUserInfoService cognitoUserInfoService;
 
     @GetMapping("/members")
     @PreAuthorize("@gate.allows('company:member:read', authentication, #companyId)")
@@ -35,8 +37,9 @@ public class CompanyMemberController {
     @PreAuthorize("@gate.allows('company:member:set_user_permissions', authentication, #companyId)")
     @PostMapping("/members")
     public void add(@PathVariable String companyId,
-                    @RequestBody AddCompanyMemberReq req) {
-        String actorId = userIdResolver.requireCurrentUserId();
+                    @RequestBody AddCompanyMemberReq req,
+                    Authentication auth) {
+        String actorId = userIdResolver.resolveInternalId(auth);
         service.addMember(companyId, req, actorId);
     }
 
@@ -44,8 +47,9 @@ public class CompanyMemberController {
     @PreAuthorize("@gate.allows('company:member:set_user_permissions', authentication, #companyId)")
     public void assign(@PathVariable String companyId,
                        @PathVariable String memberUserId,
-                       @RequestBody AssignCompanyRoleReq req) {
-        String actorId = userIdResolver.requireCurrentUserId();
+                       @RequestBody AssignCompanyRoleReq req,
+                       Authentication auth) {
+        String actorId = userIdResolver.resolveInternalId(auth);
         service.assignRole(companyId, memberUserId, req, actorId);
     }
 
@@ -53,8 +57,9 @@ public class CompanyMemberController {
     @PreAuthorize("@gate.allows('company:member:transfer_ownership', authentication, #companyId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void transferOwnership(@PathVariable String companyId,
-                                  @RequestBody TransferOwnershipReq req) {
-        String actorId = userIdResolver.requireCurrentUserId();
+                                  @RequestBody TransferOwnershipReq req,
+                                  Authentication auth) {
+        String actorId = userIdResolver.resolveInternalId(auth);
         service.transferOwnership(companyId, req.toUserId(), req.downgradeRoleId(), actorId);
     }
 
@@ -62,8 +67,9 @@ public class CompanyMemberController {
     @PreAuthorize("@gate.allows('company:member:set_user_permissions', authentication, #companyId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void remove(@PathVariable String companyId,
-                       @PathVariable String memberUserId) {
-        String actorId = userIdResolver.requireCurrentUserId();
+                       @PathVariable String memberUserId,
+                       Authentication auth) {
+        String actorId = userIdResolver.resolveInternalId(auth);
         service.removeMember(companyId, memberUserId, actorId);
     }
 
@@ -74,6 +80,14 @@ public class CompanyMemberController {
                                     @RequestBody InviteRequest req,
                                     @AuthenticationPrincipal Jwt jwt) {
         String inviterEmail = jwt != null ? jwt.getClaimAsString("email") : null;
+        if (inviterEmail == null || inviterEmail.isBlank()) {
+            try {
+                assert jwt != null;
+                Map<String, Object> info = cognitoUserInfoService.fetch(jwt.getTokenValue());
+                Object e = info.get("email");
+                if (e instanceof String s && !s.isBlank()) inviterEmail = s;
+            } catch (Exception ignored) {}
+        }
         if (inviterEmail == null || inviterEmail.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Missing email claim in token"));
         }
