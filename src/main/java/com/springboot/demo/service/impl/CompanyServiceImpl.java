@@ -9,9 +9,11 @@ import com.springboot.demo.repository.CompanyMemberRepository;
 import com.springboot.demo.repository.CompanyRepository;
 import com.springboot.demo.repository.UserRepository;
 import com.springboot.demo.repository.WorkspaceRepository;
+import com.springboot.demo.security.CognitoUserInfoService;
 import com.springboot.demo.service.CompanyService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -20,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
 public class CompanyServiceImpl implements CompanyService {
@@ -29,15 +33,17 @@ public class CompanyServiceImpl implements CompanyService {
     private final CompanyMemberRepository memberRepo;
     private final UserRepository userRepo;
     private final WorkspaceRepository workspaceRepo;
+    private final CognitoUserInfoService cognitoUserInfoService;
 
     public CompanyServiceImpl(CompanyRepository repo,
                               CompanyMemberRepository memberRepo,
                               UserRepository userRepo,
-                              WorkspaceRepository workspaceRepo) {
+                              WorkspaceRepository workspaceRepo, CognitoUserInfoService cognitoUserInfoService) {
         this.repo = repo;
         this.memberRepo = memberRepo;
         this.userRepo = userRepo;
         this.workspaceRepo = workspaceRepo;
+        this.cognitoUserInfoService = cognitoUserInfoService;
     }
 
     @Override
@@ -68,7 +74,7 @@ public class CompanyServiceImpl implements CompanyService {
             CompanyMember m = memberRepo.findByCompanyIdAndUserId(c.getId(), current.getId())
                     .orElseThrow();
             m.setOwner(true);
-            m.setRoleId(null);     // ép về NULL nếu trước đó có role
+            m.setRoleId(null);
             memberRepo.save(m);
         }
 
@@ -139,20 +145,31 @@ public class CompanyServiceImpl implements CompanyService {
     private User resolveCurrentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (!(auth instanceof JwtAuthenticationToken jwtAuth)) {
-            throw new IllegalStateException("No authenticated JWT found.");
+            throw new AccessDeniedException("Unauthenticated");
         }
-        Jwt jwt = jwtAuth.getToken();
 
-        String email = jwt.getClaimAsString("email");
-        if (email == null || email.isBlank()) {
-            email = jwt.getClaimAsString("cognito:username");
+        Jwt jwt = (Jwt) jwtAuth.getToken();
+        String emailResolved = jwt.getClaimAsString("email");
+        if (emailResolved == null || emailResolved.isBlank()) {
+            try {
+                Map<String, Object> info = cognitoUserInfoService.fetch(jwt.getTokenValue());
+                Object e = info.get("email");
+                if (e instanceof String s && !s.isBlank()) emailResolved = s;
+            } catch (Exception ignored) {}
         }
-        if (email == null || email.isBlank()) {
+
+        if (emailResolved == null || emailResolved.isBlank()) {
             throw new IllegalStateException("Cannot resolve current user (no email/username in JWT).");
         }
 
-        String finalEmail = email;
-        return userRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Current user not found for email: " + finalEmail));
+        Optional<User> existing = userRepo.findByEmail(emailResolved);
+        if (existing.isPresent()) return existing.get();
+
+        User u = new User();
+        u.setEmail(emailResolved);
+        String name = jwt.getClaimAsString("name");
+        if (name == null || name.isBlank()) name = emailResolved;
+        u.setDisplayName(name);
+        return userRepo.save(u);
     }
 }

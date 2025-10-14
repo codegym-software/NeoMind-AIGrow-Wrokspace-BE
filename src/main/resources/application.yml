@@ -1,0 +1,41 @@
+server:
+  port: ${PORT}
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${ISSUER_URI}
+  servlet:
+    multipart:
+      max-file-size: ${MAX_UPLOAD_SIZE}
+      max-request-size: ${MAX_UPLOAD_SIZE}
+
+cognito:
+  issuer-uri: ${ISSUER_URI}
+  client-id: ${CLIENT_ID}
+  userinfo-url: ${COGNITO_USERINFO_URL}
+
+
+app:
+  cors:
+    allowed-origins: ${FRONTEND_ORIGIN}
+
+  upload:
+    base-url: ${PUBLIC_FILES_BASE_URL}
+    max-file-size: ${MAX_UPLOAD_SIZE}
+
+file:
+  storage:
+    base-dir: ${FILE_STORAGE_BASE}
+    buckets:
+      company-logo: company-logos
+      user-avatar: user-avatars
+      temp: temp
+
+logging:
+  level:
+    com.springboot.demo.security: DEBUG
+    org.springframework.security.authorization: TRACE
+    org.springframework.security.access: DEBUG

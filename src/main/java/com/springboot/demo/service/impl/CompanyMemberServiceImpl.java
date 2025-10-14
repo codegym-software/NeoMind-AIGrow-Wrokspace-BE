@@ -174,7 +174,6 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
             return new InviteResponse("already_member", existing.get());
         }
 
-        // Nếu đã có lời mời trước theo email (case-insensitive), trả existing_invite
         var existingInvite = cmRepo.findFirstByCompanyIdAndInvitedEmailIgnoreCase(companyId, normalized);
         if (existingInvite.isPresent()) {
             return new InviteResponse("existing_invite", existingInvite.get());
@@ -195,11 +194,5 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
         } catch (Exception ignore) {}
 
         return new InviteResponse("created", saved);
-    }
-
-    private void mustHaveManageUsersPermission(String actorId, String companyId) {
-        if (!ability.hasPermission(actorId, Scope.company, companyId, "company:set_user_permissions")) {
-            throw new AccessDeniedException("Thiếu quyền company:set_user_permissions");
-        }
     }
 }

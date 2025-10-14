@@ -122,7 +122,7 @@ public class ProjectController {
             @Parameter(description = "Filter by status") @RequestParam(required = false) ProjectStatus status,
             @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size) {
-        
+
         Page<Project> projects;
         if (q != null && !q.trim().isEmpty()) {
             projects = service.searchByWorkspaceId(workspaceId, q, page, size);
@@ -131,7 +131,7 @@ public class ProjectController {
         } else {
             projects = service.getByWorkspaceId(workspaceId, page, size);
         }
-        
+
         return projects.map(ProjectSummaryResponse::from);
     }
 }

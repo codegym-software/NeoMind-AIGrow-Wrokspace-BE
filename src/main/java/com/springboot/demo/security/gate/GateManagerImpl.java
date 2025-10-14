@@ -3,6 +3,7 @@ package com.springboot.demo.security.gate;
 import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.model.User;
 import com.springboot.demo.repository.*;
+import com.springboot.demo.security.CurrentUserService;
 import com.springboot.demo.service.AbilityService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class GateManagerImpl implements GateManager {
     private final ProjectRepository projectRepo;
     private final ProjectMemberRepository pmRepo;
     private final AbilityService abilityService;
+    private final CurrentUserService currentUserService;
     private final Map<String, BiFunction<AuthCtx, String, Boolean>> dynamicGates = new HashMap<>();
 
     @PostConstruct
@@ -113,7 +115,6 @@ public class GateManagerImpl implements GateManager {
 
     @Override
     public boolean allows(String ability, Authentication authentication) {
-        // ability không gắn target (hiếm dùng cho company/workspace/project)
         var parsed = parseAbility(ability);
         var ctx = resolveAuth(authentication);
         return rbacRepo.userHasPermissionInScope(ctx.userId, parsed.scope, null, ability);
@@ -155,7 +156,6 @@ public class GateManagerImpl implements GateManager {
     }
 
     private ParsedAbility parseAbility(String ability) {
-        // eg: "company:role:create" => scope "company"
         if (ability == null || ability.isBlank())
             throw new IllegalArgumentException("ability is null/blank");
         String prefix = ability.split(":", 2)[0];
@@ -163,32 +163,14 @@ public class GateManagerImpl implements GateManager {
     }
 
     private AuthCtx resolveAuth(Authentication authentication) {
-        if (!(authentication instanceof JwtAuthenticationToken jwt)) {
-            throw new RuntimeException("Cannot resolve email from Authentication");
-        }
-        var token = jwt.getToken();
-
-        final String email = firstNonBlank(
-                token.getClaimAsString("email")
-        );
-        if (email == null || email.isBlank()) {
-            throw new RuntimeException("Missing email in token");
+        if (!(authentication instanceof JwtAuthenticationToken)) {
+            throw new RuntimeException("Unauthenticated");
         }
 
-        String userId = userRepo.findByEmail(email)
-                .map(User::getId)
-                .orElseThrow(() -> new RuntimeException("User not ensured in DB for email: " + email));
-
-        return new AuthCtx(userId, email);
+        User me = currentUserService.resolveCurrentUser();
+        if (me == null || me.getId() == null) {
+            throw new RuntimeException("Cannot resolve current user");
+        }
+        return new AuthCtx(me.getId(), me.getEmail());
     }
-
-    private static String firstNonBlank(String... vals) {
-        if (vals == null) return null;
-        for (String v : vals) {
-            if (v != null && !v.isBlank()) return v;
-        }
-        return null;
-    }
-
-
 }
