@@ -6,20 +6,19 @@ import com.springboot.demo.model.Company;
 import org.springframework.data.domain.Page;
 
 public interface CompanyService {
-    Company create(CompanyCreateRequest req);
+    Company create(CompanyCreateRequest req, String actorId);
 
-    // show list company liên quan đến user, check company_member
-    Company getById(String id);
+    Company getById(String companyId);
 
-    Company update(String id, CompanyUpdateRequest req);
+    Company update(String companyId, CompanyUpdateRequest req);
 
     Company save(Company c);
 
     Page<Company> search(String q, int page, int size);
 
-    Page<Company> searchByCurrentUser(String q, int page, int size);
+    Page<Company> searchByCurrentUser(String q, int page, int size, String actorId);
 
-    void delete(String id);
+    void delete(String companyId);
 
 }
 

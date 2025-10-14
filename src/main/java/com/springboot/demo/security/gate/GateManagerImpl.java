@@ -3,9 +3,12 @@ package com.springboot.demo.security.gate;
 import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.model.User;
 import com.springboot.demo.repository.*;
+import com.springboot.demo.security.CognitoUserInfoService;
 import com.springboot.demo.service.AbilityService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
@@ -26,6 +29,7 @@ public class GateManagerImpl implements GateManager {
     private final ProjectRepository projectRepo;
     private final ProjectMemberRepository pmRepo;
     private final AbilityService abilityService;
+    private final CognitoUserInfoService  cognitoUserInfoService;
     private final Map<String, BiFunction<AuthCtx, String, Boolean>> dynamicGates = new HashMap<>();
 
     @PostConstruct
@@ -113,7 +117,6 @@ public class GateManagerImpl implements GateManager {
 
     @Override
     public boolean allows(String ability, Authentication authentication) {
-        // ability không gắn target (hiếm dùng cho company/workspace/project)
         var parsed = parseAbility(ability);
         var ctx = resolveAuth(authentication);
         return rbacRepo.userHasPermissionInScope(ctx.userId, parsed.scope, null, ability);
@@ -155,7 +158,6 @@ public class GateManagerImpl implements GateManager {
     }
 
     private ParsedAbility parseAbility(String ability) {
-        // eg: "company:role:create" => scope "company"
         if (ability == null || ability.isBlank())
             throw new IllegalArgumentException("ability is null/blank");
         String prefix = ability.split(":", 2)[0];
@@ -163,32 +165,29 @@ public class GateManagerImpl implements GateManager {
     }
 
     private AuthCtx resolveAuth(Authentication authentication) {
-        if (!(authentication instanceof JwtAuthenticationToken jwt)) {
-            throw new RuntimeException("Cannot resolve email from Authentication");
-        }
-        var token = jwt.getToken();
-
-        final String email = firstNonBlank(
-                token.getClaimAsString("email")
-        );
-        if (email == null || email.isBlank()) {
-            throw new RuntimeException("Missing email in token");
+        if (!(authentication instanceof JwtAuthenticationToken jwtAuth)) {
+            throw new RuntimeException("Unauthenticated");
         }
 
-        String userId = userRepo.findByEmail(email)
-                .map(User::getId)
-                .orElseThrow(() -> new RuntimeException("User not ensured in DB for email: " + email));
+        Jwt jwt = (Jwt) jwtAuth.getToken();
+        String emailResolved = jwt.getClaimAsString("email");
+        if (emailResolved == null || emailResolved.isBlank()) {
+            try {
+                Map<String, Object> info = cognitoUserInfoService.fetch(jwt.getTokenValue());
+                Object e = info.get("email");
+                if (e instanceof String s && !s.isBlank()) emailResolved = s;
+            } catch (Exception ignored) {}
+        }
+
+        if (emailResolved == null || emailResolved.isBlank()) {
+            throw new IllegalStateException("Cannot resolve current user (no email/username in JWT).");
+        }
+
+        String email = emailResolved;
+        String userId = userRepo.findByEmail(emailResolved)
+                .orElseThrow(() -> new AccessDeniedException("User not ensured in DB for email" + email))
+                .getId();
 
         return new AuthCtx(userId, email);
     }
-
-    private static String firstNonBlank(String... vals) {
-        if (vals == null) return null;
-        for (String v : vals) {
-            if (v != null && !v.isBlank()) return v;
-        }
-        return null;
-    }
-
-
 }

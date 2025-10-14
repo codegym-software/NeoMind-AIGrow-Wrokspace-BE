@@ -5,7 +5,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -13,39 +16,35 @@ public class UserIdResolver {
 
     private final UserRepository userRepo;
     private final RequestUserContext ctx;
+    private final CognitoUserInfoService cognitoUserInfoService;
 
     public String resolveInternalId(Authentication auth) {
-        if (ctx.getInternalUserId() != null) return ctx.getInternalUserId();
-
-        String email = extractEmail(auth);
-        if (email == null || email.isBlank()) {
-            throw new AccessDeniedException("Missing email in token");
+        if (!(auth instanceof JwtAuthenticationToken jwtAuth)) {
+            throw new AccessDeniedException("Unauthenticated");
         }
 
-        String id = userRepo.findByEmail(email)
-                .orElseThrow(() -> new AccessDeniedException("User not ensured in DB for email: " + email))
+        if (ctx.getInternalUserId() != null) return ctx.getInternalUserId();
+
+        Jwt jwt = (Jwt) jwtAuth.getToken();
+        String emailResolved = jwt.getClaimAsString("email");
+        if (emailResolved == null || emailResolved.isBlank()) {
+            try {
+                Map<String, Object> info = cognitoUserInfoService.fetch(jwt.getTokenValue());
+                Object e = info.get("email");
+                if (e instanceof String s && !s.isBlank()) emailResolved = s;
+            } catch (Exception ignored) {}
+        }
+
+        if (emailResolved == null || emailResolved.isBlank()) {
+            throw new IllegalStateException("Cannot resolve current user (no email/username in JWT).");
+        }
+
+        String finalEmailResolved = emailResolved;
+        String id = userRepo.findByEmail(emailResolved)
+                .orElseThrow(() -> new AccessDeniedException("User not ensured in DB for email" + finalEmailResolved))
                 .getId();
 
         ctx.setInternalUserId(id);
         return id;
-    }
-
-    private String extractEmail(Authentication auth) {
-        Object p = auth != null ? auth.getPrincipal() : null;
-        if (p instanceof Jwt jwt) {
-            String email = firstNonBlank(
-                    jwt.getClaimAsString("email")
-            );
-            return email;
-        }
-        return null;
-    }
-
-    private static String firstNonBlank(String... vals) {
-        if (vals == null) return null;
-        for (String v : vals) {
-            if (v != null && !v.isBlank()) return v;
-        }
-        return null;
     }
 }

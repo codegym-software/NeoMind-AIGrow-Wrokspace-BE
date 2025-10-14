@@ -4,22 +4,17 @@ import com.springboot.demo.dto.company.CompanyCreateRequest;
 import com.springboot.demo.dto.company.CompanyUpdateRequest;
 import com.springboot.demo.model.Company;
 import com.springboot.demo.model.CompanyMember;
-import com.springboot.demo.model.User;
 import com.springboot.demo.repository.CompanyMemberRepository;
 import com.springboot.demo.repository.CompanyRepository;
-import com.springboot.demo.repository.UserRepository;
 import com.springboot.demo.repository.WorkspaceRepository;
 import com.springboot.demo.service.CompanyService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+
 import java.util.NoSuchElementException;
 
 @Service
@@ -27,28 +22,24 @@ public class CompanyServiceImpl implements CompanyService {
 
     private final CompanyRepository repo;
     private final CompanyMemberRepository memberRepo;
-    private final UserRepository userRepo;
     private final WorkspaceRepository workspaceRepo;
 
     public CompanyServiceImpl(CompanyRepository repo,
                               CompanyMemberRepository memberRepo,
-                              UserRepository userRepo,
                               WorkspaceRepository workspaceRepo) {
         this.repo = repo;
         this.memberRepo = memberRepo;
-        this.userRepo = userRepo;
         this.workspaceRepo = workspaceRepo;
+
     }
 
     @Override
     @Transactional
-    public Company create(CompanyCreateRequest req) {
+    public Company create(CompanyCreateRequest req, String actorId) {
         Company c = new Company();
         c.setName(req.name() == null ? null : req.name().trim());
         c.setLogoUrl(req.logoUrl());
         c = repo.save(c);
-
-        User current = resolveCurrentUser();
 
         // Đảm bảo công ty chưa có owner (phòng race condition)
         if (memberRepo.existsByCompanyIdAndIsOwnerTrue(c.getId())) {
@@ -56,19 +47,19 @@ public class CompanyServiceImpl implements CompanyService {
         }
 
         // Tạo/điều chỉnh membership cho người tạo -> owner=true, role_id=null
-        if (!memberRepo.existsByCompanyIdAndUserId(c.getId(), current.getId())) {
+        if (!memberRepo.existsByCompanyIdAndUserId(c.getId(), actorId)) {
             CompanyMember m = new CompanyMember();
             m.setCompanyId(c.getId());
-            m.setUserId(current.getId());
+            m.setUserId(actorId);
             m.setOwner(true);      // is_owner = true
             m.setRoleId(null);     // owner => role_id NULL
             m.setJoinedAt(LocalDateTime.now());
             memberRepo.save(m);
         } else {
-            CompanyMember m = memberRepo.findByCompanyIdAndUserId(c.getId(), current.getId())
+            CompanyMember m = memberRepo.findByCompanyIdAndUserId(c.getId(), actorId)
                     .orElseThrow();
             m.setOwner(true);
-            m.setRoleId(null);     // ép về NULL nếu trước đó có role
+            m.setRoleId(null);
             memberRepo.save(m);
         }
 
@@ -77,15 +68,15 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     @Transactional(readOnly = true)
-    public Company getById(String id) {
-        return repo.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Company not found: " + id));
+    public Company getById(String companyId) {
+        return repo.findById(companyId)
+                .orElseThrow(() -> new NoSuchElementException("Company not found: " + companyId));
     }
 
     @Override
     @Transactional
-    public Company update(String id, CompanyUpdateRequest req) {
-        Company c = getById(id);
+    public Company update(String companyId, CompanyUpdateRequest req) {
+        Company c = getById(companyId);
         c.setName(req.name() == null ? null : req.name().trim());
         c.setLogoUrl(req.logoUrl());
         return repo.save(c);
@@ -107,10 +98,9 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Company> searchByCurrentUser(String q, int page, int size) {
-        User currentUser = resolveCurrentUser();
+    public Page<Company> searchByCurrentUser(String q, int page, int size, String actorId) {
 
-        var companyIds = memberRepo.findCompanyIdsByUserId(currentUser.getId());
+        var companyIds = memberRepo.findCompanyIdsByUserId(actorId);
         var pageable = PageRequest.of(page, size);
 
         if (companyIds == null || companyIds.isEmpty()) {
@@ -126,33 +116,13 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     @Transactional
-    public void delete(String id) {
-        if (!repo.existsById(id)) {
-            throw new NoSuchElementException("Company not found: " + id);
+    public void delete(String companyId) {
+        if (!repo.existsById(companyId)) {
+            throw new NoSuchElementException("Company not found: " + companyId);
         }
         // Xoá dữ liệu liên quan trước rồi xoá công ty
-        workspaceRepo.deleteByCompanyId(id);
-        memberRepo.deleteByCompanyId(id);
-        repo.deleteById(id);
-    }
-
-    private User resolveCurrentUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (!(auth instanceof JwtAuthenticationToken jwtAuth)) {
-            throw new IllegalStateException("No authenticated JWT found.");
-        }
-        Jwt jwt = jwtAuth.getToken();
-
-        String email = jwt.getClaimAsString("email");
-        if (email == null || email.isBlank()) {
-            email = jwt.getClaimAsString("cognito:username");
-        }
-        if (email == null || email.isBlank()) {
-            throw new IllegalStateException("Cannot resolve current user (no email/username in JWT).");
-        }
-
-        String finalEmail = email;
-        return userRepo.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Current user not found for email: " + finalEmail));
+        workspaceRepo.deleteByCompanyId(companyId);
+        memberRepo.deleteByCompanyId(companyId);
+        repo.deleteById(companyId);
     }
 }
