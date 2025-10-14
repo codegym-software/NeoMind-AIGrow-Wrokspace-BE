@@ -15,6 +15,23 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.core.*;
+import org.springframework.security.oauth2.jwt.JwtDecoders;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
+import org.springframework.web.util.WebUtils;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+
 
 import java.util.List;
 
@@ -38,9 +55,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
                         .requestMatchers("/api/uploads/**").authenticated()
                         .requestMatchers("/auth/**", "/public/**").permitAll()
+                        .requestMatchers("/actuator/health", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()));
+                .oauth2ResourceServer(oauth -> oauth
+                        .jwt(Customizer.withDefaults())
+                        .bearerTokenResolver(bearerTokenResolver())
+                );
 
         http.addFilterAfter(ensureUserExistsFilter, BearerTokenAuthenticationFilter.class);
         return http.build();
@@ -58,5 +79,40 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;
+    }
+
+    @Bean
+    JwtDecoder jwtDecoder(@Value("${cognito.issuer-uri}") String issuer) {
+        NimbusJwtDecoder decoder = (NimbusJwtDecoder) JwtDecoders.fromIssuerLocation(issuer);
+
+        // validate chuẩn issuer + thời hạn
+        var withIssuer = JwtValidators.createDefaultWithIssuer(issuer);
+
+        // chặn id_token: chỉ chấp nhận token_use = access
+        OAuth2TokenValidator<Jwt> tokenUseIsAccess = jwt -> {
+            String tokenUse = jwt.getClaimAsString("token_use");
+            return "access".equals(tokenUse)
+                    ? OAuth2TokenValidatorResult.success()
+                    : OAuth2TokenValidatorResult.failure(
+                    new OAuth2Error("invalid_token", "token_use must be 'access'", null));
+        };
+
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(withIssuer, tokenUseIsAccess));
+        return decoder;
+    }
+
+
+    @Bean
+    BearerTokenResolver bearerTokenResolver() {
+        DefaultBearerTokenResolver base = new DefaultBearerTokenResolver();
+        base.setAllowFormEncodedBodyParameter(true);
+        base.setAllowUriQueryParameter(true);
+
+        return request -> {
+            String t = base.resolve(request);
+            if (t != null) return t;
+            var cookie = WebUtils.getCookie(request, "access_token");
+            return cookie != null ? cookie.getValue() : null;
+        };
     }
 }

@@ -2,6 +2,7 @@ package com.springboot.demo.security.filter;
 
 import com.springboot.demo.model.User;
 import com.springboot.demo.repository.UserRepository;
+import com.springboot.demo.security.CognitoUserInfoService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,6 +29,7 @@ import java.util.UUID;
 public class EnsureUserExistsFilter extends OncePerRequestFilter {
 
     private final UserRepository userRepository;
+    private final CognitoUserInfoService cognitoUserInfoService;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -35,51 +38,47 @@ public class EnsureUserExistsFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request,
-                                    @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain) throws IOException, ServletException {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth instanceof JwtAuthenticationToken jwtAuth) {
+            Jwt jwt = (Jwt) jwtAuth.getToken(); // Access Token đã verify
+            String sub = jwt.getClaimAsString("sub");
 
-        if (auth instanceof JwtAuthenticationToken jwtAuth && auth.isAuthenticated()) {
-            Jwt jwt = jwtAuth.getToken();
+            if (sub != null && !sub.isBlank()) {
+                // 1) Lấy email/name qua UserInfo (vì access token thường không có email)
+                String accessToken = jwt.getTokenValue();
+                Map<String, Object> info = Map.of();
+                try {
+                    info = cognitoUserInfoService.fetch(accessToken); // inject bean này
+                } catch (Exception ignored) {}
 
-            String email      = jwt.getClaimAsString("email");
-            String sub        = jwt.getClaimAsString("sub");
-            String givenName  = jwt.getClaimAsString("given_name");
-            String familyName = jwt.getClaimAsString("family_name");
+                String email = (String) info.getOrDefault("email", jwt.getClaimAsString("email"));
+                String name  = (String) info.getOrDefault("name",
+                        email != null ? email : sub);
 
-            if (email != null && !email.isBlank()) {
-                String displayName = ((givenName == null ? "" : givenName) + " " + (familyName == null ? "" : familyName)).trim();
-                if (displayName.isEmpty()) displayName = email;
-
-                Optional<User> found = userRepository.findByEmail(email);
-
-                if (found.isPresent()) {
-                    User u = found.get();
-                    u.setLastLoginAt(LocalDateTime.now());
-                    userRepository.save(u);
-                } else {
+                // 2) Nếu DB chưa có user -> tạo; nếu có thì bỏ qua
+                userRepository.findByEmail(email).orElseGet(() -> {
                     User u = new User();
-
-                    String id = isSuitableAsId(sub) ? sub : UUID.randomUUID().toString();
-
-                    u.setId(id);
+                    // KHÔNG ép id = sub nếu hệ thống của bạn đã dùng UUID cho id nội bộ
+                    // để tránh xung đột với người dùng cũ; để null cho @PrePersist tự set UUID
                     u.setEmail(email);
-                    u.setDisplayName(displayName);
-                    u.setLastLoginAt(LocalDateTime.now());
+                    u.setDisplayName(name);
+                    try { return userRepository.save(u); }
+                    catch (DataIntegrityViolationException e) { return null; }
+                });
 
-                    try {
-                        userRepository.save(u);
-                    } catch (DataIntegrityViolationException e) {
-                    }
-                }
+                // (tuỳ chọn) nếu bạn đang dùng RequestUserContext để lưu internal id cho request,
+                // thì resolve và set vào đây (đã có sẵn trong dự án của bạn):
+                // ctx.setInternalUserId(userRepository.findByEmail(email).map(User::getId).orElse(null));
             }
         }
 
         filterChain.doFilter(request, response);
     }
+
 
     private boolean isSuitableAsId(String sub) {
         return sub != null && !sub.isBlank() && sub.length() <= 36;

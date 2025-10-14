@@ -23,7 +23,7 @@ public class ProjectController {
     public ProjectDto create(@PathVariable String workspaceId,
                              @RequestBody CreateProjectReq req,
                              Authentication authentication) {
-        String userId = userIdResolver.resolveInternalId(authentication);
+        String userId = userIdResolver.requireCurrentUserId();
         return service.create(workspaceId, req, userId);
     }
 
@@ -50,9 +50,8 @@ public class ProjectController {
 
     @GetMapping("/projects/mine")
     @PreAuthorize("isAuthenticated()")
-    public List<ProjectDto> listMine(@RequestParam(required = false) String workspaceId,
-                                     Authentication authentication) {
-        String userId = userIdResolver.resolveInternalId(authentication);
+    public List<ProjectDto> listMine(@RequestParam(required = false) String workspaceId) {
+        String userId = userIdResolver.requireCurrentUserId();
         return service.listMine(workspaceId, userId);
     }
 }

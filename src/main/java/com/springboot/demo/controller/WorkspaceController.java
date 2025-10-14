@@ -150,7 +150,7 @@ public class WorkspaceController {
     public List<WorkspaceDto> listMineInCompany(@PathVariable String companyId,
                                                 @RequestParam(defaultValue = "false") boolean includeArchived,
                                                 Authentication authentication) {
-        String userId = userIdResolver.resolveInternalId(authentication);
+        String userId = userIdResolver.requireCurrentUserId();
         return service.listMyWorkspacesInCompany(companyId, userId, includeArchived);
     }
 }

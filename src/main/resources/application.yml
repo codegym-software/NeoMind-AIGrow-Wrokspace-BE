@@ -15,6 +15,8 @@ spring:
 cognito:
   issuer-uri: ${ISSUER_URI}
   client-id: ${CLIENT_ID}
+  userinfo-url: ${COGNITO_USERINFO_URL}
+
 
 app:
   cors:
@@ -31,3 +33,9 @@ file:
       company-logo: company-logos
       user-avatar: user-avatars
       temp: temp
+
+logging:
+  level:
+    com.springboot.demo.security: DEBUG
+    org.springframework.security.authorization: TRACE
+    org.springframework.security.access: DEBUG

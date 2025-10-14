@@ -35,9 +35,8 @@ public class CompanyMemberController {
     @PreAuthorize("@gate.allows('company:member:set_user_permissions', authentication, #companyId)")
     @PostMapping("/members")
     public void add(@PathVariable String companyId,
-                    @RequestBody AddCompanyMemberReq req,
-                    Authentication auth) {
-        String actorId = userIdResolver.resolveInternalId(auth);
+                    @RequestBody AddCompanyMemberReq req) {
+        String actorId = userIdResolver.requireCurrentUserId();
         service.addMember(companyId, req, actorId);
     }
 
@@ -45,9 +44,8 @@ public class CompanyMemberController {
     @PreAuthorize("@gate.allows('company:member:set_user_permissions', authentication, #companyId)")
     public void assign(@PathVariable String companyId,
                        @PathVariable String memberUserId,
-                       @RequestBody AssignCompanyRoleReq req,
-                       Authentication auth) {
-        String actorId = userIdResolver.resolveInternalId(auth);
+                       @RequestBody AssignCompanyRoleReq req) {
+        String actorId = userIdResolver.requireCurrentUserId();
         service.assignRole(companyId, memberUserId, req, actorId);
     }
 
@@ -55,9 +53,8 @@ public class CompanyMemberController {
     @PreAuthorize("@gate.allows('company:member:transfer_ownership', authentication, #companyId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void transferOwnership(@PathVariable String companyId,
-                                  @RequestBody TransferOwnershipReq req,
-                                  Authentication auth) {
-        String actorId = userIdResolver.resolveInternalId(auth);
+                                  @RequestBody TransferOwnershipReq req) {
+        String actorId = userIdResolver.requireCurrentUserId();
         service.transferOwnership(companyId, req.toUserId(), req.downgradeRoleId(), actorId);
     }
 
@@ -65,9 +62,8 @@ public class CompanyMemberController {
     @PreAuthorize("@gate.allows('company:member:set_user_permissions', authentication, #companyId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void remove(@PathVariable String companyId,
-                       @PathVariable String memberUserId,
-                       Authentication auth) {
-        String actorId = userIdResolver.resolveInternalId(auth);
+                       @PathVariable String memberUserId) {
+        String actorId = userIdResolver.requireCurrentUserId();
         service.removeMember(companyId, memberUserId, actorId);
     }
 
