@@ -15,8 +15,8 @@ public class PermissionController {
 
     private final PermissionService permissionService;
 
-    @PreAuthorize("isAuthenticated()")
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public List<Permission> list(@RequestParam String scope) {
         return permissionService.listByScope(scope);
     }
