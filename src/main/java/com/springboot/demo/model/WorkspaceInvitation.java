@@ -1,5 +1,6 @@
 package com.springboot.demo.model;
 
+import com.springboot.demo.model.enums.InvitationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

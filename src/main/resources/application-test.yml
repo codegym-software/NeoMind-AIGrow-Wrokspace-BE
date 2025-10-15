@@ -1,0 +1,38 @@
+# Test profile configuration - bypasses Cognito for development
+spring:
+  profiles:
+    active: test
+  
+  # Disable JWT verification for testing
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: "https://mock-issuer.com"
+
+# Database configuration (same as main)
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/neomind_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+# Server configuration
+server:
+  port: 8088
+
+# Logging
+logging:
+  level:
+    com.springboot.demo: DEBUG
+    org.springframework.security: DEBUG

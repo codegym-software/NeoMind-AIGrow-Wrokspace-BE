@@ -4,13 +4,13 @@ import com.springboot.demo.dto.workspace.WorkspaceCreateInCompanyRequest;
 import com.springboot.demo.dto.workspace.WorkspaceDto;
 import com.springboot.demo.dto.workspace.WorkspaceUpdateRequest;
 import com.springboot.demo.model.Workspace;
+import com.springboot.demo.security.UserIdResolver;
 import com.springboot.demo.service.WorkspaceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,14 +21,16 @@ import java.util.List;
 public class WorkspaceController {
 
     private final WorkspaceService workspaceService;
+    private final UserIdResolver userIdResolver;
 
     // Tạo workspace trong công ty (người có quyền company.workspace:create)
     @PostMapping("/companies/{companyId}/workspaces")
-    @PreAuthorize("@gate.allows('workspace:create', authentication, #companyId)")
+    @PreAuthorize("@gate.allows('company:read', authentication, #companyId)")
     public WorkspaceDto createInCompany(@PathVariable String companyId,
                                         @Valid @RequestBody WorkspaceCreateInCompanyRequest req,
                                         Authentication auth) {
-        Workspace created = workspaceService.createInCompany(companyId, req, currentUserId(auth));
+        String actorId = userIdResolver.resolveInternalId(auth);
+        Workspace created = workspaceService.createInCompany(companyId, req, actorId);
         return WorkspaceDto.fromEntity(created);
     }
 
@@ -70,15 +72,8 @@ public class WorkspaceController {
     public List<WorkspaceDto> myWorkspacesInCompany(@PathVariable String companyId,
                                                     @RequestParam(defaultValue = "false") boolean includeArchived,
                                                     Authentication auth) {
-        return workspaceService.listMyWorkspacesInCompany(companyId, currentUserId(auth), includeArchived);
+        String actorId = userIdResolver.resolveInternalId(auth);
+        return workspaceService.listMyWorkspacesInCompany(companyId, actorId, includeArchived);
     }
 
-    // ===== helper =====
-    private String currentUserId(Authentication auth) {
-        if (auth instanceof JwtAuthenticationToken jwt) {
-            Object uid = jwt.getToken().getClaim("uid"); // hoặc "sub"/"user_id" tuỳ IdP
-            return uid != null ? uid.toString() : jwt.getName();
-        }
-        return auth.getName();
-    }
 }

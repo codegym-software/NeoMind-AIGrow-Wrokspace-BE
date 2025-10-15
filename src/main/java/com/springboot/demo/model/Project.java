@@ -29,6 +29,7 @@ public class Project {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, columnDefinition = "ENUM('active','archived')")
+    @Builder.Default
     private ProjectStatus status = ProjectStatus.active;
 
     @Column(name = "created_at", insertable = false, updatable = false)

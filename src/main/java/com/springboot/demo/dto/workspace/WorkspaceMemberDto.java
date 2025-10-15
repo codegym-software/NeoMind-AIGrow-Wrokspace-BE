@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 @Builder
 public class WorkspaceMemberDto {
-    private String id;
+    private Integer id;
     private String workspaceId;
     private String userId;
     private Integer roleId;

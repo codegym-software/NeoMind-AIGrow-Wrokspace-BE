@@ -17,4 +17,8 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, In
                                                         @Param("userId") String userId);
 
     List<ProjectMember> findAllByUserId(String userId);
+
+    @Modifying
+    @Query("DELETE FROM ProjectMember pm WHERE pm.projectId IN (SELECT p.id FROM Project p WHERE p.workspaceId = :workspaceId)")
+    void deleteByProjectWorkspaceId(@Param("workspaceId") String workspaceId);
 }

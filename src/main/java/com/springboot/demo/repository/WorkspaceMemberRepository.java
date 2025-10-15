@@ -40,4 +40,8 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
 
     @Query("SELECT (COUNT(wm) > 0) FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.userId = :userId AND wm.owner = true")
     boolean isOwner(@Param("workspaceId") String workspaceId, @Param("userId") String userId);
+
+    @Modifying
+    @Query("DELETE FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId")
+    void deleteByWorkspaceId(@Param("workspaceId") String workspaceId);
 }

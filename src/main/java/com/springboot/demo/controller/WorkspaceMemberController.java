@@ -3,6 +3,7 @@ package com.springboot.demo.controller;
 import com.springboot.demo.dto.workspace.WorkspaceInviteRequest;
 import com.springboot.demo.dto.workspace.WorkspaceMemberCreateRequest;
 import com.springboot.demo.dto.workspace.WorkspaceMemberDto;
+import com.springboot.demo.security.UserIdResolver;
 import com.springboot.demo.service.WorkspaceMemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.List;
 public class WorkspaceMemberController {
 
     private final WorkspaceMemberService memberService;
+    private final UserIdResolver userIdResolver;
 
     @GetMapping
     @PreAuthorize("@gate.allows('workspace:read', authentication, #workspaceId)")
@@ -32,7 +34,7 @@ public class WorkspaceMemberController {
     public WorkspaceMemberDto invite(@PathVariable String workspaceId,
                                      @Valid @RequestBody WorkspaceInviteRequest req,
                                      Authentication auth) {
-        return memberService.invite(workspaceId, req, currentUserId(auth));
+        return memberService.invite(workspaceId, req, userIdResolver.resolveInternalId(auth));
     }
 
     // Add member trực tiếp theo userId (nếu FE đã có userId)
