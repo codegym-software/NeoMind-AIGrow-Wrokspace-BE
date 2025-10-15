@@ -10,6 +10,4 @@ public interface RbacRepository {
 
     Set<String> findPermissionCodesOfUserInScope(String userId, Scope scope, String targetId);
 
-    Set<String> getPermissionCodesByRoleId(int roleId);
-
 }

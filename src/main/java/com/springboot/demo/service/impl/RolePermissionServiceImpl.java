@@ -41,10 +41,4 @@ public class RolePermissionServiceImpl implements RolePermissionService {
 
         rpRepo.saveAll(toSave);
     }
-
-    @Override
-    public Set<String> getPermissionCodesByRoleId(int roleId) {
-        Set<String> codes = rbacRepository.getPermissionCodesByRoleId(roleId);
-        if (codes != null && !codes.isEmpty()) return codes;
-    }
 }

@@ -115,36 +115,4 @@ public class RbacRepositoryImpl implements RbacRepository {
 
         return new HashSet<>(jdbc.queryForList(sql, params, String.class));
     }
-    @Override
-    @SuppressWarnings("unchecked")
-    public Set<String> getPermissionCodesByRoleId(int roleId) {
-        List<String> codes = em.createNativeQuery("""
-            SELECT p.code
-            FROM role_permission rp
-            JOIN permissions p ON p.id = rp.permission_id
-            WHERE rp.role_id = :roleId
-        """).setParameter("roleId", roleId).getResultList();
-        return new HashSet<>(codes);
-    }
-
-//    @Override
-//    @SuppressWarnings("unchecked")
-//    public Map<Integer, Set<String>> getPermissionCodesByRoleIds(Collection<Integer> roleIds) {
-//        if (roleIds == null || roleIds.isEmpty()) return Collections.emptyMap();
-//
-//        List<Object[]> rows = em.createNativeQuery("""
-//            SELECT rp.role_id, p.code
-//            FROM role_permission rp
-//            JOIN permissions p ON p.id = rp.permission_id
-//            WHERE rp.role_id IN (:roleIds)
-//        """).setParameter("roleIds", roleIds).getResultList();
-//
-//        Map<Integer, Set<String>> result = new HashMap<>();
-//        for (Object[] row : rows) {
-//            Integer rId = ((Number) row[0]).intValue();
-//            String code = (String) row[1];
-//            result.computeIfAbsent(rId, k -> new HashSet<>()).add(code);
-//        }
-//        return result;
-//    }
 }
