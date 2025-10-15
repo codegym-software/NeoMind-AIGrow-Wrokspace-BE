@@ -44,30 +44,28 @@ public class CompanyController {
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public Company create(@Valid @RequestBody CompanyCreateRequest req, Authentication auth) {
-        String actorId = userIdResolver.resolveInternalId(auth);
+        String actorId = userIdResolver.resolveInternalId(auth); // lấy id của user khi login - email unique => userid trong db
         return service.create(req, actorId);
     }
 
-    @GetMapping("/{companyId}")
-    @PreAuthorize("@gate.allows('company:read', authentication, #companyId)")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Company get(@PathVariable String companyId) {
-        return service.getById(companyId);
+    @GetMapping("/{id}")
+    @PreAuthorize("@gate.allows('company:read', authentication, #id)")
+    public Company get(@PathVariable String id) {
+        return service.getById(id);
     }
 
-    @PutMapping("/{companyId}")
-    @PreAuthorize("@gate.allows('company:update', authentication, #companyId)")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Company update(@PathVariable String companyId,
+    @PutMapping("/{id}")
+    @PreAuthorize("@gate.allows('company:update', authentication, #id)")
+
+    public Company update(@PathVariable String id,
                           @Valid @RequestBody CompanyUpdateRequest req) {
-        return service.update(companyId, req);
+        return service.update(id, req);
     }
 
-    @PatchMapping("/{companyId}")
-    @PreAuthorize("@gate.allows('company:update', authentication, #companyId)")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Company patch(@PathVariable String companyId, @RequestBody Map<String, Object> p) {
-        Company c = service.getById(companyId);
+    @PatchMapping("/{id}")
+    @PreAuthorize("@gate.allows('company:update', authentication, #id)")
+    public Company patch(@PathVariable String id, @RequestBody Map<String, Object> p) {
+        Company c = service.getById(id);
         if (p.containsKey("name")) {
             c.setName(Objects.toString(p.get("name"), "").trim());
         }
@@ -79,7 +77,6 @@ public class CompanyController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Page<Company> list(@Parameter(description = "Search query") @RequestParam(required = false) String q,
                               @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
                               @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
@@ -88,16 +85,15 @@ public class CompanyController {
         return service.searchByCurrentUser(q, page, size, actorId);
     }
 
-    @DeleteMapping("/{companyId}")
-    @PreAuthorize("@gate.allows('company:delete', authentication, #companyId)")
+    @DeleteMapping("/{id}")
+    @PreAuthorize("@gate.allows('company:delete', authentication, #id)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable String companyId) {
-        service.delete(companyId);
+    public void delete(@PathVariable String id) {
+        service.delete(id);
     }
 
     @GetMapping("/admin/all")
     @PreAuthorize("isAuthenticated()")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Page<Company> listAll(@Parameter(description = "Search query") @RequestParam(required = false) String q,
                                  @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
                                  @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size) {
