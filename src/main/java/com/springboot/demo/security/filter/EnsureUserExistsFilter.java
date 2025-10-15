@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -18,10 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 
 
 @Component
@@ -59,16 +55,19 @@ public class EnsureUserExistsFilter extends OncePerRequestFilter {
                 String name  = (String) info.getOrDefault("name",
                         email != null ? email : sub);
 
-                // 2) Nếu DB chưa có user -> tạo; nếu có thì bỏ qua
-                userRepository.findByEmail(email).orElseGet(() -> {
-                    User u = new User();
-                    // KHÔNG ép id = sub nếu hệ thống của bạn đã dùng UUID cho id nội bộ
-                    // để tránh xung đột với người dùng cũ; để null cho @PrePersist tự set UUID
-                    u.setEmail(email);
-                    u.setDisplayName(name);
-                    try { return userRepository.save(u); }
-                    catch (DataIntegrityViolationException e) { return null; }
-                });
+                // Only create user if we have a valid email
+                if (email != null && !email.isBlank()) {
+                    // 2) Nếu DB chưa có user -> tạo; nếu có thì bỏ qua
+                    userRepository.findByEmail(email).orElseGet(() -> {
+                        User u = new User();
+                        // KHÔNG ép id = sub nếu hệ thống của bạn đã dùng UUID cho id nội bộ
+                        // để tránh xung đột với người dùng cũ; để null cho @PrePersist tự set UUID
+                        u.setEmail(email);
+                        u.setDisplayName(name != null && !name.isBlank() ? name : email);
+                        try { return userRepository.save(u); }
+                        catch (DataIntegrityViolationException e) { return null; }
+                    });
+                }
 
                 // (tuỳ chọn) nếu bạn đang dùng RequestUserContext để lưu internal id cho request,
                 // thì resolve và set vào đây (đã có sẵn trong dự án của bạn):
@@ -77,10 +76,5 @@ public class EnsureUserExistsFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
-    }
-
-
-    private boolean isSuitableAsId(String sub) {
-        return sub != null && !sub.isBlank() && sub.length() <= 36;
     }
 }

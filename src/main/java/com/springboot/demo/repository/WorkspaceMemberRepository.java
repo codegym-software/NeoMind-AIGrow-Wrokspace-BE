@@ -31,4 +31,8 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
     boolean existsByWorkspaceIdAndUserIdAndRoleId(@Param("workspaceId") String workspaceId, 
                                                   @Param("userId") String userId, 
                                                   @Param("roleId") Long roleId);
+
+    // Check if user is owner of workspace
+    @Query("SELECT COUNT(wm) > 0 FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.userId = :userId AND wm.isOwner = true")
+    boolean isOwner(@Param("workspaceId") String workspaceId, @Param("userId") String userId);
 }

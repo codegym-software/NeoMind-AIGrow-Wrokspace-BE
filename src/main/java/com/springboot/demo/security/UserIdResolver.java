@@ -27,12 +27,16 @@ public class UserIdResolver {
 
         Jwt jwt = (Jwt) jwtAuth.getToken();
         String emailResolved = jwt.getClaimAsString("email");
+        
+        // If email is not in JWT, try to fetch from Cognito UserInfo
         if (emailResolved == null || emailResolved.isBlank()) {
             try {
                 Map<String, Object> info = cognitoUserInfoService.fetch(jwt.getTokenValue());
                 Object e = info.get("email");
                 if (e instanceof String s && !s.isBlank()) emailResolved = s;
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+                // Log the exception for debugging if needed
+            }
         }
 
         if (emailResolved == null || emailResolved.isBlank()) {
@@ -41,7 +45,7 @@ public class UserIdResolver {
 
         String finalEmailResolved = emailResolved;
         String id = userRepo.findByEmail(emailResolved)
-                .orElseThrow(() -> new AccessDeniedException("User not ensured in DB for email" + finalEmailResolved))
+                .orElseThrow(() -> new AccessDeniedException("User not found in DB for email: " + finalEmailResolved))
                 .getId();
 
         ctx.setInternalUserId(id);

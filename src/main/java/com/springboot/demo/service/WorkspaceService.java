@@ -4,6 +4,7 @@ import com.springboot.demo.dto.workspace.WorkspaceCreateRequest;
 import com.springboot.demo.dto.workspace.WorkspaceDto;
 import com.springboot.demo.dto.workspace.WorkspaceUpdateRequest;
 import com.springboot.demo.model.Workspace;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -34,5 +35,8 @@ public interface WorkspaceService {
     long countByCompanyId(String companyId);
 
     List<WorkspaceDto> listMyWorkspacesInCompany(String companyId, String userId, boolean includeArchived);
+
+    // New method for current user workspaces
+    Page<Workspace> searchByCurrentUser(String query, int page, int size, String actorId);
 }
 

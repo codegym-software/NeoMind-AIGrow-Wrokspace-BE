@@ -55,5 +55,30 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
     List<Workspace> findMineInCompany(@Param("companyId") String companyId,
                                          @Param("userId") String userId,
                                          @Param("includeArchived") boolean includeArchived);
+
+    // Find all workspaces where user is a member (with pagination)
+    @Query(value = """
+        SELECT w.*
+        FROM workspaces w
+        JOIN workspace_members wm ON wm.workspace_id = w.id
+        WHERE wm.user_id = :userId
+          AND w.archived_at IS NULL
+        ORDER BY w.created_at DESC
+        """, nativeQuery = true)
+    Page<Workspace> findByUserId(@Param("userId") String userId, Pageable pageable);
+
+    // Search workspaces by name where user is a member (with pagination)
+    @Query(value = """
+        SELECT w.*
+        FROM workspaces w
+        JOIN workspace_members wm ON wm.workspace_id = w.id
+        WHERE wm.user_id = :userId
+          AND LOWER(w.name) LIKE LOWER(CONCAT('%', :query, '%'))
+          AND w.archived_at IS NULL
+        ORDER BY w.created_at DESC
+        """, nativeQuery = true)
+    Page<Workspace> findByUserIdAndNameContainingIgnoreCase(@Param("userId") String userId, 
+                                                             @Param("query") String query, 
+                                                             Pageable pageable);
 }
 

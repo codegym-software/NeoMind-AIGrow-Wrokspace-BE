@@ -113,6 +113,40 @@ public class GateManagerImpl implements GateManager {
                     || abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:update")
                     || abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:crud");
         });
+
+        // Workspace permissions
+        dynamicGates.put("workspace:create", (ctx, target) -> {
+            String companyId = (String) target;
+            return abilityService.hasPermission(ctx.userId(), Scope.company, companyId, "workspace:create");
+        });
+
+        dynamicGates.put("workspace:read", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Owner can always read
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:read");
+        });
+
+        dynamicGates.put("workspace:update", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Owner can always update
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update");
+        });
+
+        dynamicGates.put("workspace:delete", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Owner can always delete
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:delete");
+        });
+
+        dynamicGates.put("workspace:manage_members", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Owner can always manage members
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:manage_members");
+        });
     }
 
     @Override
@@ -144,10 +178,8 @@ public class GateManagerImpl implements GateManager {
     private boolean isOwner(Scope scope, String targetId, String userId) {
         return switch (scope) {
             case company   -> companyMemberRepo.isOwner(targetId, userId);
-//            case workspace -> workspaceMemberRepo.isOwner(targetId, userId);
-//            case project   -> pmRepo.isOwner(targetId, userId);
-            case workspace -> false;
-            case project -> false;
+            case workspace -> workspaceMemberRepo.isOwner(targetId, userId);
+            case project   -> pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(targetId, userId);
         };
     }
 
