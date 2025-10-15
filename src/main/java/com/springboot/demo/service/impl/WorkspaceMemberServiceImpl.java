@@ -1,175 +1,143 @@
 package com.springboot.demo.service.impl;
 
+import com.springboot.demo.dto.workspace.WorkspaceInviteRequest;
 import com.springboot.demo.dto.workspace.WorkspaceMemberCreateRequest;
 import com.springboot.demo.dto.workspace.WorkspaceMemberDto;
-import com.springboot.demo.model.Role;
 import com.springboot.demo.model.User;
+import com.springboot.demo.model.Workspace;
 import com.springboot.demo.model.WorkspaceMember;
-import com.springboot.demo.repository.RoleRepository;
+import com.springboot.demo.repository.CompanyMemberRepository;
 import com.springboot.demo.repository.UserRepository;
 import com.springboot.demo.repository.WorkspaceMemberRepository;
 import com.springboot.demo.repository.WorkspaceRepository;
 import com.springboot.demo.service.WorkspaceMemberService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
 
-    private final WorkspaceMemberRepository workspaceMemberRepository;
     private final WorkspaceRepository workspaceRepository;
+    private final WorkspaceMemberRepository workspaceMemberRepository;
+    private final CompanyMemberRepository companyMemberRepository;
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
 
     @Override
-    public WorkspaceMemberDto addMember(String workspaceId, WorkspaceMemberCreateRequest request) {
-        // Validate workspace exists
-        if (!workspaceRepository.existsById(workspaceId)) {
-            throw new IllegalArgumentException("Workspace with ID " + workspaceId + " does not exist");
+    @Transactional
+    public WorkspaceMemberDto invite(String workspaceId, WorkspaceInviteRequest req, String inviterUserId) {
+        if (req == null || req.roleId() == null) {
+            throw new IllegalArgumentException("roleId is required");
+        }
+        if (req.email() == null && (req.userId() == null || req.userId().isBlank())) {
+            throw new IllegalArgumentException("Either email or userId is required");
         }
 
-        // Validate user exists
-        User user = userRepository.findById(request.userId())
-                .orElseThrow(() -> new IllegalArgumentException("User with ID " + request.userId() + " does not exist"));
+        Workspace ws = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
+        String companyId = ws.getCompanyId();
 
-        // Validate role exists
-        Role role = roleRepository.findById(request.roleId())
-                .orElseThrow(() -> new IllegalArgumentException("Role with ID " + request.roleId() + " does not exist"));
-
-        // Check if user is already a member
-        if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, request.userId())) {
-            throw new IllegalArgumentException("User is already a member of this workspace");
+        String targetUserId = resolveUserId(req);
+        if (!companyMemberRepository.existsByCompanyIdAndUserId(companyId, targetUserId)) {
+            throw new IllegalStateException("USER_NOT_IN_COMPANY");
+        }
+        if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, targetUserId)) {
+            throw new IllegalStateException("ALREADY_IN_WORKSPACE");
         }
 
-        // Create workspace member
-        WorkspaceMember member = new WorkspaceMember();
-        member.setId(UUID.randomUUID().toString());
-        member.setWorkspaceId(workspaceId);
-        member.setUserId(request.userId());
-        member.setRoleId(request.roleId());
-        member.setOwner(false); // New members are not owners
+        WorkspaceMember wm = new WorkspaceMember();
+        wm.setWorkspaceId(workspaceId);
+        wm.setUserId(targetUserId);
+        wm.setRoleId(req.roleId());
+        wm.setOwner(false);
+        WorkspaceMember saved = workspaceMemberRepository.save(wm);
 
-        WorkspaceMember savedMember = workspaceMemberRepository.save(member);
-
-        return WorkspaceMemberDto.builder()
-                .id(savedMember.getId())
-                .workspaceId(savedMember.getWorkspaceId())
-                .userId(savedMember.getUserId())
-                .roleId(savedMember.getRoleId())
-                .isOwner(savedMember.isOwner())
-                .userEmail(user.getEmail())
-                .userDisplayName(user.getDisplayName())
-                .roleName(role.getName())
-                .build();
+        return toDto(saved);
     }
 
     @Override
+    @Transactional
+    public WorkspaceMemberDto addMember(String workspaceId, WorkspaceMemberCreateRequest req) {
+        Workspace ws = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
+        String companyId = ws.getCompanyId();
+
+        if (!companyMemberRepository.existsByCompanyIdAndUserId(companyId, req.userId())) {
+            throw new IllegalStateException("USER_NOT_IN_COMPANY");
+        }
+        if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, req.userId())) {
+            throw new IllegalStateException("ALREADY_IN_WORKSPACE");
+        }
+
+        WorkspaceMember wm = new WorkspaceMember();
+        wm.setWorkspaceId(workspaceId);
+        wm.setUserId(req.userId());
+        wm.setRoleId(req.roleId());
+        wm.setOwner(false);
+        WorkspaceMember saved = workspaceMemberRepository.save(wm);
+
+        return toDto(saved);
+    }
+
+    @Override
+    @Transactional
     public WorkspaceMemberDto updateMemberRole(String workspaceId, String userId, Integer roleId) {
-        // Validate role exists
-        Role role = roleRepository.findById(roleId)
-                .orElseThrow(() -> new IllegalArgumentException("Role with ID " + roleId + " does not exist"));
+        WorkspaceMember wm = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("Workspace member not found"));
+        if (wm.isOwner()) {
+            throw new IllegalStateException("CANNOT_UPDATE_OWNER_ROLE");
+        }
+        wm.setRoleId(roleId);
+        WorkspaceMember saved = workspaceMemberRepository.save(wm);
+        return toDto(saved);
+    }
 
-        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("User is not a member of this workspace"));
-
-        member.setRoleId(roleId);
-        WorkspaceMember savedMember = workspaceMemberRepository.save(member);
-
-        // Get user info
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User with ID " + userId + " does not exist"));
-
-        return WorkspaceMemberDto.builder()
-                .id(savedMember.getId())
-                .workspaceId(savedMember.getWorkspaceId())
-                .userId(savedMember.getUserId())
-                .roleId(savedMember.getRoleId())
-                .isOwner(savedMember.isOwner())
-                .userEmail(user.getEmail())
-                .userDisplayName(user.getDisplayName())
-                .roleName(role.getName())
-                .build();
+    @Override
+    @Transactional
+    public void removeMember(String workspaceId, String userId) {
+        WorkspaceMember wm = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
+                .orElseThrow(() -> new EntityNotFoundException("Workspace member not found"));
+        if (wm.isOwner()) {
+            throw new IllegalStateException("CANNOT_REMOVE_OWNER");
+        }
+        workspaceMemberRepository.delete(wm);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<WorkspaceMemberDto> getWorkspaceMembers(String workspaceId) {
-        List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
-        
-        return members.stream().map(member -> {
-            User user = userRepository.findById(member.getUserId()).orElse(null);
-            Role role = roleRepository.findById(member.getRoleId()).orElse(null);
-            
-            return WorkspaceMemberDto.builder()
-                    .id(member.getId())
-                    .workspaceId(member.getWorkspaceId())
-                    .userId(member.getUserId())
-                    .roleId(member.getRoleId())
-                    .isOwner(member.isOwner())
-                    .userEmail(user != null ? user.getEmail() : null)
-                    .userDisplayName(user != null ? user.getDisplayName() : null)
-                    .roleName(role != null ? role.getName() : null)
-                    .build();
-        }).toList();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public WorkspaceMemberDto getMember(String workspaceId, String userId) {
-        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("User is not a member of this workspace"));
-
-        User user = userRepository.findById(userId).orElse(null);
-        Role role = roleRepository.findById(member.getRoleId()).orElse(null);
-
-        return WorkspaceMemberDto.builder()
-                .id(member.getId())
-                .workspaceId(member.getWorkspaceId())
-                .userId(member.getUserId())
-                .roleId(member.getRoleId())
-                .isOwner(member.isOwner())
-                .userEmail(user != null ? user.getEmail() : null)
-                .userDisplayName(user != null ? user.getDisplayName() : null)
-                .roleName(role != null ? role.getName() : null)
-                .build();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean isMember(String workspaceId, String userId) {
-        return workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<String> getUserWorkspaces(String userId) {
-        return workspaceMemberRepository.findWorkspaceIdsByUserId(userId);
+        return workspaceMemberRepository.listMembers(workspaceId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean isOwner(String workspaceId, String userId) {
-        return workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
-                .map(WorkspaceMember::isOwner)
-                .orElse(false);
+        return workspaceMemberRepository.isOwner(workspaceId, userId);
     }
 
-    @Override
-    public void removeMember(String workspaceId, String userId) {
-        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("User is not a member of this workspace"));
+    // ===== helpers =====
 
-        // Prevent removing the owner
-        if (member.isOwner()) {
-            throw new IllegalArgumentException("Cannot remove the workspace owner");
+    private String resolveUserId(WorkspaceInviteRequest req) {
+        if (req.userId() != null && !req.userId().isBlank()) {
+            return req.userId();
         }
+        User u = userRepository.findByEmail(req.email())
+                .orElseThrow(() -> new EntityNotFoundException("User not found by email: " + req.email()));
+        return u.getId();
+    }
 
-        workspaceMemberRepository.delete(member);
+    private WorkspaceMemberDto toDto(WorkspaceMember wm) {
+        // Tuỳ dự án, bạn có thể join User/Role để map thêm userEmail, roleName...
+        return WorkspaceMemberDto.builder()
+                .id(wm.getId())
+                .workspaceId(wm.getWorkspaceId())
+                .userId(wm.getUserId())
+                .roleId(wm.getRoleId())
+                .isOwner(wm.isOwner())
+                .build();
     }
 }

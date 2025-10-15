@@ -1,211 +1,130 @@
 package com.springboot.demo.service.impl;
 
+import com.springboot.demo.dto.workspace.WorkspaceCreateInCompanyRequest;
 import com.springboot.demo.dto.workspace.WorkspaceCreateRequest;
 import com.springboot.demo.dto.workspace.WorkspaceDto;
 import com.springboot.demo.dto.workspace.WorkspaceUpdateRequest;
 import com.springboot.demo.model.Workspace;
 import com.springboot.demo.model.WorkspaceMember;
-import com.springboot.demo.repository.WorkspaceRepository;
 import com.springboot.demo.repository.WorkspaceMemberRepository;
-import com.springboot.demo.repository.CompanyRepository;
-import com.springboot.demo.repository.UserRepository;
+import com.springboot.demo.repository.WorkspaceRepository;
 import com.springboot.demo.service.WorkspaceService;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class WorkspaceServiceImpl implements WorkspaceService {
 
-    private final WorkspaceRepository repository;
+    private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
-    private final CompanyRepository companyRepository;
-    private final UserRepository userRepository;
 
-    public WorkspaceServiceImpl(WorkspaceRepository repository, 
-                               WorkspaceMemberRepository workspaceMemberRepository,
-                               CompanyRepository companyRepository,
-                               UserRepository userRepository) {
-        this.repository = repository;
-        this.workspaceMemberRepository = workspaceMemberRepository;
-        this.companyRepository = companyRepository;
-        this.userRepository = userRepository;
+    private final com.springboot.demo.repository.ProjectRepository projectRepository;
+    private final com.springboot.demo.repository.ProjectMemberRepository projectMemberRepository;
+
+    @Override
+    @Transactional
+    public Workspace create(WorkspaceCreateRequest req) {
+        if (req == null || req.companyId() == null || req.companyId().isBlank()) {
+            throw new IllegalArgumentException("CompanyId is required");
+        }
+        Workspace w = new Workspace();
+        w.setCompanyId(req.companyId());
+        w.setName(req.name());
+        w.setDescription(req.description());
+        w.setCreatedAt(LocalDateTime.now());
+        w.setUpdatedAt(LocalDateTime.now());
+        return workspaceRepository.save(w);
     }
 
     @Override
-    public Workspace create(WorkspaceCreateRequest request) {
-        return create(request, null);
-    }
-
-    @Override
-    public Workspace create(WorkspaceCreateRequest request, String creatorUserId) {
-        // Validate company exists
-        if (!companyRepository.existsById(request.companyId())) {
-            throw new IllegalArgumentException("Company with ID " + request.companyId() + " does not exist");
+    @Transactional
+    public Workspace createInCompany(String companyId, WorkspaceCreateInCompanyRequest req, String actorUserId) {
+        if (companyId == null || companyId.isBlank()) {
+            throw new IllegalArgumentException("companyId is required");
         }
+        Workspace w = new Workspace();
+        w.setCompanyId(companyId);
+        w.setName(req.name());
+        w.setDescription(req.description());
+        w.setCreatedAt(LocalDateTime.now());
+        w.setUpdatedAt(LocalDateTime.now());
+        Workspace saved = workspaceRepository.save(w);
 
-        // Validate workspace name is unique in company
-        repository.findByCompanyIdAndNameAndNotArchived(request.companyId(), request.name())
-                .ifPresent(existing -> {
-                    throw new IllegalArgumentException("Workspace with name '" + request.name() + "' already exists in this company");
-                });
+        WorkspaceMember owner = new WorkspaceMember();
+        owner.setWorkspaceId(saved.getId());
+        owner.setUserId(actorUserId);
+        owner.setRoleId(resolveWorkspaceOwnerRoleId());
+        owner.setOwner(true);
+        workspaceMemberRepository.save(owner);
 
-        // Validate user exists if creatorUserId is provided
-        String actualUserId = null;
-        if (creatorUserId != null && !creatorUserId.trim().isEmpty()) {
-            // Try to find user by ID first
-            if (userRepository.existsById(creatorUserId)) {
-                actualUserId = creatorUserId;
-            } else {
-                // If not found by ID, try to find by email (assuming creatorUserId is email)
-                var userByEmail = userRepository.findByEmail(creatorUserId);
-                if (userByEmail.isPresent()) {
-                    actualUserId = userByEmail.get().getId();
-                }
-            }
-        }
-
-        // Create workspace
-        Workspace workspace = new Workspace(
-                request.companyId(),
-                actualUserId, // Use the resolved user ID
-                request.name().trim(),
-                request.description() != null ? request.description().trim() : null
-        );
-
-        Workspace savedWorkspace = repository.save(workspace);
-
-        // Auto-add creator as Owner if actualUserId is resolved
-        if (actualUserId != null && !actualUserId.trim().isEmpty()) {
-            // Check if user is already a member (idempotent)
-            if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(savedWorkspace.getId(), actualUserId)) {
-                WorkspaceMember member = new WorkspaceMember(
-                        savedWorkspace.getId(),
-                        actualUserId,
-                        null, // role_id = null for owner
-                        true  // is_owner = true
-                );
-                workspaceMemberRepository.save(member);
-            }
-        }
-
-        return savedWorkspace;
+        return saved;
     }
 
     @Override
     @Transactional(readOnly = true)
     public Workspace getById(String id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Workspace not found with id: " + id));
+        return workspaceRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + id));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Workspace getByIdAndCompanyId(String id, String companyId) {
-        return repository.findByIdAndCompanyIdAndNotArchived(id, companyId)
-                .orElseThrow(() -> new IllegalArgumentException("Workspace not found with id: " + id + " in company: " + companyId));
-    }
-
-    @Override
-    public Workspace update(String id, WorkspaceUpdateRequest request) {
-        Workspace workspace = getById(id);
-
-        if (request.name() != null && !request.name().trim().equals(workspace.getName())) {
-            repository.findByCompanyIdAndNameAndNotArchived(workspace.getCompanyId(), request.name().trim())
-                    .ifPresent(existing -> {
-                        if (!existing.getId().equals(id)) {
-                            throw new IllegalArgumentException("Workspace with name '" + request.name() + "' already exists in this company");
-                        }
-                    });
-            workspace.setName(request.name().trim());
+    @Transactional
+    public Workspace update(String id, WorkspaceUpdateRequest req) {
+        Workspace w = getById(id);
+        if (req.name() != null && !req.name().isBlank()) {
+            w.setName(req.name());
         }
-
-        if (request.description() != null) {
-            workspace.setDescription(request.description().trim());
+        if (req.description() != null) {
+            w.setDescription(req.description());
         }
-
-        return repository.save(workspace);
+        w.setUpdatedAt(LocalDateTime.now());
+        return workspaceRepository.save(w);
     }
 
     @Override
-    public Workspace updateByCompanyId(String id, String companyId, WorkspaceUpdateRequest request) {
-        getByIdAndCompanyId(id, companyId); // Validate user has access to workspace in company
-        return update(id, request);
-    }
-
-    @Override
-    public void delete(String id) {
-        Workspace workspace = getById(id);
-        workspace.archive();
-        repository.save(workspace);
-    }
-
-    @Override
-    public void deleteByCompanyId(String id, String companyId) {
-        getByIdAndCompanyId(id, companyId); // Validate user has access to workspace in company
-        delete(id);
-    }
-
-    @Override
-    public Workspace restore(String id) {
-        Workspace workspace = getById(id);
-        if (!workspace.isArchived()) {
-            throw new IllegalArgumentException("Workspace is not archived");
-        }
-        workspace.unarchive();
-        return repository.save(workspace);
+    @Transactional
+    public void deleteHard(String id) {
+        projectMemberRepository.deleteByWorkspaceId(id);
+        projectRepository.deleteByWorkspaceId(id);
+        workspaceMemberRepository.deleteByWorkspaceId(id);
+        workspaceRepository.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Workspace> getByCompanyId(String companyId) {
-        return repository.findByCompanyIdAndNotArchived(companyId);
+    public List<Workspace> searchByCompanyId(String companyId, String q) {
+        return workspaceRepository.searchByCompanyId(companyId, q);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Workspace> searchByCompanyId(String companyId, String query) {
-        if (query == null || query.trim().isEmpty()) {
-            return getByCompanyId(companyId);
-        }
-        return repository.searchByCompanyIdAndName(companyId, query.trim());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Workspace> getAllByCompanyId(String companyId) {
-        return repository.findByCompanyId(companyId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long countByCompanyId(String companyId) {
-        return repository.countByCompanyIdAndNotArchived(companyId);
-    }
-
-    @Override
     public List<WorkspaceDto> listMyWorkspacesInCompany(String companyId, String userId, boolean includeArchived) {
-        List<Workspace> list = repository.findMineInCompany(companyId, userId, includeArchived);
-        return list.stream().map(WorkspaceDto::fromEntity).toList();
-
+        List<Workspace> list = workspaceRepository.findMineInCompany(companyId, userId, includeArchived);
+        return list.stream()
+                .sorted(Comparator.comparing(Workspace::getCreatedAt).reversed())
+                .map(WorkspaceDto::fromEntity)
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Workspace> searchByCurrentUser(String query, int page, int size, String actorId) {
-        Pageable pageable = PageRequest.of(page, size);
-        
-        if (query == null || query.trim().isEmpty()) {
-            // Get all workspaces where user is a member
-            return repository.findByUserId(actorId, pageable);
-        } else {
-            // Search workspaces by name where user is a member
-            return repository.findByUserIdAndNameContainingIgnoreCase(actorId, query.trim(), pageable);
-        }
+    public Page<Workspace> searchByCurrentUser(String q, int page, int size, String actorUserId) {
+        var pageable = PageRequest.of(page, size);
+        var p = workspaceRepository.findByUserIdAndNameContainingIgnoreCase(actorUserId, q == null ? "" : q, pageable);
+        return new PageImpl<>(p.getContent(), pageable, p.getTotalElements());
+    }
+
+    private Integer resolveWorkspaceOwnerRoleId() {
+        return 1;
     }
 }

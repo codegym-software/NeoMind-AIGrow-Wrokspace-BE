@@ -6,6 +6,7 @@ import com.springboot.demo.model.Company;
 import com.springboot.demo.model.CompanyMember;
 import com.springboot.demo.repository.CompanyMemberRepository;
 import com.springboot.demo.repository.CompanyRepository;
+import com.springboot.demo.repository.WorkspaceMemberRepository;
 import com.springboot.demo.repository.WorkspaceRepository;
 import com.springboot.demo.service.CompanyService;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
@@ -23,14 +25,16 @@ public class CompanyServiceImpl implements CompanyService {
     private final CompanyRepository repo;
     private final CompanyMemberRepository memberRepo;
     private final WorkspaceRepository workspaceRepo;
+    private final WorkspaceMemberRepository wmRepo;
 
     public CompanyServiceImpl(CompanyRepository repo,
                               CompanyMemberRepository memberRepo,
-                              WorkspaceRepository workspaceRepo) {
+                              WorkspaceRepository workspaceRepo, WorkspaceMemberRepository wmRepo) {
         this.repo = repo;
         this.memberRepo = memberRepo;
         this.workspaceRepo = workspaceRepo;
 
+        this.wmRepo = wmRepo;
     }
 
     @Override
@@ -120,9 +124,13 @@ public class CompanyServiceImpl implements CompanyService {
         if (!repo.existsById(companyId)) {
             throw new NoSuchElementException("Company not found: " + companyId);
         }
-        // Xoá dữ liệu liên quan trước rồi xoá công ty
-        workspaceRepo.deleteByCompanyId(companyId);
-        memberRepo.deleteByCompanyId(companyId);
+        List<String> wsIds = workspaceRepo.findIdsByCompanyId(companyId);
+
+        if (!wsIds.isEmpty()) {
+            wmRepo.deleteAllByWorkspaceIds(wsIds);
+            workspaceRepo.deleteByCompanyId(companyId);
+        }
+
         repo.deleteById(companyId);
     }
 }
