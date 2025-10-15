@@ -30,7 +30,11 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
     @Override
     @Transactional
-    public Workspace create(WorkspaceCreateRequest req, String actorId) {
+    public Workspace create(WorkspaceCreateRequest req, String companyId, String actorId) {
+        if (workspaceRepo.existsByCompanyIdAndNameIgnoreCase(req.companyId(), req.name().trim())) {
+            throw new IllegalArgumentException("Tên workspace đã tồn tại trong công ty");
+        }
+
         Workspace w = new Workspace();
         w.setCompanyId(req.companyId());
         w.setName(req.name() == null ? null : req.name().trim());
@@ -67,7 +71,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
     @Override
     @Transactional
-    public Workspace update(String workspaceId, WorkspaceUpdateRequest req) {
+    public Workspace update(String workspaceId, String companyId, WorkspaceUpdateRequest req) {
         Workspace w = getById(workspaceId);
         if (req.name() != null && !req.name().isBlank()) {
             String newName = req.name().trim();
@@ -81,6 +85,11 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         return workspaceRepo.save(w);
     }
 
+    private void validateNameUnique(String companyId, String name) {
+        if (workspaceRepo.existsByCompanyIdAndNameIgnoreCase(companyId, name.trim())) {
+            throw new IllegalArgumentException("Tên workspace đã tồn tại trong công ty");
+        }
+    }
     @Override
     @Transactional
     public Workspace save(Workspace w) {

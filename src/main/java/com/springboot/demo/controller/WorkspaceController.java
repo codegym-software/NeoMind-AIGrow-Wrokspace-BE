@@ -2,15 +2,10 @@ package com.springboot.demo.controller;
 
 import com.springboot.demo.dto.workspace.WorkspaceCreateRequest;
 import com.springboot.demo.dto.workspace.WorkspaceUpdateRequest;
-import com.springboot.demo.model.Company;
 import com.springboot.demo.model.Workspace;
 import com.springboot.demo.security.UserIdResolver;
-import com.springboot.demo.service.CompanyService;
 import com.springboot.demo.service.WorkspaceService;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -41,7 +36,7 @@ public class WorkspaceController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Workspace create(@PathVariable String companyId, @Valid @RequestBody WorkspaceCreateRequest req, Authentication auth) {
         String actorId = userIdResolver.resolveInternalId(auth);
-        return service.create(req, actorId);
+        return service.create(req, companyId, actorId);
     }
 
     @GetMapping("/workspaces/{workspaceId}")
@@ -54,8 +49,8 @@ public class WorkspaceController {
     @PutMapping("/workspaces/{workspaceId}")
     @PreAuthorize("@gate.allows('workspace:update', authentication, #workspaceId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Workspace update(@PathVariable String workspaceId, @Valid @RequestBody WorkspaceUpdateRequest req) {
-        return service.update(workspaceId, req);
+    public Workspace update(@PathVariable String workspaceId, @Valid @RequestBody String companyId, @Valid @RequestBody WorkspaceUpdateRequest req) {
+        return service.update(workspaceId, companyId, req);
     }
 
     @PatchMapping("/workspaces/{workspaceId}")

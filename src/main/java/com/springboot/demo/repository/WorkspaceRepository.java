@@ -29,6 +29,7 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
     List<String> findIdsByCompanyId(@Param("companyId") String companyId);
 
     boolean existsByCompanyIdAndNameIgnoreCase(String companyId, String name);
+
 }
 
 

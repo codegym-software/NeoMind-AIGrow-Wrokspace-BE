@@ -7,11 +7,11 @@ import org.springframework.data.domain.Page;
 import java.util.List;
 
 public interface WorkspaceService {
-    Workspace create (WorkspaceCreateRequest req, String actorId);
+    Workspace create (WorkspaceCreateRequest req, String companyId, String actorId);
 
     Workspace getById(String workspaceId);
 
-    Workspace update(String workspaceId, WorkspaceUpdateRequest req);
+    Workspace update(String workspaceId, String companyId, WorkspaceUpdateRequest req);
 
     Workspace save(Workspace c);
 
