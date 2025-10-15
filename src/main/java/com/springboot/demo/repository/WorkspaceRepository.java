@@ -22,6 +22,13 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
     Page<Workspace> findByIdInAndNameContainingIgnoreCase(@Param("workspaceIds") List<String> workspaceIds,
                                                         @Param("searchTerm") String searchTerm,
                                                         Pageable pageable);
+
+    void deleteByCompanyId(String companyId);
+
+    @Query("select w.id from Workspace w where w.companyId = :companyId")
+    List<String> findIdsByCompanyId(@Param("companyId") String companyId);
+
+    boolean existsByCompanyIdAndNameIgnoreCase(String companyId, String name);
 }
 
 

@@ -130,7 +130,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
-    public void replaceRolePermissions(String companyId, Integer roleId, List<Integer> permissionIds) {
+    public void replaceRolePermissionsCompany(String companyId, Integer roleId, List<Integer> permissionIds) {
         // Validate role thuộc company (hoặc template company)
         Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
         if (r.getScope() != Scope.company) {

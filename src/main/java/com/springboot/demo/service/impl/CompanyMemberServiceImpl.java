@@ -37,7 +37,7 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
     private final UserRepository userRepo;
     private final EmailService emailService;
 
-    @Value("${app.defaults.roleId:201}")
+    @Value("${app.defaults.roleId:4}")
     private Integer defaultRoleId;
 
     @Override

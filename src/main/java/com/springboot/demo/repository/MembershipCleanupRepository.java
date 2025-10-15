@@ -42,4 +42,21 @@ public class MembershipCleanupRepository {
                 .addValue("userId", userId)
                 .addValue("companyId", companyId));
     }
+
+    @Transactional
+    public int deleteProjectMembershipsByWorkspaceForUser(String workspaceId, String userId) {
+        String sql = """
+            DELETE FROM project_members
+            WHERE user_id = :userId
+              AND project_id IN (
+                  SELECT p.id
+                  FROM projects p
+                  JOIN workspaces w ON w.id = p.workspace_id
+                  WHERE w.workspace_id = :workspaceId
+              )
+        """;
+        return jdbc.update(sql, new MapSqlParameterSource()
+                .addValue("userId", userId)
+                .addValue("workspaceId", workspaceId));
+    }
 }

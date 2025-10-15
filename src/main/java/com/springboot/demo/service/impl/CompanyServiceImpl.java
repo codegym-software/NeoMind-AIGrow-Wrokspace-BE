@@ -45,12 +45,10 @@ public class CompanyServiceImpl implements CompanyService {
         c.setLogoUrl(req.logoUrl());
         c = repo.save(c);
 
-        // Đảm bảo công ty chưa có owner (phòng race condition)
         if (memberRepo.existsByCompanyIdAndIsOwnerTrue(c.getId())) {
-            throw new IllegalStateException("Company already has an owner.");
+                throw new IllegalStateException("Company already has an owner.");
         }
 
-        // Tạo/điều chỉnh membership cho người tạo -> owner=true, role_id=null
         if (!memberRepo.existsByCompanyIdAndUserId(c.getId(), actorId)) {
             CompanyMember m = new CompanyMember();
             m.setCompanyId(c.getId());

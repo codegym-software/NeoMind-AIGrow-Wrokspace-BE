@@ -1,18 +1,22 @@
 package com.springboot.demo.service.impl;
 
+import com.springboot.demo.dto.company.InviteResponse;
+import com.springboot.demo.dto.workspace.AddWorkspaceMemberReq;
+import com.springboot.demo.dto.workspace.AssignWorkspaceRoleReq;
 import com.springboot.demo.dto.workspace.WorkspaceInviteRequest;
 import com.springboot.demo.dto.workspace.WorkspaceInviteResponse;
-import com.springboot.demo.model.User;
-import com.springboot.demo.model.Workspace;
-import com.springboot.demo.model.WorkspaceMember;
-import com.springboot.demo.repository.CompanyMemberRepository;
-import com.springboot.demo.repository.UserRepository;
-import com.springboot.demo.repository.WorkspaceMemberRepository;
-import com.springboot.demo.repository.WorkspaceRepository;
+import com.springboot.demo.model.*;
+import com.springboot.demo.model.enums.Scope;
+import com.springboot.demo.repository.*;
+import com.springboot.demo.service.EmailService;
 import com.springboot.demo.service.WorkspaceMemberService;
-import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -23,111 +27,163 @@ public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
 
     private final WorkspaceRepository workspaceRepo;
     private final WorkspaceMemberRepository workspaceMemberRepo;
-    private final CompanyMemberRepository companyMemberRepo;
     private final UserRepository userRepo;
+    private final MembershipCleanupRepository membershipCleanup;
+    private final RoleRepository roleRepo;
+    private final EmailService emailService;
 
+    @Value("${app.defaults.roleId:5}")
+    private Integer defaultRoleId;
+    
     @Override
-    @Transactional
-    public void createOwnerMembership(String workspaceId, String ownerUserId, int ownerRoleId) {
-        if (workspaceMemberRepo.existsByWorkspaceIdAndUserId(workspaceId, ownerUserId)) return;
-
-        WorkspaceMember owner = WorkspaceMember.builder()
-                .workspaceId(workspaceId)
-                .userId(ownerUserId)
-                .roleId(ownerRoleId)
-                .isOwner(true)
-                .invitedBy(null)
-                .invitedEmail(null)
-                .joinedAt(LocalDateTime.now())
-                .build();
-        workspaceMemberRepo.save(owner);
+    @Transactional(readOnly = true)
+    public List<WorkspaceMember> list(String workspaceId) {
+        return workspaceMemberRepo.findAllByWorkspaceId(workspaceId);
     }
 
     @Override
     @Transactional
-    public WorkspaceInviteResponse invite(String workspaceId, WorkspaceInviteRequest req, String inviterUserId) {
-        Workspace w = workspaceRepo.findById(workspaceId)
-                .orElseThrow(() -> new NoSuchElementException("Workspace not found"));
+    public void addMember(String workspaceId, AddWorkspaceMemberReq req, String actorId) {
+        if (req.userId() == null || req.userId().isBlank()) throw new IllegalArgumentException("userId required");
+        if (req.roleId() == null) throw new IllegalArgumentException("roleId required");
 
-        User user = userRepo.findByEmail(req.getEmail())
-                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy user theo email: " + req.getEmail()));
+        var actor = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, actorId)
+                .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc workspace này"));
 
-        if (!companyMemberRepo.existsByCompanyIdAndUserId(w.getCompanyId(), user.getId())) {
-            throw new IllegalArgumentException("User không thuộc công ty của workspace");
-        }
+        Role role = roleRepo.findById(req.roleId())
+                .orElseThrow(() -> new NoSuchElementException("Role không tồn tại"));
+        if (role.getScope() != Scope.workspace) throw new IllegalArgumentException("Role không thuộc scope workspace");
 
-        if (workspaceMemberRepo.existsByWorkspaceIdAndUserId(workspaceId, user.getId())) {
-            WorkspaceMember existed = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, user.getId()).get();
-            return new WorkspaceInviteResponse("already_member", toDto(existed, user));
-        }
-
-        WorkspaceMember wm = WorkspaceMember.builder()
-                .workspaceId(workspaceId)
-                .userId(user.getId())
-                .roleId(req.getRoleId())
-                .isOwner(false)
-                .invitedBy(inviterUserId)
-                .invitedEmail(req.getEmail())
-                .joinedAt(LocalDateTime.now())
-                .build();
-        workspaceMemberRepo.save(wm);
-
-        return new WorkspaceInviteResponse("invited", toDto(wm, user));
+        WorkspaceMember m = new WorkspaceMember();
+        m.setWorkspaceId(workspaceId);
+        m.setUserId(req.userId());
+        m.setOwner(false);
+        m.setRoleId(role.getId());
+        workspaceMemberRepo.save(m);
     }
 
     @Override
     @Transactional
-    public void changeMemberRole(String workspaceId, String userId, int newRoleId) {
-        WorkspaceMember wm = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, userId)
-                .orElseThrow(() -> new NoSuchElementException("Member không tồn tại trong workspace"));
-        wm.setRoleId(newRoleId);
-        // updated_at nếu cần, DB hoặc entity khác xử lý
+    public void assignRole(String workspaceId, String targetUserId, AssignWorkspaceRoleReq req, String actorId) {
+        var actor = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, actorId)
+                .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc workspace này"));
+
+        var target = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, targetUserId)
+                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy thành viên"));
+
+        if (target.isOwner()) {
+            throw new AccessDeniedException("Không thể đổi role cho Owner (dùng transfer-ownership)");
+        }
+        if (req.roleId() == null) {
+            throw new IllegalArgumentException("roleId required");
+        }
+        Role role = roleRepo.findById(req.roleId())
+                .orElseThrow(() -> new NoSuchElementException("Role không tồn tại"));
+        if (role.getScope() != Scope.workspace) {
+            throw new IllegalArgumentException("Role không thuộc scope workspace");
+        }
+
+        target.setRoleId(role.getId());
+        workspaceMemberRepo.save(target);
+    }
+
+    @Override
+    public void removeMember(String workspaceId, String memberUserId, String name) {
+        workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, memberUserId)
+                .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc công ty này"));
+
+        var target = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, memberUserId)
+                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy thành viên"));
+
+        if (Boolean.TRUE.equals(target.isOwner())) {
+            long owners = workspaceMemberRepo.countOwners(workspaceId);
+            if (owners <= 1) {
+                throw new AccessDeniedException("Không thể xóa Owner duy nhất. Hãy chuyển quyền sở hữu trước.");
+            }
+        }
+
+        membershipCleanup.deleteProjectMembershipsByWorkspaceForUser(workspaceId, memberUserId);
+
+        workspaceMemberRepo.deleteByWorkspaceIdAndUserId(workspaceId, memberUserId);
     }
 
     @Override
     @Transactional
-    public void removeMember(String workspaceId, String userId) {
-        WorkspaceMember wm = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, userId)
-                .orElseThrow(() -> new NoSuchElementException("Member không tồn tại trong workspace"));
+    public void transferOwnership(String workspaceId, String toUserId, Integer downgradeRoleId, String actorId) {
+        if (toUserId == null || toUserId.isBlank())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "toUserId required");
+        if (downgradeRoleId == null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "downgradeRoleId required");
 
-        if (wm.isOwner() && workspaceMemberRepo.countOwners(workspaceId) <= 1) {
-            throw new IllegalStateException("Không thể xóa owner cuối cùng của workspace");
-        }
-        workspaceMemberRepo.deleteByWorkspaceIdAndUserId(workspaceId, userId);
+        var actor = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, actorId)
+                .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc workspace này"));
+        if (!Boolean.TRUE.equals(actor.isOwner()))
+            throw new AccessDeniedException("Chỉ Owner mới được chuyển quyền sở hữu");
+
+        var target = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, toUserId)
+                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy thành viên được chuyển"));
+
+        Role downgradeRole = roleRepo.findById(downgradeRoleId)
+                .orElseThrow(() -> new NoSuchElementException("Role downgrade không tồn tại"));
+        if (downgradeRole.getScope() != Scope.workspace)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role downgrade phải thuộc scope=workspace");
+        if (downgradeRole.getTargetId() != null && !workspaceId.equals(downgradeRole.getTargetId()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role downgrade không thuộc workspace này");
+
+        if (actor.getUserId().equals(target.getUserId()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Owner hiện tại đã là Owner");
+
+        actor.setRoleId(downgradeRole.getId());
+        actor.setOwner(false);
+        workspaceMemberRepo.save(actor);
+
+        target.setOwner(true);
+        target.setRoleId(null);
+        workspaceMemberRepo.save(target);
     }
 
     @Override
-    public Optional<WorkspaceMemberDto> getMembership(String workspaceId, String userId) {
-        return workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, userId)
-                .map(wm -> {
-                    User u = userRepo.findById(wm.getUserId()).orElse(null);
-                    return toDto(wm, u);
-                });
-    }
+    @Transactional
+    public WorkspaceInviteResponse inviteMemberByEmail(String workspaceId, String inviterEmail, String invitedEmail, Integer roleId) {
+        var inviterUser = userRepo.findByEmail(inviterEmail)
+                .orElseThrow(() -> new IllegalArgumentException("User not found. Please login first"));
+        var inviter = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, inviterUser.getId())
+                .orElseThrow(() -> new AccessDeniedException("Bạn không thuộc công ty này"));
 
-    @Override
-    public List<WorkspaceMemberDto> listMembers(String workspaceId) {
-        List<WorkspaceMember> members = workspaceMemberRepo.findAllByWorkspaceId(workspaceId);
-        List<WorkspaceMemberDto> dtos = new ArrayList<>(members.size());
-        for (WorkspaceMember wm : members) {
-            User u = userRepo.findById(wm.getUserId()).orElse(null);
-            dtos.add(toDto(wm, u));
+        String normalized = invitedEmail == null ? null : invitedEmail.trim().toLowerCase();
+        if (normalized == null || normalized.isBlank()) throw new IllegalArgumentException("Email không hợp lệ");
+
+        Optional<User> invitedUserOpt = userRepo.findByEmail(normalized);
+        if (invitedUserOpt.isEmpty()) {
+            throw new IllegalArgumentException("Email chưa đăng ký trong hệ thống");
         }
-        return dtos;
-    }
 
-    private WorkspaceMemberDto toDto(WorkspaceMember wm, User u) {
-        return WorkspaceMemberDto.builder()
-                .id(wm.getId())
-                .workspaceId(wm.getWorkspaceId())
-                .userId(wm.getUserId())
-                .roleId(wm.getRoleId())
-                .isOwner(wm.isOwner())
-                .userEmail(u != null ? u.getEmail() : null)
-                .userDisplayName(u != null ? u.getDisplayName() : null)
-                .invitedBy(wm.getInvitedBy())
-                .invitedEmail(wm.getInvitedEmail())
-                .joinedAt(wm.getJoinedAt())
-                .build();
+        String targetUserId = invitedUserOpt.get().getId();
+
+        var existing = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, targetUserId);
+        if (existing.isPresent()) {
+            return new WorkspaceInviteResponse("already_member", existing.get());
+        }
+
+        var existingInvite = workspaceMemberRepo.findFirstByWorkspaceIdAndInvitedEmailIgnoreCase(workspaceId, normalized);
+        if (existingInvite.isPresent()) {
+            return new WorkspaceInviteResponse("existing_invite", existingInvite.get());
+        }
+
+        WorkspaceMember member = new WorkspaceMember();
+        member.setWorkspaceId(workspaceId);
+        member.setUserId(targetUserId);
+        member.setInvitedEmail(normalized);
+        member.setInvitedBy(inviter.getUserId());
+        member.setRoleId(roleId != null ? roleId : defaultRoleId);
+        member.setOwner(false);
+
+        WorkspaceMember saved = workspaceMemberRepo.save(member);
+
+        try {
+            emailService.sendInvitationEmail(normalized, "Workspace", inviterEmail);
+        } catch (Exception ignore) {}
+
+        return new WorkspaceInviteResponse("created", saved);
     }
 }

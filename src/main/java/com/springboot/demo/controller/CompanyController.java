@@ -48,24 +48,26 @@ public class CompanyController {
         return service.create(req, actorId);
     }
 
-    @GetMapping("/{id}")
-    @PreAuthorize("@gate.allows('company:read', authentication, #id)")
-    public Company get(@PathVariable String id) {
-        return service.getById(id);
+    @GetMapping("/{companyId}")
+    @PreAuthorize("@gate.allows('company:read', authentication, #companyId)")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Company get(@PathVariable String companyId) {
+        return service.getById(companyId);
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("@gate.allows('company:update', authentication, #id)")
-
-    public Company update(@PathVariable String id,
+    @PutMapping("/{companyId}")
+    @PreAuthorize("@gate.allows('company:update', authentication, #companyId)")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Company update(@PathVariable String companyId,
                           @Valid @RequestBody CompanyUpdateRequest req) {
-        return service.update(id, req);
+        return service.update(companyId, req);
     }
 
-    @PatchMapping("/{id}")
-    @PreAuthorize("@gate.allows('company:update', authentication, #id)")
-    public Company patch(@PathVariable String id, @RequestBody Map<String, Object> p) {
-        Company c = service.getById(id);
+    @PatchMapping("/{companyId}")
+    @PreAuthorize("@gate.allows('company:update', authentication, #companyId)")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Company patch(@PathVariable String companyId, @RequestBody Map<String, Object> p) {
+        Company c = service.getById(companyId);
         if (p.containsKey("name")) {
             c.setName(Objects.toString(p.get("name"), "").trim());
         }
@@ -77,6 +79,7 @@ public class CompanyController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Page<Company> list(@Parameter(description = "Search query") @RequestParam(required = false) String q,
                               @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
                               @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
@@ -85,15 +88,16 @@ public class CompanyController {
         return service.searchByCurrentUser(q, page, size, actorId);
     }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("@gate.allows('company:delete', authentication, #id)")
+    @DeleteMapping("/{companyId}")
+    @PreAuthorize("@gate.allows('company:delete', authentication, #companyId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable String id) {
-        service.delete(id);
+    public void delete(@PathVariable String companyId) {
+        service.delete(companyId);
     }
 
     @GetMapping("/admin/all")
     @PreAuthorize("isAuthenticated()")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public Page<Company> listAll(@Parameter(description = "Search query") @RequestParam(required = false) String q,
                                  @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
                                  @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size) {

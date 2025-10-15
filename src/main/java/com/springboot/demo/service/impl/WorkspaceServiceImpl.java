@@ -2,16 +2,18 @@ package com.springboot.demo.service.impl;
 
 import com.springboot.demo.dto.workspace.*;
 import com.springboot.demo.model.*;
-import com.springboot.demo.model.enums.Scope;
+
 import com.springboot.demo.repository.*;
-import com.springboot.demo.service.RolePermissionService;
-import com.springboot.demo.service.WorkspaceMemberService;
+
 import com.springboot.demo.service.WorkspaceService;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import com.springboot.demo.model.Workspace;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
+
+import java.util.NoSuchElementException;
 
 
 @Service
@@ -27,38 +29,94 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         this.workspaceMemberRepo = workspaceMemberRepo;
     }
     @Override
+    @Transactional
     public Workspace create(WorkspaceCreateRequest req, String actorId) {
+        Workspace w = new Workspace();
+        w.setCompanyId(req.companyId());
+        w.setName(req.name() == null ? null : req.name().trim());
+        w.setDescription(req.description());
+        w = workspaceRepo.save(w);
 
-        return null;
+        if (workspaceMemberRepo.existsByWorkspaceIdAndIsOwnerTrue(w.getId())) {
+            throw new IllegalStateException("Workspace already has an owner.");
+        }
+
+        if (!workspaceMemberRepo.existsByWorkspaceIdAndUserId(w.getId(), actorId)) {
+            WorkspaceMember wm = new WorkspaceMember();
+            wm.setWorkspaceId(w.getId());
+            wm.setUserId(actorId);
+            wm.setRoleId(null);
+            wm.setOwner(true);
+            wm.setJoinedAt(LocalDateTime.now());
+            workspaceMemberRepo.save(wm);
+        } else {
+            WorkspaceMember wm = workspaceMemberRepo.findByWorkspaceIdAndUserId(w.getId(), actorId).orElseThrow();
+            wm.setRoleId(null);
+            wm.setOwner(true);
+            workspaceMemberRepo.save(wm);
+        }
+
+        return w;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Workspace getById(String workspaceId) {
-        return null;
+        return workspaceRepo.findById(workspaceId).orElseThrow(() -> new NoSuchElementException("Workspace not found. " +  workspaceId));
     }
 
     @Override
+    @Transactional
     public Workspace update(String workspaceId, WorkspaceUpdateRequest req) {
-        return null;
+        Workspace w = getById(workspaceId);
+        if (req.name() != null && !req.name().isBlank()) {
+            String newName = req.name().trim();
+            if (!newName.equalsIgnoreCase(w.getName()) &&
+                    workspaceRepo.existsByCompanyIdAndNameIgnoreCase(companyId, newName)) {
+                throw new IllegalArgumentException("Tên workspace đã tồn tại trong công ty");
+            }
+            w.setName(newName);
+        }
+        w.setDescription(req.description());
+        return workspaceRepo.save(w);
     }
 
     @Override
-    public Workspace save(Workspace c) {
-        return null;
+    @Transactional
+    public Workspace save(Workspace w) {
+        return workspaceRepo.save(w);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<Workspace> search(String q, int page, int size) {
-        return null;
+        var pageable = PageRequest.of(page, size);
+        if (q == null || q.isBlank()) return workspaceRepo.findAll(pageable);
+        return workspaceRepo.findByNameContainingIgnoreCase(q.trim(), pageable);
     }
 
     @Override
     public Page<Workspace> searchByCurrentUser(String q, int page, int size, String actorId) {
-        return null;
+        var workspaceIds = workspaceMemberRepo.findWorkspaceIdsByUserId(actorId);
+        var pageable = PageRequest.of(page, size);
+
+        if (workspaceIds == null || workspaceIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        if (q == null || q.isBlank()) {
+            return workspaceRepo.findByIdIn(workspaceIds, pageable);
+        } else {
+            return workspaceRepo.findByIdInAndNameContainingIgnoreCase(workspaceIds, q.trim(), pageable);
+        }
     }
 
     @Override
+    @Transactional
     public void delete(String workspaceId) {
-
+        if (!workspaceRepo.existsById(workspaceId)) {
+            throw new NoSuchElementException("Workspace not found. " +  workspaceId);
+        }
+        workspaceRepo.deleteById(workspaceId);
     }
 }

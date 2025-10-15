@@ -34,8 +34,8 @@ public class CompanyMemberController {
         return service.list(companyId);
     }
 
-    @PreAuthorize("@gate.allows('company:member:set_user_permissions', authentication, #companyId)")
     @PostMapping("/members")
+    @PreAuthorize("@gate.allows('company:member:set_user_permissions', authentication, #companyId)")
     public void add(@PathVariable String companyId,
                     @RequestBody AddCompanyMemberReq req,
                     Authentication auth) {

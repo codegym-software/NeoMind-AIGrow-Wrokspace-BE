@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/companies/{companyId}/roles")
 @RequiredArgsConstructor
-public class RoleController {
+public class RoleCompanyController {
 
     private final RoleService roleService;
 
@@ -47,7 +47,7 @@ public class RoleController {
     @PreAuthorize("@gate.allows('company:role:grant_permission', authentication, #companyId)")
     public void upsertPermissions(@PathVariable String companyId, @PathVariable Integer roleId,
                                   @RequestBody UpsertRolePermissionsReq req) {
-        roleService.replaceRolePermissions(companyId, roleId, req.permissionIds());
+        roleService.replaceRolePermissionsCompany(companyId, roleId, req.permissionIds());
     }
 }
 
