@@ -2,96 +2,26 @@ package com.springboot.demo.repository;
 
 import com.springboot.demo.model.Workspace;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.awt.print.Pageable;
 import java.util.List;
-import java.util.Optional;
+
 
 @Repository
 public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
+    Page<Workspace> findByNameContainingIgnoreCase(String name, org.springframework.data.domain.Pageable pageable);
 
-    List<Workspace> findAllByCompanyIdAndArchivedAtIsNull(String companyId);
+    @Query("SELECT w FROM Workspace w WHERE w.id IN :workspaceIds")
+    Page<Workspace> findByIdIn(@Param("workspaceIds") List<String> workspaceIds, org.springframework.data.domain.Pageable pageable);
 
-    boolean existsByCompanyIdAndNameIgnoreCaseAndArchivedAtIsNull(String companyId, String name);
-
-    @Query("select w from Workspace w where w.id in :ids and w.archivedAt is null")
-    List<Workspace> findAllActiveByIds(@Param("ids") List<String> ids);
-
-    @Query("select w from Workspace w where w.companyId = :companyId and w.archivedAt is null and lower(w.name) like lower(concat('%', :q, '%'))")
-    List<Workspace> searchActiveInCompany(@Param("companyId") String companyId, @Param("q") String q);
-
-    @Query("select w from Workspace w where w.id = :id and w.archivedAt is null")
-    Optional<Workspace> findActiveById(@Param("id") String id);
-
-    @Query("select w.id from Workspace w where w.companyId = :companyId")
-    List<String> findIdsByCompanyId(@Param("companyId") String companyId);
-
-    @Modifying
-    @Query("delete from Workspace w where w.companyId = :companyId")
-    int deleteByCompanyId(@Param("companyId") String companyId);
-
-    @Query("""
-    SELECT w FROM Workspace w
-    WHERE w.companyId = :companyId
-      AND (:q IS NULL OR LOWER(w.name) LIKE LOWER(CONCAT('%', :q, '%')))
-      AND w.archivedAt IS NULL
-    ORDER BY w.createdAt DESC
-  """)
-    List<Workspace> searchByCompanyId(@Param("companyId") String companyId, @Param("q") String q);
-
-    @Query(value = """
-    SELECT w.* FROM workspaces w
-    JOIN workspace_members wm ON wm.workspace_id = w.id
-    WHERE wm.user_id = :userId
-      AND w.company_id = :companyId
-      AND (:includeArchived OR w.archived_at IS NULL)
-    ORDER BY w.created_at DESC
-  """, nativeQuery = true)
-    List<Workspace> findMineInCompany(@Param("companyId") String companyId,
-                                      @Param("userId") String userId,
-                                      @Param("includeArchived") boolean includeArchived);
-
-    @Query(value = """
-    SELECT w.* FROM workspaces w
-    JOIN workspace_members wm ON wm.workspace_id = w.id
-    WHERE wm.user_id = :userId
-      AND w.archived_at IS NULL
-    ORDER BY w.created_at DESC
-  """, nativeQuery = true)
-    Page<Workspace> findByUserIdAndNameContainingIgnoreCase(@Param("userId") String userId,
-                                                            @Param("query") String query,
-                                                            Pageable pageable);
-
-    long countByCompanyIdAndArchivedAtIsNull(String companyId);
-
-    List<Workspace> findAllByCompanyIdOrderByCreatedAtDesc(String companyId);
-
-    boolean existsByCompanyIdAndNameIgnoreCase(String companyId, String name);
-
-    @Query("""
-       select w from Workspace w
-       join WorkspaceMember wm on wm.workspaceId = w.id
-       where wm.userId = :userId and w.companyId = :companyId
-       order by w.createdAt desc
-    """)
-    List<Workspace> findAllByUserInCompany(@Param("userId") String userId,
-                                           @Param("companyId") String companyId);
-
-    @Query("""
-       select w from Workspace w
-       join WorkspaceMember wm on wm.workspaceId = w.id
-       where wm.userId = :userId and w.companyId = :companyId and wm.invitedBy is not null
-       order by w.createdAt desc
-    """)
-    List<Workspace> findAllInvitedForUserInCompany(@Param("userId") String userId,
-                                                   @Param("companyId") String companyId);
-
-    Optional<Workspace> findByIdAndCompanyId(String id, String companyId);
+    @Query("SELECT w FROM Workspace w WHERE w.id IN :workspaceIds AND LOWER(w.name) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    Page<Workspace> findByIdInAndNameContainingIgnoreCase(@Param("workspaceIds") List<String> workspaceIds,
+                                                        @Param("searchTerm") String searchTerm,
+                                                        Pageable pageable);
 }
 
 

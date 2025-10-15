@@ -2,7 +2,6 @@ package com.springboot.demo.service.impl;
 
 import com.springboot.demo.dto.workspace.WorkspaceInviteRequest;
 import com.springboot.demo.dto.workspace.WorkspaceInviteResponse;
-import com.springboot.demo.dto.workspace.WorkspaceMemberDto;
 import com.springboot.demo.model.User;
 import com.springboot.demo.model.Workspace;
 import com.springboot.demo.model.WorkspaceMember;
@@ -37,7 +36,7 @@ public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
                 .userId(ownerUserId)
                 .roleId(ownerRoleId)
                 .isOwner(true)
-                .invitedBy(null)               // không phải invite
+                .invitedBy(null)
                 .invitedEmail(null)
                 .joinedAt(LocalDateTime.now())
                 .build();

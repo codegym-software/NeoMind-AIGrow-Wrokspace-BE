@@ -17,25 +17,25 @@ import java.util.UUID;
 public class WorkspaceMember {
 
     @Id
-    @Column(name = "id", columnDefinition = "CHAR(36)")
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
-    @Column(name = "workspace_id", columnDefinition = "CHAR(36)", nullable = false)
+    @Column(name = "workspace_id", length = 36, nullable = false)
     private String workspaceId;
 
-    @Column(name = "user_id", columnDefinition = "CHAR(36)", nullable = false)
+    @Column(name = "user_id", length = 36, nullable = false)
     private String userId;
 
-    @Column(name = "role_id", nullable = false)
+    @Column(name = "role_id")
     private Integer roleId;
 
     @Column(name = "is_owner", nullable = false)
-    private boolean isOwner;
+    private boolean isOwner = false;
 
-    @Column(name = "invited_email", length = 255)
+    @Column(name = "invited_email")
     private String invitedEmail;
 
-    @Column(name = "invited_by", columnDefinition = "CHAR(36)")
+    @Column(name = "invited_by", length = 36)
     private String invitedBy;
 
     @Column(name = "joined_at")
@@ -43,25 +43,6 @@ public class WorkspaceMember {
 
     @PrePersist
     void prePersist() {
-        if (id == null) id = UUID.randomUUID().toString();
         if (joinedAt == null) joinedAt = LocalDateTime.now();
-    }
-
-
-    public static WorkspaceMember inviteNow(String workspaceId,
-                                            String userId,
-                                            Integer roleId,
-                                            boolean isOwner,
-                                            String inviterId,
-                                            String invitedEmail) {
-        return WorkspaceMember.builder()
-                .workspaceId(workspaceId)
-                .userId(userId)
-                .roleId(roleId)
-                .isOwner(isOwner)
-                .invitedBy(inviterId)
-                .invitedEmail(invitedEmail)
-                .joinedAt(LocalDateTime.now())
-                .build();
     }
 }

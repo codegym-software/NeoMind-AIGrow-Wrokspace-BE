@@ -43,4 +43,7 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
     default boolean isOwner(String workspaceId, String userId) {
         return isOwnerRaw(workspaceId, userId) == 1;
     }
+
+
+    boolean existsByWorkspaceIdAndIsOwnerTrue(String workspaceId);
 }

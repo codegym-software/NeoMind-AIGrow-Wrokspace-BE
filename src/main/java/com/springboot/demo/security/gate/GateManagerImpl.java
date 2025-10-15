@@ -47,6 +47,14 @@ public class GateManagerImpl implements GateManager {
                         .map(User::isAdmin)
                         .orElse(false)
         );
+
+        dynamicGates.put("workspace:transfer_ownership", (ctx, workspaceId) -> {
+            if (workspaceId == null || workspaceId.isBlank()) return false;
+            boolean isOwner = workspaceMemberRepo.isOwner(workspaceId, ctx.userId);
+            if (isOwner) return true;
+            return rbacRepo.userHasPermissionInScope(
+                    ctx.userId, Scope.company, workspaceId, "workspace:transfer_ownership");
+        });
     }
 
     @Override

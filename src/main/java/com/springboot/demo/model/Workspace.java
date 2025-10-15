@@ -14,9 +14,10 @@ import java.util.UUID;
                 @Index(name = "idx_workspaces_company", columnList = "company_id"),
                 @Index(name = "idx_workspaces_name", columnList = "name")
         })
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Workspace {
+@Getter
+@Setter
 
+public class Workspace {
     @Id
     @Column(name = "id", length = 36)
     private String id;

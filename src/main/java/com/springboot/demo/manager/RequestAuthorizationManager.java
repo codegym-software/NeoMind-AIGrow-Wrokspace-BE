@@ -18,11 +18,6 @@ public class RequestAuthorizationManager {
 
     private final AbilityService ability;
 
-    /**
-     * @param scope   company|workspace|project
-     * @param perm    ví dụ "project:create"
-     * @param regex   regex chứa group(1) = scopeId, vd "^/api/projects/([^/]+).*$"
-     */
     public AuthorizationManager<RequestAuthorizationContext> require(Scope scope, String perm, String regex) {
         Pattern path = Pattern.compile(regex);
 

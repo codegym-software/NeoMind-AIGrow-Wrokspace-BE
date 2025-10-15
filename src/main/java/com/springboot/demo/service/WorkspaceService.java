@@ -1,19 +1,23 @@
 package com.springboot.demo.service;
 
 import com.springboot.demo.dto.workspace.*;
+import com.springboot.demo.model.Workspace;
+import org.springframework.data.domain.Page;
+
 import java.util.List;
 
 public interface WorkspaceService {
-    WorkspaceDto createWorkspace(WorkspaceCreateRequest req, String currentUserId);
-    WorkspaceDto getWorkspace(String id, String companyId);
-    WorkspaceDto updateWorkspace(String id, String companyId, WorkspaceUpdateRequest req, String currentUserId);
-    void deleteWorkspaceHard(String id, String companyId, String currentUserId);
+    Workspace create (WorkspaceCreateRequest req, String actorId);
 
-    List<WorkspaceDto> listMyWorkspaces(String companyId, String userId);
-    List<WorkspaceDto> listWorkspacesInvitedMe(String companyId, String userId);
+    Workspace getById(String workspaceId);
 
-    WorkspaceInviteResponse inviteMember(String workspaceId, WorkspaceInviteRequest req, String inviterUserId);
-    List<WorkspaceMemberDto> listMembers(String workspaceId);
+    Workspace update(String workspaceId, WorkspaceUpdateRequest req);
 
-    WorkspaceAccessDto getMyAccessInWorkspace(String workspaceId, String userId);
+    Workspace save(Workspace c);
+
+    Page<Workspace> search(String q, int page, int size);
+
+    Page<Workspace> searchByCurrentUser(String q, int page, int size, String actorId);
+
+    void delete(String workspaceId);
 }
