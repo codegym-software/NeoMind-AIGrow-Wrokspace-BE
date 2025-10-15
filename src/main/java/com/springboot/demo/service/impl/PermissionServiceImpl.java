@@ -4,9 +4,11 @@ import com.springboot.demo.model.Permission;
 import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.repository.PermissionRepository;
 import com.springboot.demo.service.PermissionService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.List;
 
@@ -32,4 +34,5 @@ public class PermissionServiceImpl implements PermissionService {
         }
         return repo.findByScope(scope);
     }
+
 }

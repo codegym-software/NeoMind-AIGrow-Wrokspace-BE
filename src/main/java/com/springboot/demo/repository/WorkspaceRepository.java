@@ -68,4 +68,30 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
                                                             Pageable pageable);
 
     long countByCompanyIdAndArchivedAtIsNull(String companyId);
+
+    List<Workspace> findAllByCompanyIdOrderByCreatedAtDesc(String companyId);
+
+    boolean existsByCompanyIdAndNameIgnoreCase(String companyId, String name);
+
+    @Query("""
+       select w from Workspace w
+       join WorkspaceMember wm on wm.workspaceId = w.id
+       where wm.userId = :userId and w.companyId = :companyId
+       order by w.createdAt desc
+    """)
+    List<Workspace> findAllByUserInCompany(@Param("userId") String userId,
+                                           @Param("companyId") String companyId);
+
+    @Query("""
+       select w from Workspace w
+       join WorkspaceMember wm on wm.workspaceId = w.id
+       where wm.userId = :userId and w.companyId = :companyId and wm.invitedBy is not null
+       order by w.createdAt desc
+    """)
+    List<Workspace> findAllInvitedForUserInCompany(@Param("userId") String userId,
+                                                   @Param("companyId") String companyId);
+
+    Optional<Workspace> findByIdAndCompanyId(String id, String companyId);
 }
+
+

@@ -1,21 +1,27 @@
 package com.springboot.demo.service;
 
 import com.springboot.demo.dto.workspace.WorkspaceInviteRequest;
-import com.springboot.demo.dto.workspace.WorkspaceMemberCreateRequest;
+import com.springboot.demo.dto.workspace.WorkspaceInviteResponse;
 import com.springboot.demo.dto.workspace.WorkspaceMemberDto;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface WorkspaceMemberService {
-    WorkspaceMemberDto invite(String workspaceId, WorkspaceInviteRequest req, String inviterUserId);
 
-    WorkspaceMemberDto addMember(String workspaceId, WorkspaceMemberCreateRequest req);
+    // Tạo owner khi create workspace
+    void createOwnerMembership(String workspaceId, String ownerUserId, int ownerRoleId);
 
-    WorkspaceMemberDto updateMemberRole(String workspaceId, String userId, Integer roleId);
+    // Invite = join ngay
+    WorkspaceInviteResponse invite(String workspaceId, WorkspaceInviteRequest req, String inviterUserId);
 
+    // Quản lý role
+    void changeMemberRole(String workspaceId, String userId, int newRoleId);
+
+    // Remove
     void removeMember(String workspaceId, String userId);
 
-    List<WorkspaceMemberDto> getWorkspaceMembers(String workspaceId);
-
-    boolean isOwner(String workspaceId, String userId);
+    // Query
+    Optional<WorkspaceMemberDto> getMembership(String workspaceId, String userId);
+    List<WorkspaceMemberDto> listMembers(String workspaceId);
 }

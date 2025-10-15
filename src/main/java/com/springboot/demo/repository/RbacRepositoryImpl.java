@@ -1,19 +1,22 @@
 package com.springboot.demo.repository;
 
 import com.springboot.demo.model.enums.Scope;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Repository
 @RequiredArgsConstructor
 public class RbacRepositoryImpl implements RbacRepository {
 
     private final NamedParameterJdbcTemplate jdbc;
+    @PersistenceContext
+    private EntityManager em;
 
     @Override
     public boolean userHasPermissionInScope(String userId, Scope scope, String targetId, String permCode) {
@@ -112,4 +115,36 @@ public class RbacRepositoryImpl implements RbacRepository {
 
         return new HashSet<>(jdbc.queryForList(sql, params, String.class));
     }
+    @Override
+    @SuppressWarnings("unchecked")
+    public Set<String> getPermissionCodesByRoleId(int roleId) {
+        List<String> codes = em.createNativeQuery("""
+            SELECT p.code
+            FROM role_permission rp
+            JOIN permissions p ON p.id = rp.permission_id
+            WHERE rp.role_id = :roleId
+        """).setParameter("roleId", roleId).getResultList();
+        return new HashSet<>(codes);
+    }
+
+//    @Override
+//    @SuppressWarnings("unchecked")
+//    public Map<Integer, Set<String>> getPermissionCodesByRoleIds(Collection<Integer> roleIds) {
+//        if (roleIds == null || roleIds.isEmpty()) return Collections.emptyMap();
+//
+//        List<Object[]> rows = em.createNativeQuery("""
+//            SELECT rp.role_id, p.code
+//            FROM role_permission rp
+//            JOIN permissions p ON p.id = rp.permission_id
+//            WHERE rp.role_id IN (:roleIds)
+//        """).setParameter("roleIds", roleIds).getResultList();
+//
+//        Map<Integer, Set<String>> result = new HashMap<>();
+//        for (Object[] row : rows) {
+//            Integer rId = ((Number) row[0]).intValue();
+//            String code = (String) row[1];
+//            result.computeIfAbsent(rId, k -> new HashSet<>()).add(code);
+//        }
+//        return result;
+//    }
 }

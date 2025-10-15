@@ -5,16 +5,12 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
+@Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
 public class WorkspaceDto {
     private String id;
+    private String companyId;
     private String name;
     private String description;
-    private String companyId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime archivedAt;
@@ -22,9 +18,9 @@ public class WorkspaceDto {
     public static WorkspaceDto fromEntity(Workspace w) {
         return WorkspaceDto.builder()
                 .id(w.getId())
+                .companyId(w.getCompanyId())
                 .name(w.getName())
                 .description(w.getDescription())
-                .companyId(w.getCompanyId())
                 .createdAt(w.getCreatedAt())
                 .updatedAt(w.getUpdatedAt())
                 .archivedAt(w.getArchivedAt())

@@ -23,4 +23,10 @@ public interface ProjectRepository extends JpaRepository<Project, String> {
 
     @Query("select p.workspaceId from Project p where p.id = :projectId")
     Optional<String> findWorkspaceIdByProjectId(@Param("projectId") String projectId);
+
+    @Query("select count(p) from Project p where p.workspaceId = :workspaceId")
+    long countByWorkspaceId(@Param("workspaceId") String workspaceId);
+
+    @Query("select p.id from Project p where p.workspaceId = :workspaceId")
+    List<String> findIdsByWorkspaceId(@Param("workspaceId") String workspaceId);
 }

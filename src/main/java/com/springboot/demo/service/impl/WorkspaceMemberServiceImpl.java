@@ -1,7 +1,7 @@
 package com.springboot.demo.service.impl;
 
 import com.springboot.demo.dto.workspace.WorkspaceInviteRequest;
-import com.springboot.demo.dto.workspace.WorkspaceMemberCreateRequest;
+import com.springboot.demo.dto.workspace.WorkspaceInviteResponse;
 import com.springboot.demo.dto.workspace.WorkspaceMemberDto;
 import com.springboot.demo.model.User;
 import com.springboot.demo.model.Workspace;
@@ -11,133 +11,124 @@ import com.springboot.demo.repository.UserRepository;
 import com.springboot.demo.repository.WorkspaceMemberRepository;
 import com.springboot.demo.repository.WorkspaceRepository;
 import com.springboot.demo.service.WorkspaceMemberService;
-import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class WorkspaceMemberServiceImpl implements WorkspaceMemberService {
 
-    private final WorkspaceRepository workspaceRepository;
-    private final WorkspaceMemberRepository workspaceMemberRepository;
-    private final CompanyMemberRepository companyMemberRepository;
-    private final UserRepository userRepository;
+    private final WorkspaceRepository workspaceRepo;
+    private final WorkspaceMemberRepository workspaceMemberRepo;
+    private final CompanyMemberRepository companyMemberRepo;
+    private final UserRepository userRepo;
 
     @Override
     @Transactional
-    public WorkspaceMemberDto invite(String workspaceId, WorkspaceInviteRequest req, String inviterUserId) {
-        if (req == null || req.roleId() == null) {
-            throw new IllegalArgumentException("roleId is required");
-        }
-        if (req.email() == null && (req.userId() == null || req.userId().isBlank())) {
-            throw new IllegalArgumentException("Either email or userId is required");
-        }
+    public void createOwnerMembership(String workspaceId, String ownerUserId, int ownerRoleId) {
+        if (workspaceMemberRepo.existsByWorkspaceIdAndUserId(workspaceId, ownerUserId)) return;
 
-        Workspace ws = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
-        String companyId = ws.getCompanyId();
-
-        String targetUserId = resolveUserId(req);
-        if (!companyMemberRepository.existsByCompanyIdAndUserId(companyId, targetUserId)) {
-            throw new IllegalStateException("USER_NOT_IN_COMPANY");
-        }
-        if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, targetUserId)) {
-            throw new IllegalStateException("ALREADY_IN_WORKSPACE");
-        }
-
-        WorkspaceMember wm = new WorkspaceMember();
-        wm.setWorkspaceId(workspaceId);
-        wm.setUserId(targetUserId);
-        wm.setRoleId(req.roleId());
-        wm.setOwner(false);
-        WorkspaceMember saved = workspaceMemberRepository.save(wm);
-
-        return toDto(saved);
+        WorkspaceMember owner = WorkspaceMember.builder()
+                .workspaceId(workspaceId)
+                .userId(ownerUserId)
+                .roleId(ownerRoleId)
+                .isOwner(true)
+                .invitedBy(null)               // không phải invite
+                .invitedEmail(null)
+                .joinedAt(LocalDateTime.now())
+                .build();
+        workspaceMemberRepo.save(owner);
     }
 
     @Override
     @Transactional
-    public WorkspaceMemberDto addMember(String workspaceId, WorkspaceMemberCreateRequest req) {
-        Workspace ws = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new EntityNotFoundException("Workspace not found: " + workspaceId));
-        String companyId = ws.getCompanyId();
+    public WorkspaceInviteResponse invite(String workspaceId, WorkspaceInviteRequest req, String inviterUserId) {
+        Workspace w = workspaceRepo.findById(workspaceId)
+                .orElseThrow(() -> new NoSuchElementException("Workspace not found"));
 
-        if (!companyMemberRepository.existsByCompanyIdAndUserId(companyId, req.userId())) {
-            throw new IllegalStateException("USER_NOT_IN_COMPANY");
+        User user = userRepo.findByEmail(req.getEmail())
+                .orElseThrow(() -> new NoSuchElementException("Không tìm thấy user theo email: " + req.getEmail()));
+
+        if (!companyMemberRepo.existsByCompanyIdAndUserId(w.getCompanyId(), user.getId())) {
+            throw new IllegalArgumentException("User không thuộc công ty của workspace");
         }
-        if (workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, req.userId())) {
-            throw new IllegalStateException("ALREADY_IN_WORKSPACE");
+
+        if (workspaceMemberRepo.existsByWorkspaceIdAndUserId(workspaceId, user.getId())) {
+            WorkspaceMember existed = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, user.getId()).get();
+            return new WorkspaceInviteResponse("already_member", toDto(existed, user));
         }
 
-        WorkspaceMember wm = new WorkspaceMember();
-        wm.setWorkspaceId(workspaceId);
-        wm.setUserId(req.userId());
-        wm.setRoleId(req.roleId());
-        wm.setOwner(false);
-        WorkspaceMember saved = workspaceMemberRepository.save(wm);
+        WorkspaceMember wm = WorkspaceMember.builder()
+                .workspaceId(workspaceId)
+                .userId(user.getId())
+                .roleId(req.getRoleId())
+                .isOwner(false)
+                .invitedBy(inviterUserId)
+                .invitedEmail(req.getEmail())
+                .joinedAt(LocalDateTime.now())
+                .build();
+        workspaceMemberRepo.save(wm);
 
-        return toDto(saved);
+        return new WorkspaceInviteResponse("invited", toDto(wm, user));
     }
 
     @Override
     @Transactional
-    public WorkspaceMemberDto updateMemberRole(String workspaceId, String userId, Integer roleId) {
-        WorkspaceMember wm = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
-                .orElseThrow(() -> new EntityNotFoundException("Workspace member not found"));
-        if (wm.isOwner()) {
-            throw new IllegalStateException("CANNOT_UPDATE_OWNER_ROLE");
-        }
-        wm.setRoleId(roleId);
-        WorkspaceMember saved = workspaceMemberRepository.save(wm);
-        return toDto(saved);
+    public void changeMemberRole(String workspaceId, String userId, int newRoleId) {
+        WorkspaceMember wm = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, userId)
+                .orElseThrow(() -> new NoSuchElementException("Member không tồn tại trong workspace"));
+        wm.setRoleId(newRoleId);
+        // updated_at nếu cần, DB hoặc entity khác xử lý
     }
 
     @Override
     @Transactional
     public void removeMember(String workspaceId, String userId) {
-        WorkspaceMember wm = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
-                .orElseThrow(() -> new EntityNotFoundException("Workspace member not found"));
-        if (wm.isOwner()) {
-            throw new IllegalStateException("CANNOT_REMOVE_OWNER");
+        WorkspaceMember wm = workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, userId)
+                .orElseThrow(() -> new NoSuchElementException("Member không tồn tại trong workspace"));
+
+        if (wm.isOwner() && workspaceMemberRepo.countOwners(workspaceId) <= 1) {
+            throw new IllegalStateException("Không thể xóa owner cuối cùng của workspace");
         }
-        workspaceMemberRepository.delete(wm);
+        workspaceMemberRepo.deleteByWorkspaceIdAndUserId(workspaceId, userId);
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<WorkspaceMemberDto> getWorkspaceMembers(String workspaceId) {
-        return workspaceMemberRepository.listMembers(workspaceId);
+    public Optional<WorkspaceMemberDto> getMembership(String workspaceId, String userId) {
+        return workspaceMemberRepo.findByWorkspaceIdAndUserId(workspaceId, userId)
+                .map(wm -> {
+                    User u = userRepo.findById(wm.getUserId()).orElse(null);
+                    return toDto(wm, u);
+                });
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public boolean isOwner(String workspaceId, String userId) {
-        return workspaceMemberRepository.isOwner(workspaceId, userId);
-    }
-
-    // ===== helpers =====
-
-    private String resolveUserId(WorkspaceInviteRequest req) {
-        if (req.userId() != null && !req.userId().isBlank()) {
-            return req.userId();
+    public List<WorkspaceMemberDto> listMembers(String workspaceId) {
+        List<WorkspaceMember> members = workspaceMemberRepo.findAllByWorkspaceId(workspaceId);
+        List<WorkspaceMemberDto> dtos = new ArrayList<>(members.size());
+        for (WorkspaceMember wm : members) {
+            User u = userRepo.findById(wm.getUserId()).orElse(null);
+            dtos.add(toDto(wm, u));
         }
-        User u = userRepository.findByEmail(req.email())
-                .orElseThrow(() -> new EntityNotFoundException("User not found by email: " + req.email()));
-        return u.getId();
+        return dtos;
     }
 
-    private WorkspaceMemberDto toDto(WorkspaceMember wm) {
-        // Tuỳ dự án, bạn có thể join User/Role để map thêm userEmail, roleName...
+    private WorkspaceMemberDto toDto(WorkspaceMember wm, User u) {
         return WorkspaceMemberDto.builder()
                 .id(wm.getId())
                 .workspaceId(wm.getWorkspaceId())
                 .userId(wm.getUserId())
                 .roleId(wm.getRoleId())
                 .isOwner(wm.isOwner())
+                .userEmail(u != null ? u.getEmail() : null)
+                .userDisplayName(u != null ? u.getDisplayName() : null)
+                .invitedBy(wm.getInvitedBy())
+                .invitedEmail(wm.getInvitedEmail())
+                .joinedAt(wm.getJoinedAt())
                 .build();
     }
 }

@@ -8,47 +8,42 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
-@Entity @Table(name = "workspaces",
-        indexes = {@Index(name = "idx_ws_company", columnList = "company_id"),
-                   @Index(name = "idx_ws_name_company", columnList = "company_id,name")})
+@Entity
+@Table(name = "workspaces",
+        indexes = {
+                @Index(name = "idx_workspaces_company", columnList = "company_id"),
+                @Index(name = "idx_workspaces_name", columnList = "name")
+        })
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Workspace {
 
     @Id
-    @Column(length = 36)
+    @Column(name = "id", length = 36)
     private String id;
 
     @Column(name = "company_id", length = 36, nullable = false)
     private String companyId;
 
-    @Column(name = "created_by", length = 36, nullable = false)
-    private String createdBy;
-
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", length = 255, nullable = false)
     private String name;
 
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Lob
+    @Column(name = "description")
     private String description;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", updatable = false, insertable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", insertable = false, updatable = false)
     private LocalDateTime updatedAt;
 
     @Column(name = "archived_at")
     private LocalDateTime archivedAt;
 
     @PrePersist
-    void prePersist(){
+    void prePersist() {
         if (id == null) id = UUID.randomUUID().toString();
     }
-
-    // Business helpers
-    public boolean isArchived(){ return archivedAt != null; }
-    public void archive(){ this.archivedAt = LocalDateTime.now(); }
-    public void unarchive(){ this.archivedAt = null; }
 }

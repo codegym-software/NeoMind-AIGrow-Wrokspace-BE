@@ -17,4 +17,12 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, In
                                                         @Param("userId") String userId);
 
     List<ProjectMember> findAllByUserId(String userId);
+
+    @Query("""
+        select pm from ProjectMember pm
+        join Project p on p.id = pm.projectId
+        where pm.userId = :userId and p.workspaceId = :workspaceId
+    """)
+    List<ProjectMember> findByUserIdInWorkspace(@Param("userId") String userId,
+                                                @Param("workspaceId") String workspaceId);
 }

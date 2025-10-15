@@ -1,11 +1,11 @@
 package com.springboot.demo.dto.workspace;
 
-public record WorkspaceInviteRequest(
-        String email,
-        String userId,
-        Integer roleId
-) {
-    public boolean hasPrincipal() {
-        return (email != null && !email.isBlank()) || (userId != null && !userId.isBlank());
-    }
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data @NoArgsConstructor @AllArgsConstructor
+public class WorkspaceInviteRequest {
+    private String email;
+    private int roleId;
 }
