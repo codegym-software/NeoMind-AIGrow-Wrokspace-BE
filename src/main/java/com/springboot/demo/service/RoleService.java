@@ -22,10 +22,10 @@ public interface RoleService {
     void replaceRolePermissionsCompany(String companyId, Integer roleId, @NotEmpty List<Integer> permissionIds);
 
     // ==== workspace ==== //
-    List<RoleDto> listWorkspaceRoles(String companyId, boolean includeGlobal);
-    RoleDto createWorkspaceRole(String companyId, CreateRoleReq req);
-    RoleDto updateWorkspaceRole(String companyId, Integer roleId, UpdateRoleReq req);
-    void deleteWorkspaceRole(String companyId, Integer roleId);
+    List<RoleDto> listWorkspaceRoles(String workspaceId, boolean includeGlobal);
+    RoleDto createWorkspaceRole(String workspaceId, CreateRoleReq req);
+    RoleDto updateWorkspaceRole(String workspaceId, Integer roleId, UpdateRoleReq req);
+    void deleteWorkspaceRole(String workspaceId, Integer roleId);
 
-    void replaceRolePermissionsWorkspace(String companyId, Integer roleId, @NotEmpty List<Integer> permissionIds);
+    void replaceRolePermissionsWorkspace(String workspaceId, Integer roleId, @NotEmpty List<Integer> permissionIds);
 }
