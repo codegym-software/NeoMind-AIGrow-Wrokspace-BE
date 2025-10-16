@@ -23,9 +23,9 @@ public class WorkspaceController {
     private final WorkspaceService workspaceService;
     private final UserIdResolver userIdResolver;
 
-    // Tạo workspace trong công ty (người có quyền company.workspace:create)
+    // Tạo workspace trong công ty (người có quyền company.workspace:create hoặc owner)
     @PostMapping("/companies/{companyId}/workspaces")
-    @PreAuthorize("@gate.allows('company:read', authentication, #companyId)")
+    @PreAuthorize("@gate.allows('workspace:create', authentication, #companyId)")
     public WorkspaceDto createInCompany(@PathVariable String companyId,
                                         @Valid @RequestBody WorkspaceCreateInCompanyRequest req,
                                         Authentication auth) {
@@ -57,7 +57,7 @@ public class WorkspaceController {
         workspaceService.deleteHard(id);
     }
 
-    // Danh sách workspace của 1 company (có tìm kiếm q)
+    // Danh sách workspace của 1 company (có tìm kiếm q) - chỉ owner hoặc có quyền company:read
     @GetMapping("/companies/{companyId}/workspaces")
     @PreAuthorize("@gate.allows('company:read', authentication, #companyId)")
     public List<WorkspaceDto> listInCompany(@PathVariable String companyId,

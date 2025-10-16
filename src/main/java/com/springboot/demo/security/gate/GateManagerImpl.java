@@ -117,6 +117,9 @@ public class GateManagerImpl implements GateManager {
         // Workspace permissions
         dynamicGates.put("workspace:create", (ctx, target) -> {
             String companyId = (String) target;
+            // Company owner can always create workspace
+            if (companyMemberRepo.isOwner(companyId, ctx.userId())) return true;
+            // Or user has workspace:create permission in company scope
             return abilityService.hasPermission(ctx.userId(), Scope.company, companyId, "workspace:create");
         });
 

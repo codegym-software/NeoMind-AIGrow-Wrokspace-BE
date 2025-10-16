@@ -55,6 +55,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         }
         Workspace w = new Workspace();
         w.setCompanyId(companyId);
+        w.setCreatedBy(actorUserId);  // ✅ Thêm dòng này
         w.setName(req.name());
         w.setDescription(req.description());
         w.setCreatedAt(LocalDateTime.now());
