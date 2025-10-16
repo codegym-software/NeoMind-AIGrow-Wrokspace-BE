@@ -66,13 +66,13 @@ public class WorkspaceController {
         return service.save(c);
     }
 
-    @GetMapping("/workspaces")
-    @PreAuthorize("@gate.allows('workspace:read', authentication, #workspaceId)")
+    @GetMapping("/companies/{companyId}/workspaces")
+    @PreAuthorize("@gate.allows('workspace:read', authentication, #companyId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public Page<Workspace> list(@Parameter(description = "Search query") @RequestParam(required = false) String q,
-                              @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-                              @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
-                              Authentication auth) {
+                                @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
+                                @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
+                                Authentication auth, @PathVariable String companyId) {
         String actorId = userIdResolver.resolveInternalId(auth);
         return service.searchByCurrentUser(q, page, size, actorId);
     }

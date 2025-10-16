@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 
 
@@ -29,6 +30,11 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, String> {
     List<String> findIdsByCompanyId(@Param("companyId") String companyId);
 
     boolean existsByCompanyIdAndNameIgnoreCase(String companyId, String name);
+
+    Page<Workspace> findByCompanyIdAndIdIn(String companyId, Collection<String> ids, Pageable pageable);
+
+    Page<Workspace> findByCompanyIdAndIdInAndNameContainingIgnoreCase(
+            String companyId, Collection<String> ids, String name, Pageable pageable);
 
 }
 
