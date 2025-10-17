@@ -150,6 +150,29 @@ public class GateManagerImpl implements GateManager {
             if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
             return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:manage_members");
         });
+
+        dynamicGates.put("workspace:member:read", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Owner can always read members
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            // Member can read members
+            if (workspaceMemberRepo.existsByWorkspaceIdAndUserId(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:read");
+        });
+
+        dynamicGates.put("workspace:set_user_permissions", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Only owner can set user permissions
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:set_user_permissions");
+        });
+
+        dynamicGates.put("workspace:transfer_ownership", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Only owner can transfer ownership
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:transfer_ownership");
+        });
     }
 
     @Override

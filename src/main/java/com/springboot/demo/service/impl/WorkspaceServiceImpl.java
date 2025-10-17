@@ -14,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,7 +64,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         WorkspaceMember owner = new WorkspaceMember();
         owner.setWorkspaceId(saved.getId());
         owner.setUserId(actorUserId);
-        owner.setRoleId(resolveWorkspaceOwnerRoleId());
+        owner.setRoleId(null); // Owner không cần role vì đã có toàn quyền
         owner.setOwner(true);
         workspaceMemberRepository.save(owner);
 
@@ -125,9 +124,5 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         var pageable = PageRequest.of(page, size);
         var p = workspaceRepository.findByUserIdAndNameContainingIgnoreCase(actorUserId, q == null ? "" : q, pageable);
         return new PageImpl<>(p.getContent(), pageable, p.getTotalElements());
-    }
-
-    private Integer resolveWorkspaceOwnerRoleId() {
-        return 1;
     }
 }

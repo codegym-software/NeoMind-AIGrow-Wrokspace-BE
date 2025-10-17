@@ -16,6 +16,9 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
 
     List<WorkspaceMember> findAllByUserId(String userId);
 
+    boolean existsByWorkspaceIdAndInvitedEmailIgnoreCase(String workspaceId, String invitedEmail);
+    Optional<WorkspaceMember> findFirstByWorkspaceIdAndInvitedEmailIgnoreCase(String workspaceId, String invitedEmail);
+
     @Query("select wm from WorkspaceMember wm where wm.workspaceId = :workspaceId and wm.userId = :userId")
     Optional<WorkspaceMember> findOneByWorkspaceIdAndUserId(@Param("workspaceId") String workspaceId,
                                                             @Param("userId") String userId);
