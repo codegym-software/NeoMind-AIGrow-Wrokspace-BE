@@ -60,8 +60,9 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
     @Query("""
     select distinct wm.workspaceId
     from WorkspaceMember wm
+    join Workspace w on w.id = wm.workspaceId
     where wm.userId = :userId
-      and wm.workspace.companyId = :companyId
+      and w.companyId = :companyId
 """)
     List<String> findWorkspaceIdsByUserIdAndCompanyId(@Param("userId") String userId,
                                                       @Param("companyId") String companyId);
