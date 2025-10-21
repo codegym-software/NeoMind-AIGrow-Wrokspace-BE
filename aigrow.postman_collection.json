@@ -9,6 +9,9 @@
     { "key": "jwtToken", "value": "YOUR_JWT_TOKEN_HERE", "type": "string" },
     { "key": "companyId", "value": "", "type": "string" },
     { "key": "workspaceId", "value": "", "type": "string" },
+    { "key": "projectId", "value": "", "type": "string" },
+    { "key": "roleId", "value": "", "type": "string" },
+    { "key": "memberUserId", "value": "", "type": "string" },
     { "key": "uploadBucket", "value": "company-logo", "type": "string" },
 
     { "key": "cognitoBaseUrl", "value": "https://YOUR_DOMAIN.auth.YOUR_REGION.amazoncognito.com", "type": "string" },
@@ -169,9 +172,54 @@
             { "name": "GET /api/workspaces/company/{companyId} (paged)", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/company/{{companyId}}?q=&page=0&size=10", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "company", "{{companyId}}"], "query": [ {"key":"q","value":""}, {"key":"page","value":"0"}, {"key":"size","value":"10"} ] } } },
             { "name": "GET /api/workspaces/company/{companyId}/all", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/company/{{companyId}}/all", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "company", "{{companyId}}", "all"] } } },
             { "name": "GET /api/workspaces/company/{companyId}/count", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/company/{{companyId}}/count", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "company", "{{companyId}}", "count"] } } },
+            { "name": "GET /api/workspaces/my (List my workspaces in company)", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/my?companyId={{companyId}}&includeArchived=false", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "my"], "query": [ {"key":"companyId","value":"{{companyId}}"}, {"key":"includeArchived","value":"false"} ] } } },
             { "name": "POST /api/workspaces/companies/{companyId} (Create in company)", "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"WS in company\",\n  \"description\": \"desc\"\n}" }, "url": { "raw": "{{baseUrl}}/api/workspaces/companies/{{companyId}}", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "companies", "{{companyId}}"] } } },
             { "name": "PUT /api/workspaces/companies/{companyId}/{id}", "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"WS updated in company\",\n  \"description\": \"desc2\"\n}" }, "url": { "raw": "{{baseUrl}}/api/workspaces/companies/{{companyId}}/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "companies", "{{companyId}}", "{{workspaceId}}"] } } },
             { "name": "DELETE /api/workspaces/companies/{companyId}/{id}", "request": { "method": "DELETE", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/companies/{{companyId}}/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "companies", "{{companyId}}", "{{workspaceId}}"] } } }
+          ]
+        },
+        {
+          "name": "Projects",
+          "item": [
+            { "name": "POST /api/workspaces/{workspaceId}/projects (Create)", "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Project\",\n  \"description\": \"This is a test project\"\n}" }, "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}/projects", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}", "projects"] } }, "event": [ { "listen": "test", "script": { "exec": [ "if (pm.response.code === 200) {", "  const r = pm.response.json();", "  pm.collectionVariables.set('projectId', r.id || pm.collectionVariables.get('projectId'));", "  console.log('projectId =', pm.collectionVariables.get('projectId'));", "}" ] } } ] },
+            { "name": "GET /api/workspaces/{workspaceId}/projects (List in workspace)", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}/projects?includeArchived=false&q=", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}", "projects"], "query": [ {"key":"includeArchived","value":"false"}, {"key":"q","value":""} ] } } },
+            { "name": "PATCH /api/projects/{projectId}/rename", "request": { "method": "PATCH", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Renamed Project\"\n}" }, "url": { "raw": "{{baseUrl}}/api/projects/{{projectId}}/rename", "host": ["{{baseUrl}}"], "path": ["api", "projects", "{{projectId}}", "rename"] } } },
+            { "name": "DELETE /api/projects/{projectId}", "request": { "method": "DELETE", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/projects/{{projectId}}", "host": ["{{baseUrl}}"], "path": ["api", "projects", "{{projectId}}"] } } },
+            { "name": "GET /api/projects/mine (List my projects)", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/projects/mine?workspaceId={{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "projects", "mine"], "query": [ {"key":"workspaceId","value":"{{workspaceId}}"} ] } } }
+          ]
+        },
+        {
+          "name": "Company Members",
+          "item": [
+            { "name": "GET /api/companies/{companyId}/members", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/members", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "members"] } } },
+            { "name": "POST /api/companies/{companyId}/members (Add member)", "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"userId\": \"user-id-here\",\n  \"roleId\": 1\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/members", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "members"] } } },
+            { "name": "PUT /api/companies/{companyId}/members/{memberUserId}/role", "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"roleId\": 2\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/members/{{memberUserId}}/role", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "members", "{{memberUserId}}", "role"] } } },
+            { "name": "POST /api/companies/{companyId}/members/transfer-ownership", "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"toUserId\": \"new-owner-id\",\n  \"downgradeRoleId\": 2\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/members/transfer-ownership", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "members", "transfer-ownership"] } } },
+            { "name": "DELETE /api/companies/{companyId}/members/{memberUserId}", "request": { "method": "DELETE", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/members/{{memberUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "members", "{{memberUserId}}"] } } },
+            { "name": "POST /api/companies/{companyId}/invite", "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"email\": \"user@example.com\",\n  \"roleId\": 1\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/invite", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "invite"] } } }
+          ]
+        },
+        {
+          "name": "Roles",
+          "item": [
+            { "name": "GET /api/companies/{companyId}/roles", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/roles?includeGlobal=true", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "roles"], "query": [ {"key":"includeGlobal","value":"true"} ] } } },
+            { "name": "POST /api/companies/{companyId}/roles (Create)", "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test Role\",\n  \"description\": \"This is a test role\"\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/roles", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "roles"] } }, "event": [ { "listen": "test", "script": { "exec": [ "if (pm.response.code === 200) {", "  const r = pm.response.json();", "  pm.collectionVariables.set('roleId', r.id || pm.collectionVariables.get('roleId'));", "  console.log('roleId =', pm.collectionVariables.get('roleId'));", "}" ] } } ] },
+            { "name": "PUT /api/companies/{companyId}/roles/{roleId}", "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Role\",\n  \"description\": \"Updated description\"\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/roles/{{roleId}}", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "roles", "{{roleId}}"] } } },
+            { "name": "DELETE /api/companies/{companyId}/roles/{roleId}", "request": { "method": "DELETE", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/roles/{{roleId}}", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "roles", "{{roleId}}"] } } },
+            { "name": "PUT /api/companies/{companyId}/roles/{roleId}/permissions", "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"permissionIds\": [1, 2, 3]\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/roles/{{roleId}}/permissions", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "roles", "{{roleId}}", "permissions"] } } }
+          ]
+        },
+        {
+          "name": "Permissions",
+          "item": [
+            { "name": "GET /api/permissions", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/permissions?scope=company", "host": ["{{baseUrl}}"], "path": ["api", "permissions"], "query": [ {"key":"scope","value":"company"} ] } } }
+          ]
+        },
+        {
+          "name": "Role-Permissions",
+          "item": [
+            { "name": "GET /api/roles/{roleId}/permissions", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/roles/{{roleId}}/permissions", "host": ["{{baseUrl}}"], "path": ["api", "roles", "{{roleId}}", "permissions"] } } },
+            { "name": "PUT /api/roles/{roleId}/permissions", "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"permissionIds\": [1, 2, 3]\n}" }, "url": { "raw": "{{baseUrl}}/api/roles/{{roleId}}/permissions", "host": ["{{baseUrl}}"], "path": ["api", "roles", "{{roleId}}", "permissions"] } } }
           ]
         },
         {
