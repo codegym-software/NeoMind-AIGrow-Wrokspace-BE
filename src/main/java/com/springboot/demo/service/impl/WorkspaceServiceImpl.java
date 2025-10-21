@@ -103,8 +103,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
             System.out.println("Creating workspace entity...");
             Workspace workspace = new Workspace(
-                    request.companyId(),
-                    actualUserId, // Use the resolved user ID
+                    request.companyId(),// Use the resolved user ID
                     request.name().trim(),
                     request.description() != null ? request.description().trim() : null
             );

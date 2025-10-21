@@ -21,8 +21,6 @@ public class Workspace {
     @Column(name = "company_id", columnDefinition = "CHAR(36)", nullable = false)
     private String companyId;
 
-    @Column(name = "created_by", columnDefinition = "CHAR(36)")
-    private String createdBy;
 
     @Column(name = "name", nullable = false)
     private String name;
@@ -53,13 +51,7 @@ public class Workspace {
         this.description = description;
     }
 
-    public Workspace(String companyId, String createdBy, String name, String description) {
-        this();
-        this.companyId = companyId;
-        this.createdBy = createdBy;
-        this.name = name;
-        this.description = description;
-    }
+
 
     // Getters and Setters
     public String getId() {
@@ -76,14 +68,6 @@ public class Workspace {
 
     public void setCompanyId(String companyId) {
         this.companyId = companyId;
-    }
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
     }
 
     public String getName() {

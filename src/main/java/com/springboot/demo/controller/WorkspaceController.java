@@ -145,11 +145,10 @@ public class WorkspaceController {
         service.deleteByCompanyId(id, companyId);
     }
 
-    @PreAuthorize("@gate.allows('company:read', authentication, #companyId)")
     @GetMapping("/my")
-    public List<WorkspaceDto> listMineInCompany(@PathVariable String companyId,
-                                                @RequestParam(defaultValue = "false") boolean includeArchived,
-                                                Authentication authentication) {
+    public List<WorkspaceDto> listMine(@RequestParam String companyId,
+                                      @RequestParam(defaultValue = "false") boolean includeArchived,
+                                      Authentication authentication) {
         String userId = userIdResolver.resolveInternalId(authentication);
         return service.listMyWorkspacesInCompany(companyId, userId, includeArchived);
     }
