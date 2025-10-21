@@ -52,9 +52,9 @@ public class GateManagerImpl implements GateManager {
             String workspaceId = (String) target;
             String userId = ctx.userId();
 
-            return abilityService.hasPermission(userId, Scope.workspace, "project:create", workspaceId)
-                    || abilityService.hasPermission(userId, Scope.workspace, "project:crud", workspaceId)
-                    || abilityService.hasPermission(userId, Scope.workspace, "workspace:update", workspaceId);
+            return abilityService.hasPermission(userId, Scope.workspace, workspaceId,"project:create")
+                    || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "project:crud")
+                    || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:update");
         });
 
         dynamicGates.put("project:read", (ctx, target) -> {
@@ -62,9 +62,9 @@ public class GateManagerImpl implements GateManager {
             String workspaceId = (String) target;
             String userId = ctx.userId();
 
-            return abilityService.hasPermission(userId, Scope.workspace,"project:read", workspaceId)
-                    || abilityService.hasPermission(userId, Scope.workspace, "project:crud", workspaceId)
-                    || abilityService.hasPermission(userId, Scope.workspace, "workspace:read", workspaceId);
+            return abilityService.hasPermission(userId, Scope.workspace, workspaceId, "project:read")
+                    || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "project:crud")
+                    || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:read");
         });
 
         dynamicGates.put("project:update", (ctx, target) -> {
@@ -75,11 +75,11 @@ public class GateManagerImpl implements GateManager {
             if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) return true;
 
             String wsId = projectRepo.findWorkspaceIdByProjectId(projectId).orElse(null);
-            return abilityService.hasPermission(userId, Scope.project, "project:update", projectId)
-                    || abilityService.hasPermission(userId, Scope.project, "project:crud", projectId)
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:update")
+                    || abilityService.hasPermission(userId, Scope.project, projectId, "project:crud")
                     || (wsId != null && (
-                    abilityService.hasPermission(userId, Scope.project, "project:update", wsId) ||
-                            abilityService.hasPermission(userId, Scope.project, "project:crud", wsId)
+                    abilityService.hasPermission(userId, Scope.project, wsId, "project:update") ||
+                            abilityService.hasPermission(userId, Scope.project, wsId, "project:crud")
             ));
         });
 
@@ -90,11 +90,11 @@ public class GateManagerImpl implements GateManager {
             if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) return true;
 
             String wsId = projectRepo.findWorkspaceIdByProjectId(projectId).orElse(null);
-            return abilityService.hasPermission(userId, Scope.project,"project:delete", projectId)
-                    || abilityService.hasPermission(userId, Scope.project,"project:crud", projectId)
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:delete")
+                    || abilityService.hasPermission(userId, Scope.project, projectId, "project:crud")
                     || (wsId != null && (
-                    abilityService.hasPermission(userId, Scope.workspace,"project:delete", wsId) ||
-                            abilityService.hasPermission(userId, Scope.workspace,"project:crud", wsId)
+                    abilityService.hasPermission(userId, Scope.workspace, wsId, "project:delete") ||
+                            abilityService.hasPermission(userId, Scope.workspace, wsId, "project:crud")
             ));
         });
 
