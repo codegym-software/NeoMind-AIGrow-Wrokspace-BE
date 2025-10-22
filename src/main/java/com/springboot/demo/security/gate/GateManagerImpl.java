@@ -34,6 +34,20 @@ public class GateManagerImpl implements GateManager {
 
     @PostConstruct
     void initGates() {
+        dynamicGates.put("workspace:create", (ctx, companyId) -> {
+            if (companyId == null || companyId.isBlank()) {
+                return false;
+            }
+            // Allow if user is the owner of the company
+            boolean isOwner = companyMemberRepo.isOwner(companyId, ctx.userId);
+            if (isOwner) {
+                return true;
+            }
+            // OR if the user has the explicit 'workspace:create' permission in the company
+            return rbacRepo.userHasPermissionInScope(
+                    ctx.userId, Scope.company, companyId, "workspace:create");
+        });
+
         dynamicGates.put("company:transfer_ownership", (ctx, companyId) -> {
             if (companyId == null || companyId.isBlank()) return false;
             boolean isOwner = companyMemberRepo.isOwner(companyId, ctx.userId);
@@ -144,10 +158,12 @@ public class GateManagerImpl implements GateManager {
     private boolean isOwner(Scope scope, String targetId, String userId) {
         return switch (scope) {
             case company   -> companyMemberRepo.isOwner(targetId, userId);
-//            case workspace -> workspaceMemberRepo.isOwner(targetId, userId);
-//            case project   -> pmRepo.isOwner(targetId, userId);
-            case workspace -> false;
-            case project -> false;
+            case workspace -> workspaceMemberRepo.isOwner(targetId, userId);
+            case project -> {
+                String workspaceId = projectRepo.findWorkspaceIdByProjectId(targetId).orElse(null);
+                if (workspaceId == null) yield false;
+                yield workspaceMemberRepo.isOwner(workspaceId, userId);
+            }
         };
     }
 

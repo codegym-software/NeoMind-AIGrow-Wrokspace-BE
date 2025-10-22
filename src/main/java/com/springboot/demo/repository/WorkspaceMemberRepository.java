@@ -8,6 +8,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import com.springboot.demo.model.Workspace;
 
 @Repository
 public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember, String> {
@@ -31,4 +34,35 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
     boolean existsByWorkspaceIdAndUserIdAndRoleId(@Param("workspaceId") String workspaceId, 
                                                   @Param("userId") String userId, 
                                                   @Param("roleId") Long roleId);
+
+    // Check if user is the owner of the workspace
+    @Query("SELECT COUNT(wm) > 0 FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.userId = :userId AND wm.isOwner = true")
+    boolean isOwner(@Param("workspaceId") String workspaceId, @Param("userId") String userId);
+
+    @Query(value = """
+        SELECT w.*
+        FROM workspaces w
+        JOIN workspace_members wm ON wm.workspace_id = w.id
+        WHERE w.company_id = :companyId
+          AND wm.user_id = :userId
+          AND (:includeArchived = TRUE OR w.archived_at IS NULL)
+          AND (:q IS NULL OR :q = '' OR LOWER(w.name) LIKE LOWER(CONCAT('%', :q, '%')))
+        """,
+        countQuery = """
+        SELECT count(w.id)
+        FROM workspaces w
+        JOIN workspace_members wm ON wm.workspace_id = w.id
+        WHERE w.company_id = :companyId
+          AND wm.user_id = :userId
+          AND (:includeArchived = TRUE OR w.archived_at IS NULL)
+          AND (:q IS NULL OR :q = '' OR LOWER(w.name) LIKE LOWER(CONCAT('%', :q, '%')))
+        """,
+        nativeQuery = true)
+    Page<Workspace> findMyWorkspacesInCompany(
+        @Param("companyId") String companyId,
+        @Param("userId") String userId,
+        @Param("q") String q,
+        @Param("includeArchived") boolean includeArchived,
+        Pageable pageable
+    );
 }

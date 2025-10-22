@@ -3,8 +3,10 @@ package com.springboot.demo.service.impl;
 import com.springboot.demo.dto.workspace.WorkspaceCreateRequest;
 import com.springboot.demo.dto.workspace.WorkspaceDto;
 import com.springboot.demo.dto.workspace.WorkspaceUpdateRequest;
+import com.springboot.demo.model.Role;
 import com.springboot.demo.model.Workspace;
 import com.springboot.demo.model.WorkspaceMember;
+import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.repository.WorkspaceRepository;
 import com.springboot.demo.repository.WorkspaceMemberRepository;
 import com.springboot.demo.repository.CompanyRepository;
@@ -91,14 +93,6 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                         // Continue without user (created_by will be null)
                     }
                 }
-                
-                if (actualUserId != null) {
-                    System.out.println("Checking role exists...");
-                    if (!roleRepository.existsById(200)) {
-                        throw new IllegalArgumentException("Workspace Admin role (ID: 200) does not exist");
-                    }
-                    System.out.println("Role exists ✓");
-                }
             }
 
             System.out.println("Creating workspace entity...");
@@ -113,18 +107,18 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             Workspace savedWorkspace = repository.save(workspace);
             System.out.println("Workspace saved with ID: " + savedWorkspace.getId());
 
-            // Auto-add creator as Workspace Admin (role_id = 200) if actualUserId is resolved
+            // Auto-add creator as Workspace Admin if actualUserId is resolved
             if (actualUserId != null && !actualUserId.trim().isEmpty()) {
-                System.out.println("Adding creator to workspace members...");
+                System.out.println("Adding creator to workspace members as OWNER...");
+
                 // Check if user is already a member (idempotent)
                 if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(savedWorkspace.getId(), actualUserId)) {
-                    WorkspaceMember member = new WorkspaceMember(
+                    WorkspaceMember member = WorkspaceMember.asOwner(
                             savedWorkspace.getId(),
-                            actualUserId,
-                            200
+                            actualUserId
                     );
                     workspaceMemberRepository.save(member);
-                    System.out.println("Creator added as workspace member ✓");
+                    System.out.println("Creator added as workspace member (Owner) ✓");
                 } else {
                     System.out.println("Creator already a member, skipping ✓");
                 }
@@ -240,5 +234,11 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         List<Workspace> list = repository.findMineInCompany(companyId, userId, includeArchived);
         return list.stream().map(WorkspaceDto::fromEntity).toList();
 
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Workspace> searchMyWorkspacesInCompany(String companyId, String userId, String query, boolean includeArchived, Pageable pageable) {
+        return workspaceMemberRepository.findMyWorkspacesInCompany(companyId, userId, query, includeArchived, pageable);
     }
 }

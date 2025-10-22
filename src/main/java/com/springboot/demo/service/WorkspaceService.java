@@ -4,6 +4,8 @@ import com.springboot.demo.dto.workspace.WorkspaceCreateRequest;
 import com.springboot.demo.dto.workspace.WorkspaceDto;
 import com.springboot.demo.dto.workspace.WorkspaceUpdateRequest;
 import com.springboot.demo.model.Workspace;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -34,5 +36,7 @@ public interface WorkspaceService {
     long countByCompanyId(String companyId);
 
     List<WorkspaceDto> listMyWorkspacesInCompany(String companyId, String userId, boolean includeArchived);
+
+    Page<Workspace> searchMyWorkspacesInCompany(String companyId, String userId, String query, boolean includeArchived, Pageable pageable);
 }
 

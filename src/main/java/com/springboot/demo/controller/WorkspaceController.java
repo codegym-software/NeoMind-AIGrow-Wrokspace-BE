@@ -112,41 +112,8 @@ public class WorkspaceController {
         return service.restore(id);
     }
 
-    // Alternative endpoint structure: /api/companies/{companyId}/workspaces
-    @PostMapping("/companies/{companyId}")
-    @ResponseStatus(HttpStatus.CREATED)
-    public Workspace createInCompany(@PathVariable String companyId,
-                                     @Valid @RequestBody WorkspaceCreateRequest request) {
-        // Override companyId from path variable
-        WorkspaceCreateRequest requestWithCompanyId = new WorkspaceCreateRequest(
-                companyId, request.name(), request.description()
-        );
-        return service.create(requestWithCompanyId);
-    }
-
     @GetMapping("/companies/{companyId}")
-    public List<Workspace> getByCompanyIdAlt(@PathVariable String companyId,
-                                             @RequestParam(required = false) String q,
-                                             @RequestParam(defaultValue = "0") int page,
-                                             @RequestParam(defaultValue = "10") int size) {
-        return service.searchByCompanyId(companyId, q);
-    }
-
-    @PutMapping("/companies/{companyId}/{id}")
-    public Workspace updateInCompany(@PathVariable String companyId,
-                                     @PathVariable String id,
-                                     @Valid @RequestBody WorkspaceUpdateRequest request) {
-        return service.updateByCompanyId(id, companyId, request);
-    }
-
-    @DeleteMapping("/companies/{companyId}/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteInCompany(@PathVariable String companyId, @PathVariable String id) {
-        service.deleteByCompanyId(id, companyId);
-    }
-
-    @GetMapping("/my")
-    public List<WorkspaceDto> listMine(@RequestParam String companyId,
+    public List<WorkspaceDto> listMine(@PathVariable String companyId,
                                       @RequestParam(defaultValue = "false") boolean includeArchived,
                                       Authentication authentication) {
         String userId = userIdResolver.resolveInternalId(authentication);
