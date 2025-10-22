@@ -87,9 +87,20 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    public ProjectDto rename(String projectId, String newName) {
-        Project p = projectRepo.findById(projectId).orElseThrow(() -> new IllegalArgumentException("Project not found"));
-        p.setName(newName == null ? "Untitled Project" : newName.trim());
+    public ProjectDto update(String projectId, UpdateProjectReq req) {
+        Project p = projectRepo.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+        if (req.name() != null && !req.name().isBlank()) {
+            p.setName(req.name().trim());
+        }
+        if (req.description() != null) {
+            p.setDescription(req.description().trim());
+        }
+        if (req.color() != null) {
+            p.setColor(req.color());
+        }
+
+        p.setUpdatedAt(LocalDateTime.now());
         projectRepo.save(p);
         return toDto(p);
     }

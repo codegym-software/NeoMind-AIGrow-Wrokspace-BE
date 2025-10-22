@@ -35,11 +35,11 @@ public class ProjectController {
         return service.listInWorkspace(workspaceId, includeArchived, keyword);
     }
 
-    @PatchMapping("/projects/{projectId}/rename")
+    @PatchMapping("/projects/{projectId}")
     @PreAuthorize("@gate.allows('project:update', authentication, #projectId)")
-    public ProjectDto rename(@PathVariable String projectId,
-                             @RequestBody RenameProjectReq req) {
-        return service.rename(projectId, req.name());
+    public ProjectDto update(@PathVariable String projectId,
+                             @RequestBody UpdateProjectReq req) {
+        return service.update(projectId, req);
     }
 
     @DeleteMapping("/projects/{projectId}")
