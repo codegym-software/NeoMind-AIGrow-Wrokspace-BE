@@ -7,6 +7,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
+
 
 import java.util.List;
 
@@ -37,8 +41,7 @@ public class ProjectController {
 
     @PatchMapping("/projects/{projectId}")
     @PreAuthorize("@gate.allows('project:update', authentication, #projectId)")
-    public ProjectDto update(@PathVariable String projectId,
-                             @RequestBody UpdateProjectReq req) {
+    public ProjectDto update(@PathVariable String projectId, @Valid @RequestBody UpdateProjectReq req) {
         return service.update(projectId, req);
     }
 

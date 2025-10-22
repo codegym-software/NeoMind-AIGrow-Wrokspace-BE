@@ -11,7 +11,6 @@ import com.springboot.demo.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -90,20 +89,16 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectDto update(String projectId, UpdateProjectReq req) {
         Project p = projectRepo.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found"));
-        if (req.name() != null && !req.name().isBlank()) {
-            p.setName(req.name().trim());
-        }
-        if (req.description() != null) {
-            p.setDescription(req.description().trim());
-        }
-        if (req.color() != null) {
-            p.setColor(req.color());
-        }
 
+        p.setName(req.name().trim());
+        p.setDescription(req.description().trim());
+        p.setColor(req.color());
         p.setUpdatedAt(LocalDateTime.now());
+
         projectRepo.save(p);
         return toDto(p);
     }
+
 
     @Override
     @Transactional
