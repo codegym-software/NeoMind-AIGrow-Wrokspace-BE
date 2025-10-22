@@ -24,6 +24,7 @@ public class AbilityServiceImpl implements AbilityService {
     @Transactional(readOnly = true)
     public boolean hasPermission(String userId, Scope scope, String scopeId, String permCode) {
         Set<String> granted = rbacRepository.findPermissionCodesOfUserInScope(userId, scope, scopeId);
+        System.out.println(granted);
         return matches(granted, permCode);
     }
 
