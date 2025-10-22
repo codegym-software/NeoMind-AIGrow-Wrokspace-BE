@@ -34,19 +34,21 @@ public class GateManagerImpl implements GateManager {
 
     @PostConstruct
     void initGates() {
-        dynamicGates.put("workspace:create", (ctx, companyId) -> {
-            if (companyId == null || companyId.isBlank()) {
-                return false;
-            }
-            // Allow if user is the owner of the company
-            boolean isOwner = companyMemberRepo.isOwner(companyId, ctx.userId);
-            if (isOwner) {
+        dynamicGates.put("workspace:create", (ctx, target) -> {
+            String companyId = (String) target;
+            String userId = ctx.userId();
+
+            // Allow if user is the owner of the company (highest priority)
+            if (companyMemberRepo.isOwner(companyId, userId)) {
                 return true;
             }
-            // OR if the user has the explicit 'workspace:create' permission in the company
-            return rbacRepo.userHasPermissionInScope(
-                    ctx.userId, Scope.company, companyId, "workspace:create");
+
+            // Otherwise, allow if user has 'workspace:create' or a broader 'company:update' permission
+            return abilityService.hasPermission(userId, Scope.company, companyId, "workspace:create")
+                    || abilityService.hasPermission(userId, Scope.company, companyId, "company:update");
         });
+
+
 
         dynamicGates.put("company:transfer_ownership", (ctx, companyId) -> {
             if (companyId == null || companyId.isBlank()) return false;

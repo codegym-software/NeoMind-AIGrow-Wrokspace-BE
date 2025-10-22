@@ -2,14 +2,9 @@ package com.springboot.demo.controller;
 
 import com.springboot.demo.dto.company.CompanyCreateRequest;
 import com.springboot.demo.dto.company.CompanyUpdateRequest;
-import com.springboot.demo.dto.workspace.WorkspaceCreateInCompanyRequest;
-import com.springboot.demo.dto.workspace.WorkspaceCreateRequest;
-import com.springboot.demo.dto.workspace.WorkspaceUpdateRequest;
 import com.springboot.demo.model.Company;
-import com.springboot.demo.model.Workspace;
 import com.springboot.demo.security.UserIdResolver;
 import com.springboot.demo.service.CompanyService;
-import com.springboot.demo.service.WorkspaceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -34,12 +29,10 @@ import java.util.Objects;
 @SecurityRequirement(name = "Bearer Authentication")
 public class CompanyController {
     private final CompanyService service;
-    private final WorkspaceService workspaceService;
     private final UserIdResolver userIdResolver;
 
-    public CompanyController(CompanyService service, WorkspaceService workspaceService, UserIdResolver userIdResolver) {
+    public CompanyController(CompanyService service, UserIdResolver userIdResolver) {
         this.service = service;
-        this.workspaceService = workspaceService;
         this.userIdResolver = userIdResolver;
     }
 
@@ -107,51 +100,6 @@ public class CompanyController {
                                  @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
                                  @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size) {
         return service.search(q, page, size);
-    }
-
-
-    // ====== Workspace APIs nested under Company ======
-
-    @PostMapping("/{companyId}/workspaces")
-    @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("@gate.allows('workspace:create', authentication, #companyId)")
-    public Workspace createWorkspace(@PathVariable String companyId,
-                                     @Valid @RequestBody WorkspaceCreateInCompanyRequest request,
-                                     Authentication auth) {
-        String actorId = userIdResolver.resolveInternalId(auth);
-        WorkspaceCreateRequest fullRequest = new WorkspaceCreateRequest(
-                companyId, request.name(), request.description()
-        );
-        return workspaceService.create(fullRequest, actorId);
-    }
-
-    @GetMapping("/{companyId}/workspaces")
-    @PreAuthorize("isAuthenticated()")
-    public Page<Workspace> getMyWorkspacesInCompany(
-            @PathVariable String companyId,
-            @RequestParam(required = false) String q,
-            @RequestParam(defaultValue = "false") boolean includeArchived,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            Authentication authentication) {
-        String userId = userIdResolver.resolveInternalId(authentication);
-        Pageable pageable = PageRequest.of(page, size);
-        return workspaceService.searchMyWorkspacesInCompany(companyId, userId, q, includeArchived, pageable);
-    }
-
-    @PutMapping("/{companyId}/workspaces/{workspaceId}")
-    @PreAuthorize("@gate.allows('workspace:update', authentication, #companyId)")
-    public Workspace updateWorkspace(@PathVariable String companyId,
-                                     @PathVariable String workspaceId,
-                                     @Valid @RequestBody WorkspaceUpdateRequest request) {
-        return workspaceService.updateByCompanyId(workspaceId, companyId, request);
-    }
-
-    @DeleteMapping("/{companyId}/workspaces/{workspaceId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("@gate.allows('workspace:delete', authentication, #companyId)")
-    public void deleteWorkspace(@PathVariable String companyId, @PathVariable String workspaceId) {
-        workspaceService.deleteByCompanyId(workspaceId, companyId);
     }
 }
 

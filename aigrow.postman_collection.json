@@ -163,16 +163,39 @@
         {
           "name": "Workspaces",
           "item": [
-            { "name": "POST /api/workspaces (Create)", "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"companyId\": \"{{companyId}}\",\n  \"name\": \"Test Workspace\",\n  \"description\": \"This is a test workspace\"\n}" }, "url": { "raw": "{{baseUrl}}/api/workspaces", "host": ["{{baseUrl}}"], "path": ["api", "workspaces"] } }, "event": [ { "listen": "test", "script": { "exec": [ "if (pm.response.code === 201) {", "  const r = pm.response.json();", "  pm.collectionVariables.set('workspaceId', r.id || pm.collectionVariables.get('workspaceId'));", "  console.log('workspaceId =', pm.collectionVariables.get('workspaceId'));", "}" ] } } ] },
-            { "name": "GET /api/workspaces/{id}", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}"] } } },
-            { "name": "PUT /api/workspaces/{id}", "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Test Workspace\",\n  \"description\": \"Updated desc\"\n}" }, "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}"] } } },
-            { "name": "DELETE /api/workspaces/{id}", "request": { "method": "DELETE", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}"] } } },
-            { "name": "PATCH /api/workspaces/{id}/restore", "request": { "method": "PATCH", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}/restore", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}", "restore"] } } },
-            { "name": "GET /api/workspaces (by companyId, for admin)", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces?companyId={{companyId}}&q=&page=0&size=10", "host": ["{{baseUrl}}"], "path": ["api", "workspaces"], "query": [ {"key":"companyId","value":"{{companyId}}"}, {"key":"q","value":""}, {"key":"page","value":"0"}, {"key":"size","value":"10"} ] } } },
-            { "name": "GET /api/companies/{companyId}/workspaces (List my workspaces, paged)", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/workspaces?q=&page=0&size=10&includeArchived=false", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "workspaces"], "query": [ {"key":"q","value":""}, {"key":"page","value":"0"}, {"key":"size","value":"10"}, {"key":"includeArchived","value":"false"} ] } } },
-            { "name": "POST /api/companies/{companyId}/workspaces (Create)", "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"WS in company\",\n  \"description\": \"desc\"\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/workspaces", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "workspaces"] } } },
-            { "name": "PUT /api/companies/{companyId}/workspaces/{id}", "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"WS updated in company\",\n  \"description\": \"desc2\"\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/workspaces/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "workspaces", "{{workspaceId}}"] } } },
-            { "name": "DELETE /api/companies/{companyId}/workspaces/{id}", "request": { "method": "DELETE", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/workspaces/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "workspaces", "{{workspaceId}}"] } } }
+            {
+              "name": "GET /workspaces/{id}",
+              "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}"] } }
+            },
+            {
+              "name": "PUT /workspaces/{id}",
+              "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Test Workspace\",\n  \"description\": \"Updated desc\"\n}" }, "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}"] } }
+            },
+            {
+              "name": "DELETE /workspaces/{id}",
+              "request": { "method": "DELETE", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}"] } }
+            },
+            {
+              "name": "PATCH /workspaces/{id}/restore",
+              "request": { "method": "PATCH", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}/restore", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}", "restore"] } }
+            },
+            {
+              "name": "GET /companies/{companyId}/workspaces (List my workspaces, paged)",
+              "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/workspaces?q=&page=0&size=10&includeArchived=false", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "workspaces"], "query": [ {"key":"q","value":""}, {"key":"page","value":"0"}, {"key":"size","value":"10"}, {"key":"includeArchived","value":"false"} ] } }
+            },
+            {
+              "name": "POST /companies/{companyId}/workspaces (Create)",
+              "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"WS in company\",\n  \"description\": \"desc\"\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/workspaces", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "workspaces"] } },
+              "event": [ { "listen": "test", "script": { "exec": [ "if (pm.response.code === 201) {", "  const r = pm.response.json();", "  pm.collectionVariables.set('workspaceId', r.id || pm.collectionVariables.get('workspaceId'));", "  console.log('workspaceId =', pm.collectionVariables.get('workspaceId'));", "}" ] } } ]
+            },
+            {
+              "name": "PUT /companies/{companyId}/workspaces/{id}",
+              "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"WS updated in company\",\n  \"description\": \"desc2\"\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/workspaces/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "workspaces", "{{workspaceId}}"] } }
+            },
+            {
+              "name": "DELETE /companies/{companyId}/workspaces/{id}",
+              "request": { "method": "DELETE", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/workspaces/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "workspaces", "{{workspaceId}}"] } }
+            }
           ]
         },
         {

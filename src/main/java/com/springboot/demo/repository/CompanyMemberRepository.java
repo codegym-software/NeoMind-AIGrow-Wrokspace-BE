@@ -44,9 +44,9 @@ public interface CompanyMemberRepository extends JpaRepository<CompanyMember, In
         """, nativeQuery = true)
     int isOwnerRaw(@Param("companyId") String companyId, @Param("userId") String userId);
 
-    default boolean isOwner(String companyId, String userId) {
-        return isOwnerRaw(companyId, userId) == 1;
-    }
+ default boolean isOwner(String companyId, String userId) {
+       return isOwnerRaw(companyId, userId) == 1;
+   }
 
 
     @Query("SELECT COUNT(m) FROM CompanyMember m WHERE m.companyId = :companyId AND m.isOwner = true")
