@@ -6,7 +6,6 @@ import com.springboot.demo.dto.workspace.WorkspaceUpdateRequest;
 import com.springboot.demo.model.Workspace;
 import com.springboot.demo.security.UserIdResolver;
 import com.springboot.demo.service.WorkspaceService;
-import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -68,31 +67,6 @@ public class WorkspaceController {
     @PreAuthorize("@gate.allows('workspace:delete', authentication, #workspaceId)")
     public void deleteInCompany(@PathVariable String companyId, @PathVariable String workspaceId) {
         service.deleteByCompanyId(workspaceId, companyId);
-    }
-
-
-    // Generic APIs (not company-specific in path)
-
-    @GetMapping("/{id}")
-    public Workspace getById(@Parameter(description = "Workspace ID") @PathVariable String id) {
-        return service.getById(id);
-    }
-
-    @PutMapping("/{id}")
-    public Workspace update(@PathVariable String id,
-                            @Valid @RequestBody WorkspaceUpdateRequest request) {
-        return service.update(id, request);
-    }
-
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable String id) {
-        service.delete(id);
-    }
-
-    @PatchMapping("/{id}/restore")
-    public Workspace restore(@PathVariable String id) {
-        return service.restore(id);
     }
 }
 

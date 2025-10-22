@@ -16,6 +16,7 @@ public class RolePermissionServiceImpl implements RolePermissionService {
 
     private final RolePermissionRepository rpRepo;
 
+
     @Override
     public List<Integer> getPermissionIdsByRole(Integer roleId) {
         return rpRepo.findByIdRoleId(roleId)

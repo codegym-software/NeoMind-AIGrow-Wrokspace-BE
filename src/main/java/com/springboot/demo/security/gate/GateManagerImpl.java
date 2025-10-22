@@ -48,8 +48,6 @@ public class GateManagerImpl implements GateManager {
                     || abilityService.hasPermission(userId, Scope.company, companyId, "company:update");
         });
 
-
-
         dynamicGates.put("company:transfer_ownership", (ctx, companyId) -> {
             if (companyId == null || companyId.isBlank()) return false;
             boolean isOwner = companyMemberRepo.isOwner(companyId, ctx.userId);
@@ -68,6 +66,12 @@ public class GateManagerImpl implements GateManager {
             String workspaceId = (String) target;
             String userId = ctx.userId();
 
+            // Allow if user is the owner of the workspace (highest priority)
+            if (workspaceMemberRepo.isOwner(workspaceId, userId)) {
+                return true;
+            }
+
+            // Otherwise, check for explicit permissions
             return abilityService.hasPermission(userId, Scope.workspace, workspaceId,"project:create")
                     || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "project:crud")
                     || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:update");
