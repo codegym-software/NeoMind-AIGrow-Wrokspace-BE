@@ -55,17 +55,17 @@ public class WorkspaceController {
         return service.searchMyWorkspacesInCompany(companyId, userId, q, includeArchived, pageable);
     }
 
-    @PutMapping("/companies/{companyId}/workspaces/{workspaceId}")
-    @PreAuthorize("@gate.allows('workspace:update', authentication, #companyId)")
+    @PutMapping("/companies/{companyId}/{workspaceId}")
+    @PreAuthorize("@gate.allows('workspace:update', authentication, #workspaceId)")
     public Workspace updateInCompany(@PathVariable String companyId,
                                      @PathVariable String workspaceId,
                                      @Valid @RequestBody WorkspaceUpdateRequest request) {
         return service.updateByCompanyId(workspaceId, companyId, request);
     }
 
-    @DeleteMapping("/companies/{companyId}/workspaces/{workspaceId}")
+    @DeleteMapping("/companies/{companyId}/{workspaceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("@gate.allows('workspace:delete', authentication, #companyId)")
+    @PreAuthorize("@gate.allows('workspace:delete', authentication, #workspaceId)")
     public void deleteInCompany(@PathVariable String companyId, @PathVariable String workspaceId) {
         service.deleteByCompanyId(workspaceId, companyId);
     }
@@ -73,24 +73,24 @@ public class WorkspaceController {
 
     // Generic APIs (not company-specific in path)
 
-    @GetMapping("/workspaces/{id}")
+    @GetMapping("/{id}")
     public Workspace getById(@Parameter(description = "Workspace ID") @PathVariable String id) {
         return service.getById(id);
     }
 
-    @PutMapping("/workspaces/{id}")
+    @PutMapping("/{id}")
     public Workspace update(@PathVariable String id,
                             @Valid @RequestBody WorkspaceUpdateRequest request) {
         return service.update(id, request);
     }
 
-    @DeleteMapping("/workspaces/{id}")
+    @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
         service.delete(id);
     }
 
-    @PatchMapping("/workspaces/{id}/restore")
+    @PatchMapping("/{id}/restore")
     public Workspace restore(@PathVariable String id) {
         return service.restore(id);
     }

@@ -189,12 +189,12 @@
               "event": [ { "listen": "test", "script": { "exec": [ "if (pm.response.code === 201) {", "  const r = pm.response.json();", "  pm.collectionVariables.set('workspaceId', r.id || pm.collectionVariables.get('workspaceId'));", "  console.log('workspaceId =', pm.collectionVariables.get('workspaceId'));", "}" ] } } ]
             },
             {
-              "name": "PUT /companies/{companyId}/workspaces/{id}",
-              "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"WS updated in company\",\n  \"description\": \"desc2\"\n}" }, "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/workspaces/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "workspaces", "{{workspaceId}}"] } }
+              "name": "PUT /companies/{companyId}/{workspaceId}",
+              "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"name\": \"WS updated in company\",\n  \"description\": \"desc2\"\n}" }, "url": { "raw": "{{baseUrl}}/api/workspaces/companies/{{companyId}}/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "companies", "{{companyId}}", "{{workspaceId}}"] } }
             },
             {
-              "name": "DELETE /companies/{companyId}/workspaces/{id}",
-              "request": { "method": "DELETE", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/workspaces/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "workspaces", "{{workspaceId}}"] } }
+              "name": "DELETE /companies/{companyId}/{workspaceId}",
+              "request": { "method": "DELETE", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/companies/{{companyId}}/{{workspaceId}}", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "companies", "{{companyId}}", "{{workspaceId}}"] } }
             }
           ]
         },
