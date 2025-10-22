@@ -7,14 +7,20 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${ISSUER_URI}
+  
+  # Cấu hình jackson phải nằm ở đây, ngang hàng với security
+  jackson:
+    mapper:
+      accept-case-insensitive-enums: true
+      
   servlet:
     multipart:
-      max-file-size: ${MAX_UPLOAD_SIZE}
+      max-file-size: 5 MB
       max-request-size: 5 MB
 
 cognito:
-  issuer-uri: ${ISSUER_URI}
-  client-id: ${CLIENT_ID}
+  issuer-uri: https://cognito-idp.ap-southeast-2.amazonaws.com/ap-southeast-2_TespiMS7C
+  client-id: 1eg6hhsgee31ha8hh6lg2kjn9p
   userinfo-url: https://ap-southeast-2tespims7c.auth.ap-southeast-2.amazoncognito.com/oauth2/userInfo
 
 
