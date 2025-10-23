@@ -34,6 +34,20 @@ public class GateManagerImpl implements GateManager {
 
     @PostConstruct
     void initGates() {
+        dynamicGates.put("workspace:create", (ctx, target) -> {
+            String companyId = (String) target;
+            String userId = ctx.userId();
+
+            // Allow if user is the owner of the company (highest priority)
+            if (companyMemberRepo.isOwner(companyId, userId)) {
+                return true;
+            }
+
+            // Otherwise, allow if user has 'workspace:create' or a broader 'company:update' permission
+            return abilityService.hasPermission(userId, Scope.company, companyId, "workspace:create")
+                    || abilityService.hasPermission(userId, Scope.company, companyId, "company:update");
+        });
+
         dynamicGates.put("company:transfer_ownership", (ctx, companyId) -> {
             if (companyId == null || companyId.isBlank()) return false;
             boolean isOwner = companyMemberRepo.isOwner(companyId, ctx.userId);
@@ -52,6 +66,12 @@ public class GateManagerImpl implements GateManager {
             String workspaceId = (String) target;
             String userId = ctx.userId();
 
+            // Allow if user is the owner of the workspace (highest priority)
+            if (workspaceMemberRepo.isOwner(workspaceId, userId)) {
+                return true;
+            }
+
+            // Otherwise, check for explicit permissions
             return abilityService.hasPermission(userId, Scope.workspace, workspaceId,"project:create")
                     || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "project:crud")
                     || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:update");
@@ -144,10 +164,12 @@ public class GateManagerImpl implements GateManager {
     private boolean isOwner(Scope scope, String targetId, String userId) {
         return switch (scope) {
             case company   -> companyMemberRepo.isOwner(targetId, userId);
-//            case workspace -> workspaceMemberRepo.isOwner(targetId, userId);
-//            case project   -> pmRepo.isOwner(targetId, userId);
-            case workspace -> false;
-            case project -> false;
+            case workspace -> workspaceMemberRepo.isOwner(targetId, userId);
+            case project -> {
+                String workspaceId = projectRepo.findWorkspaceIdByProjectId(targetId).orElse(null);
+                if (workspaceId == null) yield false;
+                yield workspaceMemberRepo.isOwner(workspaceId, userId);
+            }
         };
     }
 
