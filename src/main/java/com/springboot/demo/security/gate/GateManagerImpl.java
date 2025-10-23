@@ -133,6 +133,40 @@ public class GateManagerImpl implements GateManager {
                     || abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:update")
                     || abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:crud");
         });
+
+        dynamicGates.put("project:sprint:create", (ctx, target) -> {
+            String projectId = (String) target;
+            String userId = ctx.userId();
+
+            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) return true;
+
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:sprint:create");
+        });
+
+        dynamicGates.put("project:sprint:read", (ctx, target) -> {
+            String projectId = (String) target;
+            String userId = ctx.userId();
+
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:sprint:read");
+        });
+
+        dynamicGates.put("project:sprint:update", (ctx, target) -> {
+            String projectId = (String) target;
+            String userId = ctx.userId();
+
+            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) return true;
+
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:sprint:update");
+        });
+
+        dynamicGates.put("project:sprint:delete", (ctx, target) -> {
+            String projectId = (String) target;
+            String userId = ctx.userId();
+
+            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) return true;
+
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:sprint:delete");
+        });
     }
 
     @Override
