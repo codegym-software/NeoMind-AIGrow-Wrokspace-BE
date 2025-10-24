@@ -3,6 +3,7 @@ package com.springboot.demo.service.impl;
 import com.springboot.demo.dto.workspace.WorkspaceCreateRequest;
 import com.springboot.demo.dto.workspace.WorkspaceDto;
 import com.springboot.demo.dto.workspace.WorkspaceUpdateRequest;
+import com.springboot.demo.exception.DuplicateWorkspaceException;
 import com.springboot.demo.model.Workspace;
 import com.springboot.demo.model.WorkspaceMember;
 import com.springboot.demo.repository.WorkspaceRepository;
@@ -51,7 +52,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         // Validate workspace name is unique in company
         repository.findByCompanyIdAndNameAndNotArchived(request.companyId(), request.name())
                 .ifPresent(existing -> {
-                    throw new IllegalArgumentException("Workspace with name '" + request.name() + "' already exists in this company");
+                    throw new DuplicateWorkspaceException("Workspace with name '" + request.name() + "' already exists in this company");
                 });
 
         // Validate user exists if creatorUserId is provided
@@ -115,7 +116,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             repository.findByCompanyIdAndNameAndNotArchived(workspace.getCompanyId(), request.name().trim())
                     .ifPresent(existing -> {
                         if (!existing.getId().equals(id)) {
-                            throw new IllegalArgumentException("Workspace with name '" + request.name() + "' already exists in this company");
+                            throw new DuplicateWorkspaceException("Workspace with name '" + request.name() + "' already exists in this company");
                         }
                     });
             workspace.setName(request.name().trim());

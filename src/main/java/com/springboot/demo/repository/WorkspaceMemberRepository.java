@@ -48,7 +48,15 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
           AND (:includeArchived = TRUE OR w.archived_at IS NULL)
           AND (:q IS NULL OR :q = '' OR LOWER(w.name) LIKE LOWER(CONCAT('%', :q, '%')))
         """,
-
+        countQuery = """
+        SELECT count(w.id)
+        FROM workspaces w
+        JOIN workspace_members wm ON wm.workspace_id = w.id
+        WHERE w.company_id = :companyId
+          AND wm.user_id = :userId
+          AND (:includeArchived = TRUE OR w.archived_at IS NULL)
+          AND (:q IS NULL OR :q = '' OR LOWER(w.name) LIKE LOWER(CONCAT('%', :q, '%')))
+        """,
         nativeQuery = true)
     Page<Workspace> findMyWorkspacesInCompany(
         @Param("companyId") String companyId,
