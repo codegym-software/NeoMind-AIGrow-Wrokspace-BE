@@ -1,7 +1,15 @@
 package com.springboot.demo.model;
 
+// Import TaskPriority, nhưng XÓA TaskStatus
 import com.springboot.demo.model.enums.TaskPriority;
-import com.springboot.demo.model.enums.TaskStatus;
+// import com.springboot.demo.model.enums.TaskStatus; // <-- ĐÃ XÓA
+
+// THÊM CÁC IMPORT MỚI
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+// Giả sử bạn có Entity tên là BoardColumn (từ bảng board_columns)
+import com.springboot.demo.model.BoardColumn; 
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -30,7 +38,8 @@ public class Task {
     @Column(name = "project_id", columnDefinition = "CHAR(36)", nullable = false)
     private String projectId;
 
-    @Column(name = "sprint_id", columnDefinition = "CHAR(36)")
+    // SỬA LẠI: Xóa 'columnDefinition' vì kiểu dữ liệu là INT, không phải CHAR(36)
+    @Column(name = "sprint_id") 
     private Integer sprintId;
 
     @Column(name = "assigned_to", columnDefinition = "CHAR(36)")
@@ -42,13 +51,19 @@ public class Task {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, columnDefinition = "ENUM('TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'CANCELLED') DEFAULT 'TODO'")
-    private TaskStatus status = TaskStatus.TODO;
+    // --- BẮT ĐẦU THAY ĐỔI LỚN ---
+    // Xóa trường @Enumerated TaskStatus cũ
+    
+    // THAY THẾ BẰNG: Mối quan hệ với bảng BoardColumn
+    @ManyToOne 
+    @JoinColumn(name = "column_id") // Đây là cột khóa ngoại mới trong bảng 'tasks'
+    private BoardColumn statusColumn; // Đặt tên là statusColumn (hoặc status)
+    
+    // --- KẾT THÚC THAY ĐỔI LỚN ---
 
     @Enumerated(EnumType.STRING)
     @Column(name = "priority", nullable = false, columnDefinition = "ENUM('LOW', 'MEDIUM', 'HIGH', 'URGENT') DEFAULT 'MEDIUM'")
-    private TaskPriority priority = TaskPriority.medium;
+    private TaskPriority priority = TaskPriority.medium; // Giữ nguyên vì Enum Priority của bạn dùng chữ thường
 
     @Column(name = "due_date")
     private LocalDate dueDate;
@@ -73,12 +88,15 @@ public class Task {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    // SỬA LẠI: Thêm @Column
+    @Column(name = "completed_at") 
     private LocalDateTime completedAt;
 
     @Column(name = "archived_at")
     private LocalDateTime archivedAt;
 
-    // Business methods
+    // --- SỬA LẠI CÁC BUSINESS METHODS ---
+    
     public boolean isArchived() {
         return archivedAt != null;
     }
@@ -91,16 +109,18 @@ public class Task {
         this.archivedAt = null;
     }
 
+    // SỬA LẠI: Logic kiểm tra hoàn thành (giả sử cột "Done" có tên là "Done")
     public boolean isCompleted() {
-        return status == TaskStatus.DONE;
+        return statusColumn != null && "Done".equalsIgnoreCase(statusColumn.getName());
     }
 
     public boolean isOverdue() {
         return dueDate != null && dueDate.isBefore(LocalDate.now()) && !isCompleted();
     }
 
+    // SỬA LẠI: Logic kiểm tra "In Progress" (giả sử tên cột là "In Progress")
     public boolean isInProgress() {
-        return status == TaskStatus.IN_PROGRESS;
+        return statusColumn != null && "In Progress".equalsIgnoreCase(statusColumn.getName());
     }
 
     public boolean isAssigned() {

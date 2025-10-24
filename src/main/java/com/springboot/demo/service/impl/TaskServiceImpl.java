@@ -1,69 +1,20 @@
 package com.springboot.demo.service.impl;
 
+
+import com.springboot.demo.exception.AccessDeniedException;
+import com.springboot.demo.exception.ResourceNotFoundException;
+
 import com.springboot.demo.model.Task;
 import com.springboot.demo.repository.ProjectMemberRepository;
 import com.springboot.demo.repository.ProjectRepository;
 import com.springboot.demo.repository.TaskRepository;
 import com.springboot.demo.service.TaskService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.context.request.WebRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
-
-// --- ĐỊNH NGHĨA CÁC LỚP EXCEPTION ---
-// (Không cần @ResponseStatus nữa vì GlobalExceptionHandler sẽ xử lý)
-class ResourceNotFoundException extends RuntimeException {
-    public ResourceNotFoundException(String message) {
-        super(message);
-    }
-}
-
-class AccessDeniedException extends RuntimeException {
-    public AccessDeniedException(String message) {
-        super(message);
-    }
-}
-
-
-// --- BỘ XỬ LÝ LỖI TOÀN CỤC ---
-@ControllerAdvice
-class GlobalExceptionHandler {
-
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Object> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.NOT_FOUND.value());
-        body.put("error", "Not Found");
-        body.put("message", ex.getMessage()); // Lấy message chi tiết
-        body.put("path", request.getDescription(false).replace("uri=", ""));
-        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException ex, WebRequest request) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.FORBIDDEN.value());
-        body.put("error", "Forbidden");
-        body.put("message", ex.getMessage()); // Lấy message chi tiết
-        body.put("path", request.getDescription(false).replace("uri=", ""));
-        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
-    }
-}
-
-
-// --- LỚP SERVICE IMPLEMENTATION CỦA BẠN ---
 @Service
 @RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
@@ -89,51 +40,74 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     @Transactional
-    public Task update(String taskId, Task task, String currentUserId) {
+    public Task update(Long taskId, Task task, String currentUserId) {
         Task existing = taskRepo.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
 
         checkProjectAccess(existing.getProjectId(), currentUserId);
 
-        existing.setTitle(task.getTitle());
-        existing.setDescription(task.getDescription());
-        existing.setStatus(task.getStatus());
-        existing.setPriority(task.getPriority());
-        existing.setDueDate(task.getDueDate());
-        existing.setSprintId(task.getSprintId());
-        existing.setAssignedTo(task.getAssignedTo());
-        existing.setEstimatedHours(task.getEstimatedHours());
-        existing.setActualHours(task.getActualHours());
-        existing.setTags(task.getTags());
-        existing.setOrderIndex(task.getOrderIndex());
+        // --- Logic PATCH (vá lỗi) ---
+        if (task.getTitle() != null) {
+            existing.setTitle(task.getTitle());
+        }
+        if (task.getDescription() != null) {
+            existing.setDescription(task.getDescription());
+        }
+        if (task.getStatusColumn() != null) { // Giữ nguyên logic mới của bạn
+            existing.setStatusColumn(task.getStatusColumn());
+        }
+        if (task.getPriority() != null) {
+            existing.setPriority(task.getPriority());
+        }
+        if (task.getDueDate() != null) {
+            existing.setDueDate(task.getDueDate());
+        }
+        if (task.getEstimatedHours() != null) {
+            existing.setEstimatedHours(task.getEstimatedHours());
+        }
+        if (task.getActualHours() != null) {
+            existing.setActualHours(task.getActualHours());
+        }
+        if (task.getAssignedTo() != null) {
+            existing.setAssignedTo(task.getAssignedTo());
+        }
+        if (task.getSprintId() != null) {
+            existing.setSprintId(task.getSprintId());
+        }
+        if (task.getTags() != null) {
+            existing.setTags(task.getTags());
+        }
+        if (task.getOrderIndex() != null) {
+            existing.setOrderIndex(task.getOrderIndex());
+        }
 
         return taskRepo.save(existing);
     }
 
     @Override
     @Transactional
-    public void delete(String taskId, String currentUserId) {
+    public void delete(Long taskId, String currentUserId) {
         Task existing = taskRepo.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
-        
+
         checkProjectAccess(existing.getProjectId(), currentUserId);
         taskRepo.delete(existing);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Task get(String taskId, String currentUserId) {
+    public Task get(Long taskId, String currentUserId) {
         Task task = taskRepo.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
-        
+
         checkProjectAccess(task.getProjectId(), currentUserId);
         return task;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Task> listByProject(String projectId, String currentUserId) {
+    public Page<Task> listByProject(String projectId, String currentUserId, Pageable pageable) {
         checkProjectAccess(projectId, currentUserId);
-        return taskRepo.findByProjectId(projectId);
+        return taskRepo.findByProjectId(projectId, pageable);
     }
 }

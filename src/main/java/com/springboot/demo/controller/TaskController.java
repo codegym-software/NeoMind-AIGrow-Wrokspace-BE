@@ -8,11 +8,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 // DTO phản hồi chung
-record ApiResponse<T>(String message, T data) {}
+record ApiResponse<T>(String message, T data) {
+}
 
 @RestController
 @RequestMapping("/api/projects/{projectId}/tasks")
@@ -39,12 +41,12 @@ public class TaskController {
     @PutMapping("/{taskId}")
     @PreAuthorize("@gate.allows('project:task:update', authentication, #projectId)")
     public ApiResponse<Task> update(@PathVariable String projectId,
-                                    @PathVariable String taskId,
+                                    @PathVariable Long taskId, // <-- SỬA Ở ĐÂY
                                     @RequestBody Task task,
                                     Authentication authentication) {
         String userId = userIdResolver.resolveInternalId(authentication);
         task.setProjectId(projectId);
-        Task updated = taskService.update(taskId, task, userId);
+        Task updated = taskService.update(taskId, task, userId); // <-- Truyền Long vào
         return new ApiResponse<>("Task updated successfully", updated);
     }
 
@@ -53,10 +55,10 @@ public class TaskController {
     @PreAuthorize("@gate.allows('project:task:delete', authentication, #projectId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public ApiResponse<Void> delete(@PathVariable String projectId,
-                                    @PathVariable String taskId,
+                                    @PathVariable Long taskId, // <-- SỬA Ở ĐÂY
                                     Authentication authentication) {
         String userId = userIdResolver.resolveInternalId(authentication);
-        taskService.delete(taskId, userId);
+        taskService.delete(taskId, userId); // <-- Truyền Long vào
         return new ApiResponse<>("Task deleted successfully", null);
     }
 
@@ -64,20 +66,23 @@ public class TaskController {
     @GetMapping("/{taskId}")
     @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
     public ApiResponse<Task> get(@PathVariable String projectId,
-                                 @PathVariable String taskId,
+                                 @PathVariable Long taskId, // <-- SỬA Ở ĐÂY
                                  Authentication authentication) {
         String userId = userIdResolver.resolveInternalId(authentication);
-        Task task = taskService.get(taskId, userId);
+        Task task = taskService.get(taskId, userId); // <-- Truyền Long vào
         return new ApiResponse<>("Task retrieved successfully", task);
     }
 
     // List tasks by project
     @GetMapping
     @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
-    public ApiResponse<List<Task>> listByProject(@PathVariable String projectId,
-                                                 Authentication authentication) {
+    public ApiResponse<Page<Task>> listByProject(@PathVariable String projectId,
+                                                  Authentication authentication,
+                                                  Pageable pageable) {
+
         String userId = userIdResolver.resolveInternalId(authentication);
-        List<Task> tasks = taskService.listByProject(projectId, userId);
-        return new ApiResponse<>("Tasks listed successfully", tasks);
+
+        Page<Task> tasksPage = taskService.listByProject(projectId, userId, pageable);
+        return new ApiResponse<>("Tasks listed successfully", tasksPage);
     }
 }
