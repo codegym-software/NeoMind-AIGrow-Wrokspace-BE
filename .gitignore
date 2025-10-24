@@ -42,4 +42,3 @@ docker-compose.override.yml
 hs_err_pid*.log
 .env.myenv
 srcBE.zip
-launch.json

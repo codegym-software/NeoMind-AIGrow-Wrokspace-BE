@@ -109,7 +109,7 @@ public class Task {
         this.archivedAt = null;
     }
 
-    // SỬA LẠI: Logic kiểm tra hoàn thành (giả sử cột "Done" có tên là "Done")
+    
     public boolean isCompleted() {
         return statusColumn != null && "Done".equalsIgnoreCase(statusColumn.getName());
     }
@@ -118,7 +118,7 @@ public class Task {
         return dueDate != null && dueDate.isBefore(LocalDate.now()) && !isCompleted();
     }
 
-    // SỬA LẠI: Logic kiểm tra "In Progress" (giả sử tên cột là "In Progress")
+    
     public boolean isInProgress() {
         return statusColumn != null && "In Progress".equalsIgnoreCase(statusColumn.getName());
     }

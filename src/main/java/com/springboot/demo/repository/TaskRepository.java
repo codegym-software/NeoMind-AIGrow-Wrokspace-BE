@@ -1,7 +1,6 @@
 package com.springboot.demo.repository;
 
 import com.springboot.demo.model.Task;
-// import com.springboot.demo.model.enums.TaskStatus; // <-- XÓA IMPORT NÀY
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,7 +21,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findByProjectIdAndStatusColumn_IdAndArchivedAtIsNull(String projectId, Integer columnId);
     
-    // SỬA LẠI:
+    
     List<Task> findBySprintIdAndStatusColumn_IdAndArchivedAtIsNull(Integer sprintId, Integer columnId);
     
     List<Task> findByAssignedToAndArchivedAtIsNull(String assignedTo);

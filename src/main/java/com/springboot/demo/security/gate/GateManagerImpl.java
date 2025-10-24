@@ -73,7 +73,7 @@ public class GateManagerImpl implements GateManager {
             }
 
             // SỬA LẠI: Dùng đúng tên quyền 'workspace:project:create'
-            return abilityService.hasPermission(userId, Scope.workspace, workspaceId,"workspace:project:create")
+            return abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:project:create")
                     || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:update");
         });
 
@@ -118,7 +118,6 @@ public class GateManagerImpl implements GateManager {
                                     abilityService.hasPermission(userId, Scope.workspace, wsId, "project:crud")));
         });
 
-        
         // --- BẮT ĐẦU SỬA LẠI LOGIC TASK ---
 
         dynamicGates.put("project:task:read", (ctx, target) -> {
@@ -126,7 +125,7 @@ public class GateManagerImpl implements GateManager {
             String userId = ctx.userId();
             // 1. Kiểm tra Project Owner trước
             if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) {
-                 return true; // Sửa lỗi "Unreachable code": Xóa 'return true' ở dòng dưới
+                return true; // Sửa lỗi "Unreachable code": Xóa 'return true' ở dòng dưới
             }
 
             // 2. Kiểm tra quyền chi tiết (dùng đúng tên quyền)
@@ -162,9 +161,9 @@ public class GateManagerImpl implements GateManager {
         dynamicGates.put("project:task:delete", (ctx, target) -> {
             String projectId = (String) target;
             String userId = ctx.userId();
-            
+
             // Sửa lỗi: Gọi đúng tên hàm (IsTrue)
-            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) { 
+            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) {
                 return true;
             }
 
@@ -173,9 +172,8 @@ public class GateManagerImpl implements GateManager {
                     // Thêm logic: Ai có quyền sửa project cũng có thể xóa task
                     || abilityService.hasPermission(userId, Scope.project, projectId, "project:update");
         });
-        
-        // --- KẾT THÚC SỬA LOGIC TASK ---
 
+        // --- KẾT THÚC SỬA LOGIC TASK ---
 
         dynamicGates.put("project:sprint:create", (ctx, target) -> {
             String projectId = (String) target;
@@ -225,7 +223,7 @@ public class GateManagerImpl implements GateManager {
     @Override
     public boolean allows(String ability, Authentication authentication, String targetId) {
         var scope = parse_scope(ability);
-        var ctx   = resolveAuth(authentication);
+        var ctx = resolveAuth(authentication);
 
         if (isOwner(scope, targetId, ctx.userId))
             return true;
