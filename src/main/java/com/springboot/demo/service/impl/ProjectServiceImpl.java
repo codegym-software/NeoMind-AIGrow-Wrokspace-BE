@@ -4,13 +4,13 @@ import com.springboot.demo.dto.project.*;
 import com.springboot.demo.model.Project;
 import com.springboot.demo.model.ProjectMember;
 import com.springboot.demo.model.enums.ProjectStatus;
+import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.model.Role;
 import com.springboot.demo.repository.*;
 import com.springboot.demo.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -51,7 +51,7 @@ public class ProjectServiceImpl implements ProjectService {
         projectRepo.save(p);
 
         // Gắn owner (is_owner = true). role_id là role(scope='project', code='admin')
-        Integer adminRoleId = roleRepo.findByScopeAndCode("project", "admin")
+        Integer adminRoleId = roleRepo.findByScopeAndCode(Scope.project, "admin")
                 .map(Role::getId)
                 .orElseThrow(() -> new IllegalStateException("Missing seed role: scope=project, code=admin"));
 
@@ -86,12 +86,19 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    public ProjectDto rename(String projectId, String newName) {
-        Project p = projectRepo.findById(projectId).orElseThrow(() -> new IllegalArgumentException("Project not found"));
-        p.setName(newName == null ? "Untitled Project" : newName.trim());
+    public ProjectDto update(String projectId, UpdateProjectReq req) {
+        Project p = projectRepo.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+
+        p.setName(req.name().trim());
+        p.setDescription(req.description().trim());
+        p.setColor(req.color());
+        p.setUpdatedAt(LocalDateTime.now());
+
         projectRepo.save(p);
         return toDto(p);
     }
+
 
     @Override
     @Transactional
