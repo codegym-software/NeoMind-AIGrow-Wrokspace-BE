@@ -5,13 +5,26 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@ControllerAdvice 
+@ControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(DuplicateWorkspaceException.class)
+    public ResponseEntity<Object> handleDuplicateWorkspaceException(
+            DuplicateWorkspaceException ex, WebRequest request) {
+        
+        Map<String, Object> body = Map.of(
+                "message", ex.getMessage(),
+                "status", HttpStatus.CONFLICT.value()
+        );
+
+        return new ResponseEntity<>(body, HttpStatus.CONFLICT);
+    }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Object> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {

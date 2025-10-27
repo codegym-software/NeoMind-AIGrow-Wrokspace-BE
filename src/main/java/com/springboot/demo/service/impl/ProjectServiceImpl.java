@@ -50,16 +50,12 @@ public class ProjectServiceImpl implements ProjectService {
 
         projectRepo.save(p);
 
-        // Gắn owner (is_owner = true). role_id là role(scope='project', code='admin')
-        Integer adminRoleId = roleRepo.findByScopeAndCode(Scope.project, "admin")
-                .map(Role::getId)
-                .orElseThrow(() -> new IllegalStateException("Missing seed role: scope=project, code=admin"));
-
+        // Add the creator as the project owner (is_owner = true, role_id = null)
         if (!pmRepo.existsByProjectIdAndUserId(p.getId(), currentUserId)) {
             pmRepo.save(ProjectMember.builder()
                     .projectId(p.getId())
                     .userId(currentUserId)
-                    .roleId(adminRoleId)
+                    .roleId(null) // Owners do not need a specific role
                     .owner(true)
                     .build());
         }
