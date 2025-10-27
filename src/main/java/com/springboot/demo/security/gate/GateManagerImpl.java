@@ -188,7 +188,8 @@ public class GateManagerImpl implements GateManager {
         dynamicGates.put("project:sprint:read", (ctx, target) -> {
             String projectId = (String) target;
             String userId = ctx.userId();
-
+if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId))
+                return true;
             return abilityService.hasPermission(userId, Scope.project, projectId, "project:sprint:read");
         });
 
