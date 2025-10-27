@@ -43,24 +43,25 @@ public class GateManagerImpl implements GateManager {
                 return true;
             }
 
-            // Otherwise, allow if user has 'workspace:create' or a broader 'company:update' permission
+            // Otherwise, allow if user has 'workspace:create' or a broader 'company:update'
+            // permission
             return abilityService.hasPermission(userId, Scope.company, companyId, "workspace:create")
                     || abilityService.hasPermission(userId, Scope.company, companyId, "company:update");
         });
 
         dynamicGates.put("company:transfer_ownership", (ctx, companyId) -> {
-            if (companyId == null || companyId.isBlank()) return false;
+            if (companyId == null || companyId.isBlank())
+                return false;
             boolean isOwner = companyMemberRepo.isOwner(companyId, ctx.userId);
-            if (isOwner) return true;
+            if (isOwner)
+                return true;
             return rbacRepo.userHasPermissionInScope(
                     ctx.userId, Scope.company, companyId, "company:transfer_ownership");
         });
 
-        dynamicGates.put("system:admin", (ctx, ignore) ->
-                userRepo.findById(ctx.userId)
-                        .map(User::isAdmin)
-                        .orElse(false)
-        );
+        dynamicGates.put("system:admin", (ctx, ignore) -> userRepo.findById(ctx.userId)
+                .map(User::isAdmin)
+                .orElse(false));
 
         dynamicGates.put("project:create", (ctx, target) -> {
             String workspaceId = (String) target;
@@ -71,14 +72,14 @@ public class GateManagerImpl implements GateManager {
                 return true;
             }
 
-            // Otherwise, check for explicit permissions like 'workspace:create-project' or broader ones
             // SỬA LẠI: Dùng đúng tên quyền 'workspace:project:create'
             return abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:project:create")
                     || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:update");
         });
 
         dynamicGates.put("project:read", (ctx, target) -> {
-            // target: workspaceId (list) — còn xem detail project sẽ đi nhánh "project:read" với projectId (ở fallback DB)
+            // target: workspaceId (list) — còn xem detail project sẽ đi nhánh
+            // "project:read" với projectId (ở fallback DB)
             String workspaceId = (String) target;
             String userId = ctx.userId();
 
