@@ -58,4 +58,11 @@ public class ProjectController {
         String userId = userIdResolver.resolveInternalId(authentication);
         return service.listMine(workspaceId, userId);
     }
+
+    @GetMapping("/projects/{projectId}")
+    @PreAuthorize("@gate.allows('project:read', authentication, #projectId)")
+    public ProjectDto getById(@PathVariable String projectId) {
+        return service.getProjectById(projectId);
+    }
+
 }

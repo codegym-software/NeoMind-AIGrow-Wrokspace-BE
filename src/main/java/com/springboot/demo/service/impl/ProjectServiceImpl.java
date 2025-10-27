@@ -121,4 +121,12 @@ public class ProjectServiceImpl implements ProjectService {
                 .map(this::toDto)
                 .toList();
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ProjectDto getProjectById(String projectId) {
+        Project project = projectRepo.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+        return toDto(project);
+    }
 }
