@@ -72,8 +72,8 @@ public class GateManagerImpl implements GateManager {
             }
 
             // Otherwise, check for explicit permissions like 'workspace:create-project' or broader ones
-            return abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:create-project")
-                    || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "project:crud")
+            // SỬA LẠI: Dùng đúng tên quyền 'workspace:project:create'
+            return abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:project:create")
                     || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:update");
         });
 
