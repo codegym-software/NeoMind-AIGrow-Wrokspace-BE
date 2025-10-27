@@ -17,9 +17,15 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${ISSUER_URI}
+  
+  # Cấu hình jackson phải nằm ở đây, ngang hàng với security
+  jackson:
+    mapper:
+      accept-case-insensitive-enums: true
+      
   servlet:
     multipart:
-      max-file-size: ${MAX_UPLOAD_SIZE}
+      max-file-size: 5 MB
       max-request-size: 5 MB
 
 cognito:
