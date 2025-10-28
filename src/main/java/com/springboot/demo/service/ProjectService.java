@@ -9,5 +9,6 @@ public interface ProjectService {
     ProjectDto update(String projectId, UpdateProjectReq req);
     void delete(String projectId); // soft-delete
     List<ProjectDto> listMine(String workspaceId, String currentUserId);
+    List<ProjectDto> listMineInCompany(String companyId, String currentUserId);
     ProjectDto getProjectById(String projectId);
 }

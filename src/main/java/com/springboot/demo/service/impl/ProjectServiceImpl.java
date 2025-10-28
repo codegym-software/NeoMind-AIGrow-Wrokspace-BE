@@ -4,8 +4,6 @@ import com.springboot.demo.dto.project.*;
 import com.springboot.demo.model.Project;
 import com.springboot.demo.model.ProjectMember;
 import com.springboot.demo.model.enums.ProjectStatus;
-import com.springboot.demo.model.enums.Scope;
-import com.springboot.demo.model.Role;
 import com.springboot.demo.repository.*;
 import com.springboot.demo.service.ProjectService;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +19,6 @@ public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepo;
     private final ProjectMemberRepository pmRepo;
-    private final RoleRepository roleRepo;
     private final WorkspaceRepository workspaceRepo;
 
     private ProjectDto toDto(Project p) {
@@ -112,6 +109,16 @@ public class ProjectServiceImpl implements ProjectService {
                 ? projectRepo.findAllByMember(currentUserId)
                 : projectRepo.findAllByMemberInWorkspace(currentUserId, workspaceId);
 
+        return list.stream()
+                .filter(p -> p.getStatus() == ProjectStatus.active)
+                .map(this::toDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProjectDto> listMineInCompany(String companyId, String currentUserId) {
+        List<Project> list = projectRepo.findAllByMemberInCompany(currentUserId, companyId);
         return list.stream()
                 .filter(p -> p.getStatus() == ProjectStatus.active)
                 .map(this::toDto)
