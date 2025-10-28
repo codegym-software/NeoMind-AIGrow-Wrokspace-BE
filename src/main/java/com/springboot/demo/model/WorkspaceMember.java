@@ -24,7 +24,7 @@ public class WorkspaceMember {
     @Column(name = "user_id", columnDefinition = "CHAR(36)", nullable = false)
     private String userId;
 
-    @Column(name = "role_id")
+    @Column(name = "role_id", nullable = true)
     private Integer roleId;
 
     @Column(name = "is_owner")
