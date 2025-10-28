@@ -8,8 +8,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
 
 
 import java.util.List;
@@ -54,9 +52,21 @@ public class ProjectController {
     @GetMapping("/projects/mine")
     @PreAuthorize("isAuthenticated()")
     public List<ProjectDto> listMine(@RequestParam(required = false) String workspaceId,
+                                     @RequestParam(required = false) String companyId,
                                      Authentication authentication) {
         String userId = userIdResolver.resolveInternalId(authentication);
+        if (companyId != null && !companyId.isBlank()) {
+            return service.listMineInCompany(companyId, userId);
+        }
         return service.listMine(workspaceId, userId);
+    }
+
+    @GetMapping("/companies/{companyId}/projects/mine")
+    @PreAuthorize("isAuthenticated()")
+    public List<ProjectDto> listMineInCompany(@PathVariable String companyId,
+                                              Authentication authentication) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        return service.listMineInCompany(companyId, userId);
     }
 
     @GetMapping("/projects/{projectId}")
