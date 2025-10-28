@@ -25,8 +25,8 @@ spring:
       
   servlet:
     multipart:
-      max-file-size: 5 MB
-      max-request-size: 5 MB
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 cognito:
   issuer-uri: ${ISSUER_URI:https://cognito-idp.ap-southeast-2.amazonaws.com/ap-southeast-2_TespiMS7C}

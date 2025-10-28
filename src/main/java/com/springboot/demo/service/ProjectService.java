@@ -1,5 +1,4 @@
 package com.springboot.demo.service;
-
 import com.springboot.demo.dto.project.*;
 
 import java.util.List;
@@ -10,4 +9,5 @@ public interface ProjectService {
     ProjectDto update(String projectId, UpdateProjectReq req);
     void delete(String projectId); // soft-delete
     List<ProjectDto> listMine(String workspaceId, String currentUserId);
+    ProjectDto getProjectById(String projectId);
 }

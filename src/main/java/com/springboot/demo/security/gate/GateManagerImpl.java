@@ -78,14 +78,44 @@ public class GateManagerImpl implements GateManager {
         });
 
         dynamicGates.put("project:read", (ctx, target) -> {
-            // target: workspaceId (list) — còn xem detail project sẽ đi nhánh
-            // "project:read" với projectId (ở fallback DB)
-            String workspaceId = (String) target;
+            // target có thể là workspaceId (khi list) hoặc projectId (khi xem detail)
+            String targetId = (String) target;
             String userId = ctx.userId();
 
-            return abilityService.hasPermission(userId, Scope.workspace, workspaceId, "project:read")
-                    || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "project:crud")
-                    || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:read");
+            // Trường hợp 1: Nếu target là projectId (xem detail project)
+            // Kiểm tra xem user có phải project owner không
+            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(targetId, userId)) {
+                return true;
+            }
+
+            // Kiểm tra quyền trực tiếp trên project
+            if (abilityService.hasPermission(userId, Scope.project, targetId, "project:read")
+                    || abilityService.hasPermission(userId, Scope.project, targetId, "project:crud")) {
+                return true;
+            }
+
+            // Trường hợp 2: Target có thể là workspaceId (khi list projects)
+            // Kiểm tra quyền trên workspace
+            if (abilityService.hasPermission(userId, Scope.workspace, targetId, "project:read")
+                    || abilityService.hasPermission(userId, Scope.workspace, targetId, "project:crud")
+                    || abilityService.hasPermission(userId, Scope.workspace, targetId, "workspace:read")) {
+                return true;
+            }
+
+            // Trường hợp 3: Nếu target là projectId, lấy workspaceId và check quyền workspace
+            String wsId = projectRepo.findWorkspaceIdByProjectId(targetId).orElse(null);
+            if (wsId != null) {
+                // Kiểm tra user có phải workspace owner không
+                if (workspaceMemberRepo.isOwner(wsId, userId)) {
+                    return true;
+                }
+                // Kiểm tra quyền workspace
+                return abilityService.hasPermission(userId, Scope.workspace, wsId, "project:read")
+                        || abilityService.hasPermission(userId, Scope.workspace, wsId, "project:crud")
+                        || abilityService.hasPermission(userId, Scope.workspace, wsId, "workspace:read");
+            }
+
+            return false;
         });
 
         dynamicGates.put("project:update", (ctx, target) -> {

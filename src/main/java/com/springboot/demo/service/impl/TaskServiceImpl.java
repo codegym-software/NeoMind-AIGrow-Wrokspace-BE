@@ -53,7 +53,8 @@ public class TaskServiceImpl implements TaskService {
         if (task.getDescription() != null) {
             existing.setDescription(task.getDescription());
         }
-        if (task.getStatusColumn() != null) { // Giữ nguyên logic mới của bạn
+        // CRITICAL: Update statusColumn - Check both null and valid ID
+        if (task.getStatusColumn() != null && task.getStatusColumn().getId() != null) {
             existing.setStatusColumn(task.getStatusColumn());
         }
         if (task.getPriority() != null) {
@@ -68,12 +69,12 @@ public class TaskServiceImpl implements TaskService {
         if (task.getActualHours() != null) {
             existing.setActualHours(task.getActualHours());
         }
-        if (task.getAssignedTo() != null) {
-            existing.setAssignedTo(task.getAssignedTo());
-        }
-        if (task.getSprintId() != null) {
-            existing.setSprintId(task.getSprintId());
-        }
+        // Handle assignedTo - allow explicit null to unassign
+        existing.setAssignedTo(task.getAssignedTo());
+        
+        // Handle sprintId - allow explicit null to move to backlog
+        existing.setSprintId(task.getSprintId());
+        
         if (task.getTags() != null) {
             existing.setTags(task.getTags());
         }
