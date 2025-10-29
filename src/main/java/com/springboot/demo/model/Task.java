@@ -71,9 +71,6 @@ public class Task {
     @Column(name = "estimated_hours")
     private Integer estimatedHours;
 
-    @Column(name = "actual_hours")
-    private Integer actualHours;
-
     @Column(name = "tags", length = 500) // Comma-separated tags
     private String tags;
 

@@ -27,7 +27,6 @@ public class TaskCreateRequest {
 
     private LocalDate dueDate;
     private Integer estimatedHours;
-    private Integer actualHours;
     private String assignedTo;
     private String sprintId;
     private String tags;

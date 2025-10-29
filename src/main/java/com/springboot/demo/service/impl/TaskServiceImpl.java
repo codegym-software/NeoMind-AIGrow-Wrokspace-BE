@@ -66,9 +66,6 @@ public class TaskServiceImpl implements TaskService {
         if (task.getEstimatedHours() != null) {
             existing.setEstimatedHours(task.getEstimatedHours());
         }
-        if (task.getActualHours() != null) {
-            existing.setActualHours(task.getActualHours());
-        }
         // Handle assignedTo - allow explicit null to unassign
         existing.setAssignedTo(task.getAssignedTo());
         
