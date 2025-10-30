@@ -7,8 +7,6 @@ import com.springboot.demo.model.enums.TaskPriority;
 // THÊM CÁC IMPORT MỚI
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-// Giả sử bạn có Entity tên là BoardColumn (từ bảng board_columns)
-import com.springboot.demo.model.BoardColumn; 
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -42,8 +40,9 @@ public class Task {
     @Column(name = "sprint_id") 
     private Integer sprintId;
 
-    @Column(name = "assigned_to", columnDefinition = "CHAR(36)")
-    private String assignedTo; // User ID
+    // CHUẨN HÓA: Dùng assignee_id thay vì assigned_to (Foreign Key → users.id)
+    @Column(name = "assignee_id", columnDefinition = "CHAR(36)")
+    private String assigneeId; // User ID (FK)
 
     @Column(name = "title", nullable = false, length = 255)
     private String title;
@@ -85,9 +84,6 @@ public class Task {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // SỬA LẠI: Thêm @Column
-    @Column(name = "completed_at") 
-    private LocalDateTime completedAt;
 
     @Column(name = "archived_at")
     private LocalDateTime archivedAt;
@@ -121,6 +117,6 @@ public class Task {
     }
 
     public boolean isAssigned() {
-        return assignedTo != null;
+        return assigneeId != null;
     }
 }
