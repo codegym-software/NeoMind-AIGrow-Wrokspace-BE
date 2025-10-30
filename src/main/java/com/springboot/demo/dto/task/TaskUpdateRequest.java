@@ -23,7 +23,10 @@ public class TaskUpdateRequest {
     
     private LocalDate dueDate;
     private Integer estimatedHours;
-    private String assignedTo;
+    
+    // CHUẨN HÓA: Đổi từ assignedTo → assigneeId (FK → users.id)
+    private String assigneeId;
+    
     private String sprintId;
     private String tags;
     private Integer orderIndex;
