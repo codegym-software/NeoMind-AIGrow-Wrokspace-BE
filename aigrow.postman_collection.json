@@ -220,6 +220,16 @@
           ]
         },
         {
+          "name": "Workspace Members",
+          "item": [
+            { "name": "GET /api/workspaces/{workspaceId}/members (List members)", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}/members", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}", "members"] } } },
+            { "name": "POST /api/workspaces/{workspaceId}/members (Add member)", "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"userId\": \"user-id-must-be-company-member\",\n  \"roleId\": 123\n}" }, "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}/members", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}", "members"] } } },
+            { "name": "PUT /api/workspaces/{workspaceId}/members/{memberUserId}/role", "request": { "method": "PUT", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"roleId\": 124\n}" }, "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}/members/{{memberUserId}}/role", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}", "members", "{{memberUserId}}", "role"] } } },
+            { "name": "DELETE /api/workspaces/{workspaceId}/members/{memberUserId}", "request": { "method": "DELETE", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}/members/{{memberUserId}}", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}", "members", "{{memberUserId}}"] } } },
+            { "name": "POST /api/workspaces/{workspaceId}/members/transfer-ownership", "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "body": { "mode": "raw", "raw": "{\n  \"toUserId\": \"new-owner-user-id\",\n  \"downgradeRoleId\": 125\n}" }, "url": { "raw": "{{baseUrl}}/api/workspaces/{{workspaceId}}/members/transfer-ownership", "host": ["{{baseUrl}}"], "path": ["api", "workspaces", "{{workspaceId}}", "members", "transfer-ownership"] } } }
+          ]
+        },
+        {
           "name": "Roles",
           "item": [
             { "name": "GET /api/companies/{companyId}/roles", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{jwtToken}}" } ], "url": { "raw": "{{baseUrl}}/api/companies/{{companyId}}/roles?includeGlobal=true", "host": ["{{baseUrl}}"], "path": ["api", "companies", "{{companyId}}", "roles"], "query": [ {"key":"includeGlobal","value":"true"} ] } } },
