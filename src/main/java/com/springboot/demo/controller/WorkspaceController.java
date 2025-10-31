@@ -54,7 +54,13 @@ public class WorkspaceController {
         return service.searchMyWorkspacesInCompany(companyId, userId, q, includeArchived, pageable);
     }
 
-    @PutMapping("/companies/{companyId}/{workspaceId}")
+    @GetMapping("/workspaces/{workspaceId}")
+    @PreAuthorize("@gate.allows('workspace:read', authentication, #workspaceId)")
+    public Workspace getById(@PathVariable String workspaceId) {
+        return service.getById(workspaceId);
+    }
+
+    @PutMapping("/companies/{companyId}/workspaces/{workspaceId}")
     @PreAuthorize("@gate.allows('workspace:update', authentication, #workspaceId)")
     public Workspace updateInCompany(@PathVariable String companyId,
                                      @PathVariable String workspaceId,
@@ -62,7 +68,7 @@ public class WorkspaceController {
         return service.updateByCompanyId(workspaceId, companyId, request);
     }
 
-    @DeleteMapping("/companies/{companyId}/{workspaceId}")
+    @DeleteMapping("/companies/{companyId}/workspaces/{workspaceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@gate.allows('workspace:delete', authentication, #workspaceId)")
     public void deleteInCompany(@PathVariable String companyId, @PathVariable String workspaceId) {
