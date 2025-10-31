@@ -25,6 +25,7 @@ public class GateManagerImpl implements GateManager {
     private final RbacRepository rbacRepo;
     private final CompanyMemberRepository companyMemberRepo;
     private final WorkspaceMemberRepository workspaceMemberRepo;
+    private final WorkspaceRepository workspaceRepo;
     private final UserRepository userRepo;
     private final ProjectRepository projectRepo;
     private final ProjectMemberRepository pmRepo;
@@ -57,6 +58,24 @@ public class GateManagerImpl implements GateManager {
                 return true;
             return rbacRepo.userHasPermissionInScope(
                     ctx.userId, Scope.company, companyId, "company:transfer_ownership");
+        });
+
+        // Allow reading workspace overview for:
+        // - workspace owner
+        // - anyone who has explicit workspace:read permission in that workspace
+        // - any member of the company that owns the workspace (default visibility)
+        dynamicGates.put("workspace:read", (ctx, target) -> {
+            String workspaceId = (String) target;
+            String userId = ctx.userId();
+            if (workspaceMemberRepo.isOwner(workspaceId, userId)) return true;
+            if (abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:read")) return true;
+
+            // Default visibility for company members
+            String companyId = workspaceRepo.findById(workspaceId)
+                    .map(ws -> ws.getCompanyId())
+                    .orElse(null);
+            if (companyId == null) return false;
+            return companyMemberRepo.findByCompanyIdAndUserId(companyId, userId).isPresent();
         });
 
         dynamicGates.put("system:admin", (ctx, ignore) -> userRepo.findById(ctx.userId)
