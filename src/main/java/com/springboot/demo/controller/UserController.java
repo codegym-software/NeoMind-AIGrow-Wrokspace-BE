@@ -13,6 +13,8 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -21,6 +23,7 @@ public class UserController {
 
     private final AccountService accountService;
     private final UserService userService;
+    private final com.springboot.demo.repository.UserRepository userRepository;
 
     @PostMapping("/session")
     public Map<String, Object> session(Authentication authentication) {
@@ -36,6 +39,16 @@ public class UserController {
             );
         }
         throw new RuntimeException("Unauthenticated");
+    }
+
+    @GetMapping("/users")
+    public List<Map<String, String>> getUsersByIds(@RequestParam(name = "ids") List<String> ids) {
+        return userRepository.findAllById(ids).stream()
+                .map(u -> Map.of(
+                        "id", u.getId(),
+                        "email", u.getEmail()
+                ))
+                .collect(Collectors.toList());
     }
 
     @PostMapping("account/change-password")
