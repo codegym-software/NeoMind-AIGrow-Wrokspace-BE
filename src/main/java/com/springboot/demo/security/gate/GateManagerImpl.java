@@ -25,6 +25,7 @@ public class GateManagerImpl implements GateManager {
     private final RbacRepository rbacRepo;
     private final CompanyMemberRepository companyMemberRepo;
     private final WorkspaceMemberRepository workspaceMemberRepo;
+    private final WorkspaceRepository workspaceRepo;
     private final UserRepository userRepo;
     private final ProjectRepository projectRepo;
     private final ProjectMemberRepository pmRepo;
@@ -59,6 +60,24 @@ public class GateManagerImpl implements GateManager {
                     ctx.userId, Scope.company, companyId, "company:transfer_ownership");
         });
 
+        // Allow reading workspace overview for:
+        // - workspace owner
+        // - anyone who has explicit workspace:read permission in that workspace
+        // - any member of the company that owns the workspace (default visibility)
+        dynamicGates.put("workspace:read", (ctx, target) -> {
+            String workspaceId = (String) target;
+            String userId = ctx.userId();
+            if (workspaceMemberRepo.isOwner(workspaceId, userId)) return true;
+            if (abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:read")) return true;
+
+            // Default visibility for company members
+            String companyId = workspaceRepo.findById(workspaceId)
+                    .map(ws -> ws.getCompanyId())
+                    .orElse(null);
+            if (companyId == null) return false;
+            return companyMemberRepo.findByCompanyIdAndUserId(companyId, userId).isPresent();
+        });
+
         dynamicGates.put("system:admin", (ctx, ignore) -> userRepo.findById(ctx.userId)
                 .map(User::isAdmin)
                 .orElse(false));
@@ -78,39 +97,28 @@ public class GateManagerImpl implements GateManager {
         });
 
         dynamicGates.put("project:read", (ctx, target) -> {
-            
-            String targetId = (String) target;
+            // target can be either workspaceId (listing) or projectId (detail)
             String userId = ctx.userId();
+            String maybeProjectId = (String) target;
 
-            
-            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(targetId, userId)) {
+            // Try resolve as projectId -> workspaceId
+            String wsId = projectRepo.findWorkspaceIdByProjectId(maybeProjectId).orElse(null);
+            String workspaceId = wsId != null ? wsId : maybeProjectId; // if not a projectId, treat as workspaceId
+
+            // Owner of workspace always allowed
+            if (workspaceMemberRepo.isOwner(workspaceId, userId)) return true;
+
+            // Allow via workspace-level permissions
+            if (abilityService.hasPermission(userId, Scope.workspace, workspaceId, "project:read")
+                    || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "project:crud")
+                    || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "workspace:read")) {
                 return true;
             }
 
-            
-            if (abilityService.hasPermission(userId, Scope.project, targetId, "project:read")
-                    || abilityService.hasPermission(userId, Scope.project, targetId, "project:crud")) {
-                return true;
-            }
-
-            
-            if (abilityService.hasPermission(userId, Scope.workspace, targetId, "project:read")
-                    || abilityService.hasPermission(userId, Scope.workspace, targetId, "project:crud")
-                    || abilityService.hasPermission(userId, Scope.workspace, targetId, "workspace:read")) {
-                return true;
-            }
-
-            
-            String wsId = projectRepo.findWorkspaceIdByProjectId(targetId).orElse(null);
+            // If target was a concrete projectId, allow via project-scope permission as well
             if (wsId != null) {
-                
-                if (workspaceMemberRepo.isOwner(wsId, userId)) {
-                    return true;
-                }
-                
-                return abilityService.hasPermission(userId, Scope.workspace, wsId, "project:read")
-                        || abilityService.hasPermission(userId, Scope.workspace, wsId, "project:crud")
-                        || abilityService.hasPermission(userId, Scope.workspace, wsId, "workspace:read");
+                return abilityService.hasPermission(userId, Scope.project, maybeProjectId, "project:read")
+                        || abilityService.hasPermission(userId, Scope.project, maybeProjectId, "project:crud");
             }
 
             return false;
@@ -239,6 +247,196 @@ if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId))
                 return true;
 
             return abilityService.hasPermission(userId, Scope.project, projectId, "project:sprint:delete");
+        });
+
+        dynamicGates.put("workspace:member:create", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Owner always has permission
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            // Check DB permission
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:create");
+        });
+
+        dynamicGates.put("workspace:member:read", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Owner always has permission
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            // Check DB permissions
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:read")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:read");
+        });
+
+        dynamicGates.put("workspace:member:update", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Owner always has permission
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            // Check DB permission
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:update");
+        });
+
+        dynamicGates.put("workspace:member:delete", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Owner always has permission
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            // Check DB permission
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:delete");
+        });
+
+        dynamicGates.put("workspace:member:transfer_ownership", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Only owner can transfer ownership - this is hardcoded, not in DB
+            return workspaceMemberRepo.isOwner(workspaceId, ctx.userId());
+        });
+
+        // Support aggregate permission for workspace update/delete
+        dynamicGates.put("workspace:update", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+        });
+
+        dynamicGates.put("workspace:delete", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:delete")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+        });
+
+        // Workspace role management (list/create/update/delete/grant permissions)
+        dynamicGates.put("workspace:role:read", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:read")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+        });
+
+        dynamicGates.put("workspace:role:create", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:create")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+        });
+
+        dynamicGates.put("workspace:role:update", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+        });
+
+        dynamicGates.put("workspace:role:delete", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:delete")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+        });
+
+        dynamicGates.put("workspace:role:grant_permission", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:grant_permission")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+        });
+
+        dynamicGates.put("workspace:member:create", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Owner always has permission
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            // Check DB permission
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:create");
+        });
+
+        dynamicGates.put("workspace:member:read", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Owner always has permission
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            // Check DB permissions
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:read")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:read");
+        });
+
+        dynamicGates.put("workspace:member:update", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Owner always has permission
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            // Check DB permission
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:update");
+        });
+
+        dynamicGates.put("workspace:member:delete", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Owner always has permission
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            // Check DB permission
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:delete");
+        });
+
+        dynamicGates.put("workspace:member:transfer_ownership", (ctx, target) -> {
+            String workspaceId = (String) target;
+            // Only owner can transfer ownership - this is hardcoded, not in DB
+            return workspaceMemberRepo.isOwner(workspaceId, ctx.userId());
+        });
+
+        // Support aggregate permission for workspace update/delete
+        dynamicGates.put("workspace:update", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+        });
+
+        dynamicGates.put("workspace:delete", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:delete")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+        });
+
+        // Workspace role management (list/create/update/delete/grant permissions)
+        dynamicGates.put("workspace:role:read", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:read")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+        });
+
+        dynamicGates.put("workspace:role:create", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:create")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+        });
+
+        dynamicGates.put("workspace:role:update", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+        });
+
+        dynamicGates.put("workspace:role:delete", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:delete")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+        });
+
+        dynamicGates.put("workspace:role:grant_permission", (ctx, target) -> {
+            String workspaceId = (String) target;
+            if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:grant_permission")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
+                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
         });
     }
 

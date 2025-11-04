@@ -53,6 +53,11 @@ public class WorkspaceController {
         Pageable pageable = PageRequest.of(page, size);
         return service.searchMyWorkspacesInCompany(companyId, userId, q, includeArchived, pageable);
     }
+    @GetMapping("/workspaces/{workspaceId}")
+    @PreAuthorize("@gate.allows('workspace:read', authentication, #workspaceId)")
+    public Workspace getById(@PathVariable String workspaceId) {
+        return service.getById(workspaceId);
+    }
 
     @PutMapping("/companies/{companyId}/workspaces/{workspaceId}")
     @PreAuthorize("@gate.allows('workspace:update', authentication, #workspaceId)")
