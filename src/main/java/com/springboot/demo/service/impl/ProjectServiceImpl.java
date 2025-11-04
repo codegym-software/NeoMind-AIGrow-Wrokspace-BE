@@ -63,6 +63,7 @@ public class ProjectServiceImpl implements ProjectService {
         }
         
         // Tạo mặc định 2 role admin và member cho project mới
+        roleService.createDefaultProjectRoles(p.getId());
 
 
         return toDto(p);

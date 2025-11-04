@@ -456,4 +456,74 @@ public class RoleServiceImpl implements RoleService {
             new MapSqlParameterSource().addValue("workspaceId", workspaceId)
         );
     }
+
+    /**
+     * Tạo mặc định 2 role admin và member cho project mới
+     * @param projectId ID của project mới được tạo
+     */
+    @Override
+    @Transactional
+    public void createDefaultProjectRoles(String projectId) {
+        // Tạo role admin với các quyền theo yêu cầu
+        CreateRoleReq adminRoleReq = new CreateRoleReq("project", projectId, "admin", "Admin", "Quản trị viên project");
+        RoleDto adminRole = createProjectRole(projectId, adminRoleReq);
+
+        List<String> adminPermissionCodes = Arrays.asList(
+                "project:read",
+                "project:update",
+                "project:delete",
+                "project:task:read",
+                "project:task:update",
+                "project:task:create",
+                "project:task:delete",
+                "project:sprint:read",
+                "project:sprint:update",
+                "project:sprint:create",
+                "project:sprint:delete",
+                "project:role:read",
+                "project:role:create",
+                "project:role:update",
+                "project:role:delete",
+                "project:role:grant_permission",
+                "project:member:create",
+                "project:member:read",
+                "project:member:update",
+                "project:member:delete",
+                "project:member:transfer_ownership"
+        );
+
+        List<Integer> adminPermissionIds = jdbc.queryForList(
+                "SELECT id FROM permissions WHERE scope = 'project' AND code IN (:codes)",
+                new MapSqlParameterSource().addValue("codes", adminPermissionCodes),
+                Integer.class
+        );
+
+        replaceProjectRolePermissions(projectId, adminRole.id(), adminPermissionIds);
+
+        // Tạo role member với các quyền theo yêu cầu
+        CreateRoleReq memberRoleReq = new CreateRoleReq("project", projectId, "member", "Member", "Thành viên project");
+        RoleDto memberRole = createProjectRole(projectId, memberRoleReq);
+
+        List<String> memberPermissionCodes = Arrays.asList(
+                "project:read",
+                "project:task:read",
+                "project:task:update",
+                "project:task:create",
+                "project:task:delete",
+                "project:sprint:read",
+                "project:sprint:update",
+                "project:sprint:create",
+                "project:sprint:delete",
+                "project:role:read",
+                "project:member:read"
+        );
+
+        List<Integer> memberPermissionIds = jdbc.queryForList(
+                "SELECT id FROM permissions WHERE scope = 'project' AND code IN (:codes)",
+                new MapSqlParameterSource().addValue("codes", memberPermissionCodes),
+                Integer.class
+        );
+
+        replaceProjectRolePermissions(projectId, memberRole.id(), memberPermissionIds);
+    }
 }

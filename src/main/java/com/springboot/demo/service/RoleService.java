@@ -43,6 +43,7 @@ public interface RoleService {
     List<Permission> getProjectRolePermissions(String projectId, Integer roleId);
     
     // Tạo mặc định 2 role admin và member cho project mới
+    void createDefaultProjectRoles(String projectId);
 
     
     // Tạo mặc định 2 role admin và member cho workspace mới
