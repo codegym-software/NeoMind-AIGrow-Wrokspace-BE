@@ -5,11 +5,16 @@ import com.springboot.demo.dto.board.TaskMoveRequest;
 import com.springboot.demo.exception.AccessDeniedException;
 import com.springboot.demo.exception.ResourceNotFoundException;
 
+import com.springboot.demo.model.Board;
 import com.springboot.demo.model.BoardColumn;
+import com.springboot.demo.model.Sprint;
 import com.springboot.demo.model.Task;
+import com.springboot.demo.model.enums.SprintStatus;
+import com.springboot.demo.repository.BoardRepository;
 import com.springboot.demo.repository.BoardColumnRepository;
 import com.springboot.demo.repository.ProjectMemberRepository;
 import com.springboot.demo.repository.ProjectRepository;
+import com.springboot.demo.repository.SprintRepository;
 import com.springboot.demo.repository.TaskRepository;
 import com.springboot.demo.service.TaskService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +24,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +32,9 @@ public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepo;
     private final ProjectMemberRepository pmRepo;
     private final ProjectRepository projectRepo;
+    private final BoardRepository boardRepo;
     private final BoardColumnRepository boardColumnRepo;
+    private final SprintRepository sprintRepo;
 
     private void checkProjectAccess(String projectId, String userId) {
         if (!projectRepo.existsById(projectId)) {
@@ -41,6 +49,36 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public Task create(Task task, String currentUserId) {
         checkProjectAccess(task.getProjectId(), currentUserId);
+        
+        // Auto-assign default column if not set (To Do / first column)
+        if (task.getStatusColumn() == null || task.getStatusColumn().getId() == null) {
+            // Find board of this project
+            Optional<Board> boardOpt = boardRepo.findByProjectIdAndIsDefaultTrue(task.getProjectId());
+            
+            if (boardOpt.isPresent()) {
+                // Find columns of this board
+                List<BoardColumn> columns = boardColumnRepo.findByBoardIdOrderByPositionAsc(boardOpt.get().getId());
+                
+                if (!columns.isEmpty()) {
+                    // Try to find "To Do" column first
+                    BoardColumn toDoColumn = columns.stream()
+                        .filter(col -> "To Do".equalsIgnoreCase(col.getName()) || "TODO".equalsIgnoreCase(col.getName()))
+                        .findFirst()
+                        .orElse(columns.get(0)); // Fallback to first column
+                    
+                    task.setStatusColumn(toDoColumn);
+                }
+            }
+        }
+        
+        // Auto-assign to active sprint if not set (khi tạo từ Board)
+        if (task.getSprintId() == null) {
+            Optional<Sprint> activeSprint = sprintRepo.findByProjectIdAndStatus(task.getProjectId(), SprintStatus.active);
+            if (activeSprint.isPresent()) {
+                task.setSprintId(activeSprint.get().getId());
+            }
+        }
+        
         return taskRepo.save(task);
     }
 
@@ -73,11 +111,19 @@ public class TaskServiceImpl implements TaskService {
             existing.setEstimatedHours(task.getEstimatedHours());
         }
         
-        // CHUẨN HÓA: Đổi assignedTo → assigneeId (allow explicit null to unassign)
-        existing.setAssigneeId(task.getAssigneeId());
+        // CRITICAL FIX: Chỉ update assigneeId nếu nó được gửi lên
+        // Tránh trường hợp drag & drop làm mất assignee
+        if (task.getAssigneeId() != null) {
+            existing.setAssigneeId(task.getAssigneeId());
+        }
         
-        // Handle sprintId - allow explicit null to move to backlog
-        existing.setSprintId(task.getSprintId());
+        // CRITICAL FIX: Chỉ update sprintId nếu nó được gửi lên explicitly
+        // Tránh trường hợp drag & drop gửi lên task object không có sprintId
+        // Nếu muốn xóa task khỏi sprint, phải gửi sprintId = null explicitly từ frontend
+        if (task.getSprintId() != null) {
+            existing.setSprintId(task.getSprintId());
+        }
+        // Note: Nếu cần unassign từ sprint, frontend phải gửi sprintId = -1 hoặc dùng endpoint riêng
         
         if (task.getTags() != null) {
             existing.setTags(task.getTags());

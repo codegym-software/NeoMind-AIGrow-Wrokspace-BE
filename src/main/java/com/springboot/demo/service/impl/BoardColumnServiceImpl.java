@@ -2,6 +2,7 @@ package com.springboot.demo.service.impl;
 
 import com.springboot.demo.dto.board.*;
 import com.springboot.demo.model.BoardColumn;
+import com.springboot.demo.model.Task;
 import com.springboot.demo.repository.BoardColumnRepository;
 import com.springboot.demo.repository.TaskRepository;
 import com.springboot.demo.service.BoardColumnService;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 public class BoardColumnServiceImpl implements BoardColumnService {
 
     private final BoardColumnRepository boardColumnRepository;
+    private final TaskRepository taskRepository;
 
     /**
      * API 2: Tạo column mới
@@ -97,7 +99,7 @@ public class BoardColumnServiceImpl implements BoardColumnService {
      * DELETE /api/columns/{columnId}
      * 
      * Lưu ý: Khi xóa column, các tasks trong column đó sẽ có column_id = NULL
-     * (Vì foreign key constraint: ON DELETE SET NULL)
+     * Chúng ta phải tự SET NULL vì database constraint không có ON DELETE SET NULL
      */
     @Override
     @Transactional
@@ -106,9 +108,15 @@ public class BoardColumnServiceImpl implements BoardColumnService {
             throw new RuntimeException("Column not found: " + columnId);
         }
 
-        // Optional: Di chuyển tasks sang cột khác trước khi xóa
-        // Ở đây để đơn giản, chúng ta để database handle (SET NULL)
+        // CRITICAL: Set column_id = NULL cho tất cả tasks trong column này
+        // Tránh lỗi foreign key constraint
+        List<Task> tasksInColumn = taskRepository.findByStatusColumn_Id(columnId);
+        for (Task task : tasksInColumn) {
+            task.setStatusColumn(null);
+        }
+        taskRepository.saveAll(tasksInColumn);
         
+        // Giờ mới xóa column
         boardColumnRepository.deleteById(columnId);
     }
 

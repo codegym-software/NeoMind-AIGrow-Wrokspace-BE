@@ -5,6 +5,7 @@ import com.springboot.demo.service.BoardColumnService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,7 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class BoardColumnController {
 
     private final BoardColumnService boardColumnService;
@@ -33,6 +33,7 @@ public class BoardColumnController {
      *   "color": "#F59E0B"
      * }
      */
+    @PreAuthorize("permitAll()")
     @PostMapping("/boards/{boardId}/columns")
     public ResponseEntity<BoardColumnResponse> createColumn(
             @PathVariable Integer boardId,
@@ -53,6 +54,7 @@ public class BoardColumnController {
      *   "color": "#8B5CF6"
      * }
      */
+    @PreAuthorize("permitAll()")
     @PutMapping("/columns/{columnId}")
     public ResponseEntity<BoardColumnResponse> updateColumn(
             @PathVariable Integer columnId,
@@ -65,6 +67,7 @@ public class BoardColumnController {
      * API 4: Xóa column
      * DELETE /api/columns/{columnId}
      */
+    @PreAuthorize("permitAll()")
     @DeleteMapping("/columns/{columnId}")
     public ResponseEntity<Void> deleteColumn(@PathVariable Integer columnId) {
         boardColumnService.deleteColumn(columnId);
@@ -77,6 +80,7 @@ public class BoardColumnController {
      * 
      * Request body: [3, 1, 2, 4] (columnIds theo thứ tự mới)
      */
+    @PreAuthorize("permitAll()")
     @PatchMapping("/boards/{boardId}/columns/reorder")
     public ResponseEntity<Void> reorderColumns(
             @PathVariable Integer boardId,
@@ -89,6 +93,7 @@ public class BoardColumnController {
      * Lấy danh sách columns của board
      * GET /api/boards/{boardId}/columns
      */
+    @PreAuthorize("permitAll()")
     @GetMapping("/boards/{boardId}/columns")
     public ResponseEntity<List<BoardColumnResponse>> getColumnsByBoardId(@PathVariable Integer boardId) {
         List<BoardColumnResponse> responses = boardColumnService.getColumnsByBoardId(boardId);

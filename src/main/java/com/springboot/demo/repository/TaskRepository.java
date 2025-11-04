@@ -28,6 +28,9 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     // CHUẨN HÓA: Đổi từ assignedTo → assigneeId
     List<Task> findByAssigneeIdAndArchivedAtIsNull(String assigneeId);
     
+    // Tìm tất cả tasks trong một column (dùng cho deleteColumn)
+    List<Task> findByStatusColumn_Id(Integer columnId);
+    
     // XÓA method trùng tên - đã có findByProjectId(String, Pageable) ở trên
     // List<Task> findByProjectId(String projectId);
     
