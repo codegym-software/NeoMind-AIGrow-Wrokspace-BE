@@ -55,7 +55,7 @@ spring.datasource.url=jdbc:mysql://localhost:3306/ai-grow?useSSL=false&serverTim
 spring.datasource.username=YOUR_USERNAME
 spring.datasource.password=YOUR_PASSWORD
 
-spring.jpa.hibernate.ddl-auto=update
+spring.jpa.hibernate.ddl-auto=none
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 
