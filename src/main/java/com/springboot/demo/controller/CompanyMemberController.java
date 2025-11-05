@@ -64,7 +64,7 @@ public class CompanyMemberController {
     }
 
     @DeleteMapping("/members/{memberUserId}")
-    @PreAuthorize("@gate.allows('company:member:set_user_permissions', authentication, #companyId)")
+    @PreAuthorize("@gate.allows('company:member:delete', authentication, #companyId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void remove(@PathVariable String companyId,
                        @PathVariable String memberUserId,
@@ -74,7 +74,7 @@ public class CompanyMemberController {
     }
 
     @PostMapping("/invite")
-    @PreAuthorize("@gate.allows('company:member:set_user_permissions', authentication, #companyId)")
+    @PreAuthorize("@gate.allows('company:member:invite', authentication, #companyId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity<?> invite(@PathVariable String companyId,
                                     @RequestBody InviteRequest req,

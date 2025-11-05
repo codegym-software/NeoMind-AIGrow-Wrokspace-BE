@@ -14,11 +14,10 @@ INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (2
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (67, 'workspace:read', 'workspace', 'Xem workspace', 'Đọc thông tin workspace');
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (68, 'workspace:update', 'workspace', 'Cập nhật workspace', 'Sửa thông tin workspace');
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (69, 'workspace:delete', 'workspace', 'Xóa workspace', 'Xóa workspace');
-INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (70, 'workspace:member:create', 'workspace', 'Thêm thành viên', 'Mời/thêm user vào workspace');
+INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (70, 'workspace:member:invite', 'workspace', 'Mời thành viên', 'Mời/thêm user vào workspace');
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (71, 'workspace:member:read', 'workspace', 'Xem thành viên', 'Xem danh sách thành viên workspace');
-INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (72, 'workspace:member:update', 'workspace', 'Cập nhật thành viên', 'Cập nhật role thành viên');
+INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (72, 'workspace:member:set_user_permissions', 'workspace', 'Thiết lập quyền thành viên', 'Gán quyền/role cho thành viên');
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (73, 'workspace:member:delete', 'workspace', 'Xóa thành viên', 'Xóa thành viên khỏi workspace');
-INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (74, 'workspace:member:transfer_ownership', 'workspace', 'Chuyển quyền sở hữu workspace', 'Chuyển owner cho user khác');
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (75, 'workspace:role:read', 'workspace', 'Xem vai trò workspace', 'Xem role trong workspace');
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (76, 'workspace:role:create', 'workspace', 'Tạo vai trò workspace', 'Tạo role workspace');
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (77, 'workspace:role:update', 'workspace', 'Sửa vai trò workspace', 'Cập nhật role workspace');
@@ -41,9 +40,14 @@ INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (9
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (96, 'project:role:update', 'project', 'Sửa vai trò project', null);
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (97, 'project:role:delete', 'project', 'Xóa vai trò project', null);
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (98, 'project:role:grant_permission', 'project', 'Gán quyền cho role project', null);
-INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (99, 'project:member:create', 'project', 'Add member to project', 'Permission to add a member to a project');
+INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (99, 'project:member:invite', 'project', 'Invite member to project', 'Permission to invite/add a member to a project');
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (100, 'project:member:read', 'project', 'Read project member list', 'Permission to read the list of project members');
-INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (101, 'project:member:update', 'project', 'Update project member role', 'Permission to update a project member\'s role');
+INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (101, 'project:member:set_user_permissions', 'project', 'Set project member permissions', 'Permission to set a project member\'s permissions/role');
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (102, 'project:member:delete', 'project', 'Remove member from project', 'Permission to remove a member from a project');
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (103, 'project:member:transfer_ownership', 'project', 'Chuyển quyền sở hữu project
 ', null);
+-- New company invite permission
+INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (104, 'company:member:invite', 'company', 'Invite member to company', 'Permission to invite/add a member to a company');
+-- Company member delete permission
+INSERT INTO permissions (scope, code, description)
+VALUES ('company', 'company:member:delete', 'Delete member from company');

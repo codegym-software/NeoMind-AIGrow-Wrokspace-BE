@@ -405,9 +405,9 @@ public class RoleServiceImpl implements RoleService {
                 "workspace:read",
                 "workspace:update",
                 "workspace:delete",
-                "workspace:member:create",
+                "workspace:member:invite",
                 "workspace:member:read",
-                "workspace:member:update",
+                "workspace:member:set_user_permissions",
                 "workspace:member:delete",
                 "workspace:role:read",
                 "workspace:role:create",
@@ -485,9 +485,9 @@ public class RoleServiceImpl implements RoleService {
                 "project:role:update",
                 "project:role:delete",
                 "project:role:grant_permission",
-                "project:member:create",
+                "project:member:invite",
                 "project:member:read",
-                "project:member:update",
+                "project:member:set_user_permissions",
                 "project:member:delete",
                 "project:member:transfer_ownership"
         );

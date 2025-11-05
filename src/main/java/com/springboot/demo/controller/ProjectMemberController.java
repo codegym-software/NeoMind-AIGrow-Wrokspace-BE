@@ -30,7 +30,7 @@ public class ProjectMemberController {
 
     @PostMapping("/members")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("@gate.allows('project:member:create', authentication, #projectId)")
+    @PreAuthorize("@gate.allows('project:member:invite', authentication, #projectId)")
     public void addMember(@PathVariable String projectId,
                            @RequestBody AddProjectMemberReq req,
                            Authentication auth) {
@@ -39,7 +39,7 @@ public class ProjectMemberController {
     }
 
     @PutMapping("/members/{targetUserId}/role")
-    @PreAuthorize("@gate.allows('project:member:update', authentication, #projectId)")
+    @PreAuthorize("@gate.allows('project:member:set_user_permissions', authentication, #projectId)")
     public void assignRole(@PathVariable String projectId,
                            @PathVariable String targetUserId,
                            @RequestBody AssignProjectRoleReq req,
