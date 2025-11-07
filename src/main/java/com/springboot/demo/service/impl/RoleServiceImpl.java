@@ -9,6 +9,7 @@ import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.repository.RoleRepository;
 import com.springboot.demo.service.RoleService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -266,30 +267,13 @@ public class RoleServiceImpl implements RoleService {
             throw new IllegalArgumentException("Role không thuộc workspace này");
         }
 
-        // Validate permissionIds đều thuộc scope 'workspace'
-        if (permissionIds != null && !permissionIds.isEmpty()) {
-            Integer cnt = jdbc.queryForObject(
-                    "SELECT COUNT(*) FROM permissions WHERE id IN (:ids) AND scope = 'workspace'",
-                    new MapSqlParameterSource().addValue("ids", permissionIds),
-                    Integer.class
-            );
-            if (cnt == null || cnt != permissionIds.size()) {
-                throw new IllegalArgumentException("Danh sách permission chứa phần tử không thuộc scope workspace");
-            }
+        // Chặn sửa permissions của role mặc định (admin/member) thông qua API/public service
+        if (r.getTargetId() != null && ("admin".equalsIgnoreCase(r.getCode()) || "member".equalsIgnoreCase(r.getCode()))) {
+            throw new AccessDeniedException("Không thể sửa permissions của role mặc định (admin/member)");
         }
 
-        // Thay toàn bộ mapping
-        jdbc.update("DELETE FROM role_permission WHERE role_id = :roleId",
-                new MapSqlParameterSource().addValue("roleId", roleId));
-
-        if (permissionIds != null && !permissionIds.isEmpty()) {
-            String sql = "INSERT INTO role_permission(role_id, permission_id) VALUES (:rid, :pid)";
-            for (Integer pid : permissionIds) {
-                jdbc.update(sql, new MapSqlParameterSource()
-                        .addValue("rid", roleId)
-                        .addValue("pid", pid));
-            }
-        }
+        // Thực thi thay đổi (đã kiểm tra guard ở trên)
+        replaceWorkspaceRolePermissionsUnchecked(workspaceId, roleId, permissionIds);
     }
 
     @Override
@@ -361,30 +345,13 @@ public class RoleServiceImpl implements RoleService {
             throw new IllegalArgumentException("Role không thuộc project này");
         }
 
-        // Validate permissionIds đều thuộc scope 'project'
-        if (permissionIds != null && !permissionIds.isEmpty()) {
-            Integer cnt = jdbc.queryForObject(
-                    "SELECT COUNT(*) FROM permissions WHERE id IN (:ids) AND scope = 'project'",
-                    new MapSqlParameterSource().addValue("ids", permissionIds),
-                    Integer.class
-            );
-            if (cnt == null || cnt != permissionIds.size()) {
-                throw new IllegalArgumentException("Danh sách permission chứa phần tử không thuộc scope project");
-            }
+        // Chặn sửa permissions của role mặc định (admin/member) thông qua API/public service
+        if (r.getTargetId() != null && ("admin".equalsIgnoreCase(r.getCode()) || "member".equalsIgnoreCase(r.getCode()))) {
+            throw new AccessDeniedException("Không thể sửa permissions của role mặc định (admin/member)");
         }
 
-        // Thay toàn bộ mapping
-        jdbc.update("DELETE FROM role_permission WHERE role_id = :roleId",
-                new MapSqlParameterSource().addValue("roleId", roleId));
-
-        if (permissionIds != null && !permissionIds.isEmpty()) {
-            String sql = "INSERT INTO role_permission(role_id, permission_id) VALUES (:rid, :pid)";
-            for (Integer pid : permissionIds) {
-                jdbc.update(sql, new MapSqlParameterSource()
-                        .addValue("rid", roleId)
-                        .addValue("pid", pid));
-            }
-        }
+        // Thực thi thay đổi (đã kiểm tra guard ở trên)
+        replaceProjectRolePermissionsUnchecked(projectId, roleId, permissionIds);
     }
     
 
@@ -425,8 +392,8 @@ public class RoleServiceImpl implements RoleService {
                 Integer.class
         );
         
-        // Gán tất cả permission cho role admin
-        replaceWorkspaceRolePermissions(workspaceId, adminRole.id(), adminPermissionIds);
+        // Gán tất cả permission cho role admin (bỏ qua guard mặc định vì đây là khởi tạo hệ thống)
+        replaceWorkspaceRolePermissionsUnchecked(workspaceId, adminRole.id(), adminPermissionIds);
         
         // Tạo role member với các quyền cơ bản
         CreateRoleReq memberRoleReq = new CreateRoleReq("workspace", workspaceId, "member", "Member", "Thành viên workspace");
@@ -447,14 +414,54 @@ public class RoleServiceImpl implements RoleService {
                 Integer.class
         );
         
-        // Gán permission cho role member
-        replaceWorkspaceRolePermissions(workspaceId, memberRole.id(), memberPermissionIds);
+        // Gán permission cho role member (bỏ qua guard mặc định vì đây là khởi tạo hệ thống)
+        replaceWorkspaceRolePermissionsUnchecked(workspaceId, memberRole.id(), memberPermissionIds);
         
         // Xóa role Workspace Admin nếu có
         jdbc.update(
             "DELETE FROM roles WHERE scope = 'workspace' AND target_id = :workspaceId AND name = 'Workspace Admin'",
             new MapSqlParameterSource().addValue("workspaceId", workspaceId)
         );
+    }
+
+    /**
+     * Internal helper: thay permissions cho role workspace, bỏ qua chặn role mặc định.
+     * Dùng cho quá trình khởi tạo role mặc định khi tạo workspace.
+     */
+    private void replaceWorkspaceRolePermissionsUnchecked(String workspaceId, Integer roleId, List<Integer> permissionIds) {
+        // Validate role thuộc workspace (hoặc template workspace)
+        Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
+        if (r.getScope() != Scope.workspace) {
+            throw new IllegalArgumentException("Role không thuộc scope workspace");
+        }
+        if (r.getTargetId() != null && !r.getTargetId().equals(workspaceId)) {
+            throw new IllegalArgumentException("Role không thuộc workspace này");
+        }
+
+        // Validate permissionIds đều thuộc scope 'workspace'
+        if (permissionIds != null && !permissionIds.isEmpty()) {
+            Integer cnt = jdbc.queryForObject(
+                    "SELECT COUNT(*) FROM permissions WHERE id IN (:ids) AND scope = 'workspace'",
+                    new MapSqlParameterSource().addValue("ids", permissionIds),
+                    Integer.class
+            );
+            if (cnt == null || cnt != permissionIds.size()) {
+                throw new IllegalArgumentException("Danh sách permission chứa phần tử không thuộc scope workspace");
+            }
+        }
+
+        // Thay toàn bộ mapping
+        jdbc.update("DELETE FROM role_permission WHERE role_id = :roleId",
+                new MapSqlParameterSource().addValue("roleId", roleId));
+
+        if (permissionIds != null && !permissionIds.isEmpty()) {
+            String sql = "INSERT INTO role_permission(role_id, permission_id) VALUES (:rid, :pid)";
+            for (Integer pid : permissionIds) {
+                jdbc.update(sql, new MapSqlParameterSource()
+                        .addValue("rid", roleId)
+                        .addValue("pid", pid));
+            }
+        }
     }
 
     /**
@@ -498,7 +505,8 @@ public class RoleServiceImpl implements RoleService {
                 Integer.class
         );
 
-        replaceProjectRolePermissions(projectId, adminRole.id(), adminPermissionIds);
+        // Gán quyền cho role admin (bỏ qua guard mặc định vì đây là khởi tạo hệ thống)
+        replaceProjectRolePermissionsUnchecked(projectId, adminRole.id(), adminPermissionIds);
 
         // Tạo role member với các quyền theo yêu cầu
         CreateRoleReq memberRoleReq = new CreateRoleReq("project", projectId, "member", "Member", "Thành viên project");
@@ -524,6 +532,46 @@ public class RoleServiceImpl implements RoleService {
                 Integer.class
         );
 
-        replaceProjectRolePermissions(projectId, memberRole.id(), memberPermissionIds);
+        // Gán quyền cho role member (bỏ qua guard mặc định vì đây là khởi tạo hệ thống)
+        replaceProjectRolePermissionsUnchecked(projectId, memberRole.id(), memberPermissionIds);
+    }
+    /**
+     * Internal helper: thay permissions cho role project, bỏ qua chặn role mặc định.
+     * Dùng cho quá trình khởi tạo role mặc định khi tạo project.
+     */
+    private void replaceProjectRolePermissionsUnchecked(String projectId, Integer roleId, List<Integer> permissionIds) {
+        // Validate role thuộc project (hoặc template project)
+        Role r = repo.findById(roleId).orElseThrow(() -> new IllegalArgumentException("Role không tồn tại"));
+        if (r.getScope() != Scope.project) {
+            throw new IllegalArgumentException("Role không thuộc scope project");
+        }
+        if (r.getTargetId() != null && !r.getTargetId().equals(projectId)) {
+            throw new IllegalArgumentException("Role không thuộc project này");
+        }
+
+        // Validate permissionIds đều thuộc scope 'project'
+        if (permissionIds != null && !permissionIds.isEmpty()) {
+            Integer cnt = jdbc.queryForObject(
+                    "SELECT COUNT(*) FROM permissions WHERE id IN (:ids) AND scope = 'project'",
+                    new MapSqlParameterSource().addValue("ids", permissionIds),
+                    Integer.class
+            );
+            if (cnt == null || cnt != permissionIds.size()) {
+                throw new IllegalArgumentException("Danh sách permission chứa phần tử không thuộc scope project");
+            }
+        }
+
+        // Thay toàn bộ mapping
+        jdbc.update("DELETE FROM role_permission WHERE role_id = :roleId",
+                new MapSqlParameterSource().addValue("roleId", roleId));
+
+        if (permissionIds != null && !permissionIds.isEmpty()) {
+            String sql = "INSERT INTO role_permission(role_id, permission_id) VALUES (:rid, :pid)";
+            for (Integer pid : permissionIds) {
+                jdbc.update(sql, new MapSqlParameterSource()
+                        .addValue("rid", roleId)
+                        .addValue("pid", pid));
+            }
+        }
     }
 }

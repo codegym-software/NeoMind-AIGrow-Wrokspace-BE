@@ -3,17 +3,14 @@ package com.springboot.demo.controller;
 import com.springboot.demo.dto.RolePermission.CreateRoleReq;
 import com.springboot.demo.dto.RolePermission.RoleDto;
 import com.springboot.demo.dto.RolePermission.UpdateRoleReq;
-
-import com.springboot.demo.service.RoleService;
 import com.springboot.demo.dto.RolePermission.UpsertRolePermissionsReq;
+import com.springboot.demo.model.Permission;
+import com.springboot.demo.service.RoleService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/projects/{projectId}/roles")
@@ -28,16 +25,22 @@ public class ProjectRoleController {
         return roleService.listProjectRoles(projectId);
     }
 
+    @GetMapping("/{roleId}")
+    @PreAuthorize("@gate.allows('project:role:read', authentication, #projectId)")
+    public RoleDto getOne(@PathVariable String projectId, @PathVariable Integer roleId) {
+        return roleService.getProjectRoleById(projectId, roleId);
+    }
+
+    @GetMapping("/{roleId}/permissions")
+    @PreAuthorize("@gate.allows('project:role:read', authentication, #projectId)")
+    public List<Permission> listPermissions(@PathVariable String projectId, @PathVariable Integer roleId) {
+        return roleService.getProjectRolePermissions(projectId, roleId);
+    }
+
     @PostMapping
     @PreAuthorize("@gate.allows('project:role:create', authentication, #projectId)")
     public RoleDto create(@PathVariable String projectId, @RequestBody CreateRoleReq req) {
         return roleService.createProjectRole(projectId, req);
-    }
-
-    @GetMapping("/{roleId}")
-    @PreAuthorize("@gate.allows('project:role:read', authentication, #projectId)")
-    public RoleDto getById(@PathVariable String projectId, @PathVariable Integer roleId) {
-        return roleService.getProjectRoleById(projectId, roleId);
     }
 
     @PutMapping("/{roleId}")
@@ -54,15 +57,8 @@ public class ProjectRoleController {
 
     @PutMapping("/{roleId}/permissions")
     @PreAuthorize("@gate.allows('project:role:grant_permission', authentication, #projectId)")
-    public void upsertPermissions(@PathVariable String projectId,
-                                  @PathVariable Integer roleId,
+    public void upsertPermissions(@PathVariable String projectId, @PathVariable Integer roleId,
                                   @RequestBody UpsertRolePermissionsReq req) {
         roleService.replaceProjectRolePermissions(projectId, roleId, req.permissionIds());
-    }
-
-    @GetMapping("/{roleId}/permissions")
-    @PreAuthorize("@gate.allows('project:role:read', authentication, #projectId)")
-    public ResponseEntity<?> getProjectRolePermissions(@PathVariable String projectId, @PathVariable Integer roleId) {
-        return ResponseEntity.ok(roleService.getProjectRolePermissions(projectId, roleId));
     }
 }

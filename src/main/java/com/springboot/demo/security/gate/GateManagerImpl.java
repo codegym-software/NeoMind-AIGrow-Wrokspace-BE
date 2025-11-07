@@ -40,13 +40,14 @@ public class GateManagerImpl implements GateManager {
             String userId = ctx.userId();
 
             // Allow if user is the owner of the company (highest priority)
-            if (companyMemberRepo.isOwner(companyId, userId)) {
+            if (companyMemberRepo.isOwner(companyId, ctx.userId())) {
                 return true;
             }
 
-            // Otherwise, allow if user has 'workspace:create' or a broader 'company:update'
-            // permission
+            // Otherwise, allow if user has explicit permission at company scope.
+            // Support both codes to align with existing seeds: 'workspace:create' and 'company:create:workspace'.
             return abilityService.hasPermission(userId, Scope.company, companyId, "workspace:create")
+                    || abilityService.hasPermission(userId, Scope.company, companyId, "company:create:workspace")
                     || abilityService.hasPermission(userId, Scope.company, companyId, "company:update");
         });
 
