@@ -98,23 +98,37 @@ public class BoardColumnServiceImpl implements BoardColumnService {
      * API 4: Xóa column
      * DELETE /api/columns/{columnId}
      * 
-     * Lưu ý: Khi xóa column, các tasks trong column đó sẽ có column_id = NULL
-     * Chúng ta phải tự SET NULL vì database constraint không có ON DELETE SET NULL
+     * Lưu ý: Khi xóa column, các tasks trong column đó sẽ chuyển về column đầu tiên (TODO)
      */
     @Override
     @Transactional
     public void deleteColumn(Integer columnId) {
-        if (!boardColumnRepository.existsById(columnId)) {
-            throw new RuntimeException("Column not found: " + columnId);
-        }
+        BoardColumn column = boardColumnRepository.findById(columnId)
+            .orElseThrow(() -> new RuntimeException("Column not found: " + columnId));
 
-        // CRITICAL: Set column_id = NULL cho tất cả tasks trong column này
-        // Tránh lỗi foreign key constraint
+        // Lấy tất cả tasks trong column này
         List<Task> tasksInColumn = taskRepository.findByStatusColumn_Id(columnId);
-        for (Task task : tasksInColumn) {
-            task.setStatusColumn(null);
+        
+        if (!tasksInColumn.isEmpty()) {
+            // Tìm column đầu tiên (position = 0) trong cùng board
+            List<BoardColumn> allColumns = boardColumnRepository.findByBoardIdOrderByPositionAsc(column.getBoardId());
+            
+            // Tìm column đầu tiên khác với column đang xóa
+            BoardColumn firstColumn = allColumns.stream()
+                .filter(col -> !col.getId().equals(columnId))
+                .findFirst()
+                .orElse(null);
+            
+            if (firstColumn == null) {
+                throw new RuntimeException("Cannot delete the last column in the board");
+            }
+            
+            // Chuyển tất cả tasks về column đầu tiên
+            for (Task task : tasksInColumn) {
+                task.setStatusColumn(firstColumn);
+            }
+            taskRepository.saveAll(tasksInColumn);
         }
-        taskRepository.saveAll(tasksInColumn);
         
         // Giờ mới xóa column
         boardColumnRepository.deleteById(columnId);

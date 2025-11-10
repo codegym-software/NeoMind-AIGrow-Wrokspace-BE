@@ -39,7 +39,7 @@ public class BoardController {
      *   ]
      * }
      */
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("@gate.allows('project:read', authentication, #projectId)")
     @GetMapping("/projects/{projectId}/board")
     public ResponseEntity<BoardResponse> getBoardByProjectId(@PathVariable String projectId) {
         try {
@@ -55,7 +55,7 @@ public class BoardController {
      * Tạo board mới cho project
      * POST /api/boards
      */
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("@gate.allows('project:update', authentication, #request.projectId)")
     @PostMapping("/boards")
     public ResponseEntity<BoardResponse> createBoard(@RequestBody BoardCreateRequest request) {
         BoardResponse response = boardService.createBoard(request);
@@ -66,7 +66,7 @@ public class BoardController {
      * Lấy tất cả boards của project
      * GET /api/projects/{projectId}/boards
      */
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("@gate.allows('project:read', authentication, #projectId)")
     @GetMapping("/projects/{projectId}/boards")
     public ResponseEntity<List<BoardResponse>> getBoardsByProjectId(@PathVariable String projectId) {
         List<BoardResponse> responses = boardService.getBoardsByProjectId(projectId);
