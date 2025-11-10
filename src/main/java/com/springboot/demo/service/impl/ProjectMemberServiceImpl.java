@@ -2,10 +2,12 @@ package com.springboot.demo.service.impl;
 
 import com.springboot.demo.dto.project.AddProjectMemberReq;
 import com.springboot.demo.dto.project.AssignProjectRoleReq;
+import com.springboot.demo.dto.project.ProjectMemberDto;
 import com.springboot.demo.dto.project.TransferProjectOwnershipReq;
 import com.springboot.demo.model.Project;
 import com.springboot.demo.model.ProjectMember;
 import com.springboot.demo.model.Role;
+import com.springboot.demo.model.User;
 import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.repository.*;
 import com.springboot.demo.service.ProjectMemberService;
@@ -17,7 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +31,7 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
     private final ProjectRepository projectRepo;
     private final WorkspaceMemberRepository wmRepo;
     private final RoleRepository roleRepo;
+    private final UserRepository userRepo;
 
     @Override
     @Transactional(readOnly = true)
@@ -34,6 +39,43 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
         projectRepo.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Project không tồn tại"));
         return pmRepo.findByProjectId(projectId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProjectMemberDto> listMembersWithDetails(String projectId) {
+        projectRepo.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project không tồn tại"));
+        
+        List<ProjectMember> members = pmRepo.findByProjectId(projectId);
+        
+        // Get all user IDs
+        List<String> userIds = members.stream()
+                .map(ProjectMember::getUserId)
+                .collect(Collectors.toList());
+        
+        // Fetch users in batch
+        List<User> users = userRepo.findAllById(userIds);
+        
+        // Create userId -> User map
+        Map<String, User> userMap = users.stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+        
+        // Map to DTO with user details
+        return members.stream()
+                .map(member -> {
+                    User user = userMap.get(member.getUserId());
+                    return ProjectMemberDto.builder()
+                            .id(member.getId())
+                            .projectId(member.getProjectId())
+                            .userId(member.getUserId())
+                            .roleId(member.getRoleId())
+                            .owner(member.isOwner())
+                            .email(user != null ? user.getEmail() : null)
+                            .displayName(user != null ? user.getDisplayName() : null)
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
