@@ -13,7 +13,7 @@ public record RoleDto(
 ) {
     public static RoleDto from(Role r) {
         boolean locked = r.getTargetId() != null
-                && ("admin".equalsIgnoreCase(r.getCode()) || "member".equalsIgnoreCase(r.getCode()));
+                && ("admin".equalsIgnoreCase(r.getCode()));
         return new RoleDto(
                 r.getId(),
                 r.getScope() == null ? null : r.getScope().name(),
