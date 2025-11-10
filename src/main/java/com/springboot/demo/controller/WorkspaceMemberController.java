@@ -30,7 +30,7 @@ public class WorkspaceMemberController {
 
     @PostMapping("/members")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("@gate.allows('workspace:member:create', authentication, #workspaceId)")
+    @PreAuthorize("@gate.allows('workspace:member:invite', authentication, #workspaceId)")
     public void addMember(@PathVariable String workspaceId,
                            @RequestBody AddWorkspaceMemberReq req,
                            Authentication auth) {
@@ -39,7 +39,7 @@ public class WorkspaceMemberController {
     }
 
     @PutMapping("/members/{targetUserId}/role")
-    @PreAuthorize("@gate.allows('workspace:member:update', authentication, #workspaceId)")
+    @PreAuthorize("@gate.allows('workspace:member:set_user_permissions', authentication, #workspaceId)")
     public void assignRole(@PathVariable String workspaceId,
                            @PathVariable String targetUserId,
                            @RequestBody AssignWorkspaceRoleReq req,

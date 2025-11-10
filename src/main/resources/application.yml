@@ -12,10 +12,10 @@ spring:
       locations: classpath:db/migration
       baseline-on-migrate: true   # Cho phép Flyway “bắt đầu” với DB hiện có
       validate-on-migrate: true
-      baseline-version: 1 # chạy file src/main/resources/db/migration/V1_data_tables.sql
+      baseline-version: 1
   jpa:
     hibernate:
-      ddl-auto: update # Hoặc validate, none, create-drop tùy môi trường
+      ddl-auto: none # Hoặc validate, none, create-drop tùy môi trường
     show-sql: true
     database-platform: org.hibernate.dialect.MySQLDialect
   security:
