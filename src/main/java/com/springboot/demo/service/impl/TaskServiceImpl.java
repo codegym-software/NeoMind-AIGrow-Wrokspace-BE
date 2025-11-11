@@ -111,19 +111,19 @@ public class TaskServiceImpl implements TaskService {
             existing.setEstimatedHours(task.getEstimatedHours());
         }
         
-        // CRITICAL FIX: Chỉ update assigneeId nếu nó được gửi lên
-        // Tránh trường hợp drag & drop làm mất assignee
+        
         if (task.getAssigneeId() != null) {
             existing.setAssigneeId(task.getAssigneeId());
         }
         
-        // CRITICAL FIX: Chỉ update sprintId nếu nó được gửi lên explicitly
-        // Tránh trường hợp drag & drop gửi lên task object không có sprintId
-        // Nếu muốn xóa task khỏi sprint, phải gửi sprintId = null explicitly từ frontend
-        if (task.getSprintId() != null) {
+       
+        if (task.getOrderIndex() != null) {
+            // This is a drag & drop operation, update sprintId (can be null for backlog)
+            existing.setSprintId(task.getSprintId());
+        } else if (task.getSprintId() != null) {
+            // Regular update with non-null sprintId
             existing.setSprintId(task.getSprintId());
         }
-        // Note: Nếu cần unassign từ sprint, frontend phải gửi sprintId = -1 hoặc dùng endpoint riêng
         
         if (task.getTags() != null) {
             existing.setTags(task.getTags());
