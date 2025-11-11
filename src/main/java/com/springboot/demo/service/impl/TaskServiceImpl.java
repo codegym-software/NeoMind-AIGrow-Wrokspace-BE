@@ -10,6 +10,7 @@ import com.springboot.demo.model.BoardColumn;
 import com.springboot.demo.model.Sprint;
 import com.springboot.demo.model.Task;
 import com.springboot.demo.model.enums.SprintStatus;
+import com.springboot.demo.model.enums.TaskPriority;
 import com.springboot.demo.repository.BoardRepository;
 import com.springboot.demo.repository.BoardColumnRepository;
 import com.springboot.demo.repository.ProjectMemberRepository;
@@ -49,6 +50,16 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public Task create(Task task, String currentUserId) {
         checkProjectAccess(task.getProjectId(), currentUserId);
+        
+        // Set default priority if not provided
+        if (task.getPriority() == null) {
+            task.setPriority(TaskPriority.medium);
+        }
+        
+        // Set default orderIndex if not provided
+        if (task.getOrderIndex() == null) {
+            task.setOrderIndex(0);
+        }
         
         // Auto-assign default column if not set (To Do / first column)
         if (task.getStatusColumn() == null || task.getStatusColumn().getId() == null) {
@@ -116,14 +127,18 @@ public class TaskServiceImpl implements TaskService {
             existing.setAssigneeId(task.getAssigneeId());
         }
         
-       
-        if (task.getOrderIndex() != null) {
-            // This is a drag & drop operation, update sprintId (can be null for backlog)
-            existing.setSprintId(task.getSprintId());
-        } else if (task.getSprintId() != null) {
-            // Regular update with non-null sprintId
-            existing.setSprintId(task.getSprintId());
+        
+        if (task.getStatusColumn() == null || task.getStatusColumn().getId() == null) {
+            // Không có statusColumn → Đây là SPRINT drag & drop
+            if (task.getOrderIndex() != null) {
+                // Sprint drag: cho phép update sprintId (kể cả null để về backlog)
+                existing.setSprintId(task.getSprintId());
+            } else if (task.getSprintId() != null) {
+                // Regular update với sprintId không null
+                existing.setSprintId(task.getSprintId());
+            }
         }
+        // Nếu có statusColumn → Đây là BOARD drag, KHÔNG update sprintId (giữ nguyên)
         
         if (task.getTags() != null) {
             existing.setTags(task.getTags());
