@@ -61,8 +61,11 @@ public class TaskServiceImpl implements TaskService {
             task.setOrderIndex(0);
         }
         
+        // Remember if task was created from Board (has statusColumn)
+        boolean isCreatedFromBoard = task.getStatusColumn() != null && task.getStatusColumn().getId() != null;
+        
         // Auto-assign default column if not set (To Do / first column)
-        if (task.getStatusColumn() == null || task.getStatusColumn().getId() == null) {
+        if (!isCreatedFromBoard) {
             // Find board of this project
             Optional<Board> boardOpt = boardRepo.findByProjectIdAndIsDefaultTrue(task.getProjectId());
             
@@ -82,8 +85,10 @@ public class TaskServiceImpl implements TaskService {
             }
         }
         
-        // Auto-assign to active sprint if not set (khi tạo từ Board)
-        if (task.getSprintId() == null) {
+        // Auto-assign to active sprint ONLY if created from Board (had statusColumn from frontend)
+        // If created from Backlog/Sprint page, sprintId is explicitly set (or null for backlog)
+        if (task.getSprintId() == null && isCreatedFromBoard) {
+            // Created from Board → Auto-assign to active sprint
             Optional<Sprint> activeSprint = sprintRepo.findByProjectIdAndStatus(task.getProjectId(), SprintStatus.active);
             if (activeSprint.isPresent()) {
                 task.setSprintId(activeSprint.get().getId());
@@ -177,20 +182,7 @@ public class TaskServiceImpl implements TaskService {
         return taskRepo.findByProjectId(projectId, pageable);
     }
 
-    /**
-     * API 6 (MỚI): Di chuyển Task (Kéo thả) - Chuẩn Jira
-     * PATCH /api/projects/{projectId}/tasks/{taskId}/move
-     * 
-     * Logic:
-     * 1. Load task từ database
-     * 2. Kiểm tra xem có thay đổi column không
-     * 3. Trường hợp 1: Di chuyển trong cùng cột
-     *    - Chỉ cập nhật orderIndex của task này và các task xung quanh
-     * 4. Trường hợp 2: Di chuyển sang cột khác
-     *    - Cập nhật columnId và orderIndex
-     *    - Cập nhật orderIndex của các task trong cột cũ (lấp chỗ trống)
-     *    - Cập nhật orderIndex của các task trong cột mới (chèn vào)
-     */
+    
     @Override
     @Transactional
     public Task moveTask(Long taskId, TaskMoveRequest request, String currentUserId) {

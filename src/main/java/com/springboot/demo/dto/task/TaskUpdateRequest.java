@@ -18,7 +18,7 @@ public class TaskUpdateRequest {
     @Pattern(regexp = "^(?i)(TODO|IN_PROGRESS|IN_REVIEW|DONE|CANCELLED)$", message = "Invalid status value")
     private String status;
 
-    @Pattern(regexp = "^(?i)(LOW|MEDIUM|HIGH|URGENT)$", message = "Invalid priority value")
+    @Pattern(regexp = "^(?i)(LOW|MEDIUM|HIGH)$", message = "Invalid priority value")
     private String priority;
     
     private LocalDate dueDate;

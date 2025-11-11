@@ -22,7 +22,7 @@ public class TaskCreateRequest {
 
     @NotBlank(message = "Priority cannot be blank")
 
-    @Pattern(regexp = "^(?i)(LOW|MEDIUM|HIGH|URGENT)$", message = "Invalid priority value")
+    @Pattern(regexp = "^(?i)(LOW|MEDIUM|HIGH)$", message = "Invalid priority value")
     private String priority;
 
     private LocalDate dueDate;

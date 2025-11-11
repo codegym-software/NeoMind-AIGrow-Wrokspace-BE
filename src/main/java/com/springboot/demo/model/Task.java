@@ -61,7 +61,7 @@ public class Task {
     // --- KẾT THÚC THAY ĐỔI LỚN ---
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "priority", nullable = false, columnDefinition = "ENUM('LOW', 'MEDIUM', 'HIGH', 'URGENT') DEFAULT 'MEDIUM'")
+    @Column(name = "priority", nullable = false, columnDefinition = "ENUM('LOW', 'MEDIUM', 'HIGH') DEFAULT 'MEDIUM'")
     private TaskPriority priority; // Removed default = TaskPriority.medium to avoid overwriting during PATCH updates
 
     @Column(name = "due_date")
