@@ -40,13 +40,14 @@ public class GateManagerImpl implements GateManager {
             String userId = ctx.userId();
 
             // Allow if user is the owner of the company (highest priority)
-            if (companyMemberRepo.isOwner(companyId, userId)) {
+            if (companyMemberRepo.isOwner(companyId, ctx.userId())) {
                 return true;
             }
 
-            // Otherwise, allow if user has 'workspace:create' or a broader 'company:update'
-            // permission
+            // Otherwise, allow if user has explicit permission at company scope.
+            // Support both codes to align with existing seeds: 'workspace:create' and 'company:create:workspace'.
             return abilityService.hasPermission(userId, Scope.company, companyId, "workspace:create")
+                    || abilityService.hasPermission(userId, Scope.company, companyId, "company:create:workspace")
                     || abilityService.hasPermission(userId, Scope.company, companyId, "company:update");
         });
 
@@ -58,6 +59,13 @@ public class GateManagerImpl implements GateManager {
                 return true;
             return rbacRepo.userHasPermissionInScope(
                     ctx.userId, Scope.company, companyId, "company:transfer_ownership");
+        });
+
+        // Company member transfer ownership - owner only (ignore DB permission)
+        dynamicGates.put("company:member:transfer_ownership", (ctx, target) -> {
+            String companyId = (String) target;
+            // Only current company owner can transfer ownership
+            return companyMemberRepo.isOwner(companyId, ctx.userId());
         });
 
         // Allow reading workspace overview for:
@@ -107,6 +115,8 @@ public class GateManagerImpl implements GateManager {
 
             // Owner of workspace always allowed
             if (workspaceMemberRepo.isOwner(workspaceId, userId)) return true;
+            // If target is a concrete projectId, owner of that project is allowed
+            if (wsId != null && pmRepo.isOwner(maybeProjectId, userId)) return true;
 
             // Allow via workspace-level permissions
             if (abilityService.hasPermission(userId, Scope.workspace, workspaceId, "project:read")
@@ -129,7 +139,7 @@ public class GateManagerImpl implements GateManager {
             String projectId = (String) target;
             String userId = ctx.userId();
 
-            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId))
+            if (pmRepo.isOwner(projectId, userId))
                 return true;
 
             String wsId = projectRepo.findWorkspaceIdByProjectId(projectId).orElse(null);
@@ -143,7 +153,7 @@ public class GateManagerImpl implements GateManager {
             String projectId = (String) target;
             String userId = ctx.userId();
 
-            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId))
+            if (pmRepo.isOwner(projectId, userId))
                 return true;
 
             String wsId = projectRepo.findWorkspaceIdByProjectId(projectId).orElse(null);
@@ -160,53 +170,63 @@ public class GateManagerImpl implements GateManager {
             String projectId = (String) target;
             String userId = ctx.userId();
            
-            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) {
+            if (pmRepo.isOwner(projectId, userId)) {
                 return true; 
+            }
+            // Bypass: bất kỳ thành viên project đều có quyền đọc task
+            if (pmRepo.existsByProjectIdAndUserId(projectId, userId)) {
+                return true;
             }
 
             
-            return abilityService.hasPermission(userId, Scope.project, projectId, "project:task:read")
-                    || abilityService.hasPermission(userId, Scope.project, projectId, "project:read");
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:task:read");
+
         });
 
         dynamicGates.put("project:task:update", (ctx, target) -> {
             String projectId = (String) target;
             String userId = ctx.userId();
-            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) {
+            if (pmRepo.isOwner(projectId, userId)) {
                 return true; 
             }
-
-           
-            return abilityService.hasPermission(userId, Scope.project, projectId, "project:task:update")
-                    || abilityService.hasPermission(userId, Scope.project, projectId, "project:update");
+            // Bypass: thành viên project có quyền cập nhật task
+            if (pmRepo.existsByProjectIdAndUserId(projectId, userId)) {
+                return true;
+            }
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:task:update");
         });
 
         dynamicGates.put("project:task:create", (ctx, target) -> {
             String projectId = (String) target;
             String userId = ctx.userId();
-            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) {
+            if (pmRepo.isOwner(projectId, userId)) {
                 return true; 
+            }
+            // Bypass: thành viên project có quyền tạo task
+            if (pmRepo.existsByProjectIdAndUserId(projectId, userId)) {
+                return true;
             }
 
             
-            return abilityService.hasPermission(userId, Scope.project, projectId, "project:task:create")
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:task:create");
                    
-                    || abilityService.hasPermission(userId, Scope.project, projectId, "project:update");
+
         });
 
         dynamicGates.put("project:task:delete", (ctx, target) -> {
             String projectId = (String) target;
             String userId = ctx.userId();
 
-            
-            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId)) {
+            if (pmRepo.isOwner(projectId, userId)) {
                 return true;
             }
-
-           
-            return abilityService.hasPermission(userId, Scope.project, projectId, "project:task:delete")
+            // Bypass: thành viên project có quyền xóa task
+            if (pmRepo.existsByProjectIdAndUserId(projectId, userId)) {
+                return true;
+            }
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:task:delete");
                     // Thêm logic: Ai có quyền sửa project cũng có thể xóa task
-                    || abilityService.hasPermission(userId, Scope.project, projectId, "project:update");
+
         });
 
         
@@ -215,8 +235,13 @@ public class GateManagerImpl implements GateManager {
             String projectId = (String) target;
             String userId = ctx.userId();
 
-            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId))
+            if (pmRepo.isOwner(projectId, userId))
                 return true;
+
+            // Bypass: thành viên project có quyền tạo sprint
+            if (pmRepo.existsByProjectIdAndUserId(projectId, userId)) {
+                return true;
+            }
 
             return abilityService.hasPermission(userId, Scope.project, projectId, "project:sprint:create");
         });
@@ -224,8 +249,12 @@ public class GateManagerImpl implements GateManager {
         dynamicGates.put("project:sprint:read", (ctx, target) -> {
             String projectId = (String) target;
             String userId = ctx.userId();
-if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId))
+if (pmRepo.isOwner(projectId, userId))
                 return true;
+            // Bypass: thành viên project có quyền đọc sprint
+            if (pmRepo.existsByProjectIdAndUserId(projectId, userId)) {
+                return true;
+            }
             return abilityService.hasPermission(userId, Scope.project, projectId, "project:sprint:read");
         });
 
@@ -233,8 +262,13 @@ if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId))
             String projectId = (String) target;
             String userId = ctx.userId();
 
-            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId))
+            if (pmRepo.isOwner(projectId, userId))
                 return true;
+
+            // Bypass: thành viên project có quyền cập nhật sprint
+            if (pmRepo.existsByProjectIdAndUserId(projectId, userId)) {
+                return true;
+            }
 
             return abilityService.hasPermission(userId, Scope.project, projectId, "project:sprint:update");
         });
@@ -243,18 +277,80 @@ if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId))
             String projectId = (String) target;
             String userId = ctx.userId();
 
-            if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId))
+            if (pmRepo.isOwner(projectId, userId))
                 return true;
+
+            // Bypass: thành viên project có quyền xóa sprint
+            if (pmRepo.existsByProjectIdAndUserId(projectId, userId)) {
+                return true;
+            }
 
             return abilityService.hasPermission(userId, Scope.project, projectId, "project:sprint:delete");
         });
 
-        dynamicGates.put("workspace:member:create", (ctx, target) -> {
+        // Project members management
+        dynamicGates.put("project:member:invite", (ctx, target) -> {
+            String projectId = (String) target;
+            String userId = ctx.userId();
+            if (pmRepo.isOwner(projectId, userId)) return true;
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:member:invite")
+                    || abilityService.hasPermission(userId, Scope.project, projectId, "project:update");
+        });
+
+        dynamicGates.put("project:member:read", (ctx, target) -> {
+            String projectId = (String) target;
+            String userId = ctx.userId();
+            if (pmRepo.isOwner(projectId, userId)) return true;
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:member:read")
+                    || abilityService.hasPermission(userId, Scope.project, projectId, "project:read");
+        });
+
+        dynamicGates.put("project:member:set_user_permissions", (ctx, target) -> {
+            String projectId = (String) target;
+            String userId = ctx.userId();
+            if (pmRepo.isOwner(projectId, userId)) return true;
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:member:set_user_permissions")
+                    || abilityService.hasPermission(userId, Scope.project, projectId, "project:update");
+        });
+
+        dynamicGates.put("project:member:delete", (ctx, target) -> {
+            String projectId = (String) target;
+            String userId = ctx.userId();
+            if (pmRepo.isOwner(projectId, userId)) return true;
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:member:delete");
+                
+        });
+
+        dynamicGates.put("project:member:transfer_ownership", (ctx, target) -> {
+            String projectId = (String) target;
+            // Only current project owner can transfer ownership
+            return pmRepo.isOwner(projectId, ctx.userId());
+        });
+
+        // Company members management - invite
+        dynamicGates.put("company:member:invite", (ctx, target) -> {
+            String companyId = (String) target;
+            // Owner always has permission
+            if (companyMemberRepo.isOwner(companyId, ctx.userId())) return true;
+            // Check DB permission
+            return abilityService.hasPermission(ctx.userId(), Scope.company, companyId, "company:member:invite");
+        });
+
+        // Company members management - delete
+        dynamicGates.put("company:member:delete", (ctx, target) -> {
+            String companyId = (String) target;
+            // Owner always has permission
+            if (companyMemberRepo.isOwner(companyId, ctx.userId())) return true;
+            // Check DB permission
+            return abilityService.hasPermission(ctx.userId(), Scope.company, companyId, "company:member:delete");
+        });
+
+        dynamicGates.put("workspace:member:invite", (ctx, target) -> {
             String workspaceId = (String) target;
             // Owner always has permission
             if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
             // Check DB permission
-            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:create");
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:invite");
         });
 
         dynamicGates.put("workspace:member:read", (ctx, target) -> {
@@ -266,12 +362,12 @@ if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId))
                     || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:read");
         });
 
-        dynamicGates.put("workspace:member:update", (ctx, target) -> {
+        dynamicGates.put("workspace:member:set_user_permissions", (ctx, target) -> {
             String workspaceId = (String) target;
             // Owner always has permission
             if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
             // Check DB permission
-            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:update");
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:set_user_permissions");
         });
 
         dynamicGates.put("workspace:member:delete", (ctx, target) -> {
@@ -307,49 +403,80 @@ if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId))
         dynamicGates.put("workspace:role:read", (ctx, target) -> {
             String workspaceId = (String) target;
             if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
-            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:read")
-                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
-                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:read");
+
         });
 
         dynamicGates.put("workspace:role:create", (ctx, target) -> {
             String workspaceId = (String) target;
             if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
-            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:create")
-                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
-                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:create");
+
         });
 
         dynamicGates.put("workspace:role:update", (ctx, target) -> {
             String workspaceId = (String) target;
             if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
-            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:update")
-                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
-                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:update");
+
         });
 
         dynamicGates.put("workspace:role:delete", (ctx, target) -> {
             String workspaceId = (String) target;
             if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
-            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:delete")
-                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
-                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:delete");
+
         });
 
         dynamicGates.put("workspace:role:grant_permission", (ctx, target) -> {
             String workspaceId = (String) target;
             if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
-            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:grant_permission")
-                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:update")
-                    || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:crud");
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:role:grant_permission");
+
         });
 
-        dynamicGates.put("workspace:member:create", (ctx, target) -> {
+        // Project role management (list/create/update/delete)
+        dynamicGates.put("project:role:read", (ctx, target) -> {
+            String projectId = (String) target;
+            if (pmRepo.isOwner(projectId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:role:read");
+
+        });
+
+        dynamicGates.put("project:role:create", (ctx, target) -> {
+            String projectId = (String) target;
+            if (pmRepo.isOwner(projectId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:role:create");
+
+        });
+
+        dynamicGates.put("project:role:update", (ctx, target) -> {
+            String projectId = (String) target;
+            if (pmRepo.isOwner(projectId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:role:update");
+
+        });
+
+        dynamicGates.put("project:role:delete", (ctx, target) -> {
+            String projectId = (String) target;
+            if (pmRepo.isOwner(projectId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:role:delete");
+
+        });
+
+        // Grant permissions to project role (mirror workspace logic)
+        dynamicGates.put("project:role:grant_permission", (ctx, target) -> {
+            String projectId = (String) target;
+            if (pmRepo.isOwner(projectId, ctx.userId())) return true;
+            return abilityService.hasPermission(ctx.userId(), Scope.project, projectId, "project:role:grant_permission");
+        });
+
+        dynamicGates.put("workspace:member:invite", (ctx, target) -> {
             String workspaceId = (String) target;
             // Owner always has permission
             if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
             // Check DB permission
-            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:create");
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:invite");
         });
 
         dynamicGates.put("workspace:member:read", (ctx, target) -> {
@@ -361,12 +488,12 @@ if (pmRepo.existsByProjectIdAndUserIdAndOwnerIsTrue(projectId, userId))
                     || abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:read");
         });
 
-        dynamicGates.put("workspace:member:update", (ctx, target) -> {
+        dynamicGates.put("workspace:member:set_user_permissions", (ctx, target) -> {
             String workspaceId = (String) target;
             // Owner always has permission
             if (workspaceMemberRepo.isOwner(workspaceId, ctx.userId())) return true;
             // Check DB permission
-            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:update");
+            return abilityService.hasPermission(ctx.userId(), Scope.workspace, workspaceId, "workspace:member:set_user_permissions");
         });
 
         dynamicGates.put("workspace:member:delete", (ctx, target) -> {

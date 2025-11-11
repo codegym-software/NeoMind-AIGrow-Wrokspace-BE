@@ -4,6 +4,7 @@ import com.springboot.demo.dto.company.CompanyCreateRequest;
 import com.springboot.demo.dto.company.CompanyUpdateRequest;
 import com.springboot.demo.model.Company;
 import com.springboot.demo.model.CompanyMember;
+import com.springboot.demo.model.Permission;
 import com.springboot.demo.model.Role;
 import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.repository.*;
@@ -94,9 +95,11 @@ public class CompanyServiceImpl implements CompanyService {
         List<Integer> memberPermissionIds = allCompanyPermissions.stream()
                 .filter(p -> {
                     String code = p.getCode().toLowerCase();
-                    return !code.contains("update") && !code.contains("delete");
+                    return !code.contains("update")
+                            && !code.contains("delete")
+                            && !code.contains("invite");
                 })
-                .map(p -> p.getId())
+                .map(Permission::getId)
                 .collect(Collectors.toList());
 
         rolePermissionService.replaceRolePermissions(memberRole.getId(), memberPermissionIds);

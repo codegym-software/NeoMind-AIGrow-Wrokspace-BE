@@ -10,9 +10,12 @@ import com.springboot.demo.repository.WorkspaceRepository;
 import com.springboot.demo.repository.WorkspaceMemberRepository;
 import com.springboot.demo.repository.CompanyRepository;
 import com.springboot.demo.repository.UserRepository;
+import com.springboot.demo.service.RoleService;
 import com.springboot.demo.service.WorkspaceService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,15 +29,21 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
+    private final RoleService roleService;
+    private final NamedParameterJdbcTemplate jdbc;
 
     public WorkspaceServiceImpl(WorkspaceRepository repository, 
                                WorkspaceMemberRepository workspaceMemberRepository,
                                CompanyRepository companyRepository,
-                               UserRepository userRepository) {
+                               UserRepository userRepository,
+                               RoleService roleService,
+                               NamedParameterJdbcTemplate jdbc) {
         this.repository = repository;
         this.workspaceMemberRepository = workspaceMemberRepository;
         this.companyRepository = companyRepository;
         this.userRepository = userRepository;
+        this.roleService = roleService;
+        this.jdbc = jdbc;
     }
 
     @Override
@@ -79,6 +88,9 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         Workspace savedWorkspace = repository.save(workspace);
 
+        // Tạo mặc định 2 role admin và member cho workspace mới
+        roleService.createDefaultWorkspaceRoles(savedWorkspace.getId());
+
         // Auto-add creator as Workspace Owner if actualUserId is resolved
         if (actualUserId != null && !actualUserId.trim().isEmpty()) {
             // Check if user is already a member (idempotent)
@@ -88,6 +100,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
                         actualUserId
                 );
                 workspaceMemberRepository.save(member);
+                // Owner đã có đầy đủ quyền nên không cần gán thêm role admin
             }
         }
 

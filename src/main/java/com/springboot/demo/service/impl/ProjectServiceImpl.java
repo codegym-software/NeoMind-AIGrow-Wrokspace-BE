@@ -6,12 +6,15 @@ import com.springboot.demo.model.ProjectMember;
 import com.springboot.demo.model.enums.ProjectStatus;
 import com.springboot.demo.repository.*;
 import com.springboot.demo.service.ProjectService;
+import com.springboot.demo.service.RoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.context.annotation.Lazy;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +23,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectRepository projectRepo;
     private final ProjectMemberRepository pmRepo;
     private final WorkspaceRepository workspaceRepo;
+    @Lazy
+    private final RoleService roleService;
 
     private ProjectDto toDto(Project p) {
         return new ProjectDto(
@@ -53,9 +58,13 @@ public class ProjectServiceImpl implements ProjectService {
                     .projectId(p.getId())
                     .userId(currentUserId)
                     .roleId(null) // Owners do not need a specific role
-                    .owner(true)
+                    .isOwner(true)
                     .build());
         }
+        
+        // Tạo mặc định 2 role admin và member cho project mới
+        roleService.createDefaultProjectRoles(p.getId());
+
 
         return toDto(p);
     }
