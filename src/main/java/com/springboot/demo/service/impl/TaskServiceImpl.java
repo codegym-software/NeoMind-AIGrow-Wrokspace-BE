@@ -85,8 +85,8 @@ public class TaskServiceImpl implements TaskService {
             }
         }
         
-        // Auto-assign to active sprint if not set (khi tạo từ Board)
-        if (task.getSprintId() == null) {
+        // Auto-assign to active sprint ONLY if created from Board (not from Backlog/Sprint page)
+        if (task.getSprintId() == null && isCreatedFromBoard) {
             Optional<Sprint> activeSprint = sprintRepo.findByProjectIdAndStatus(task.getProjectId(), SprintStatus.active);
             if (activeSprint.isPresent()) {
                 task.setSprintId(activeSprint.get().getId());
