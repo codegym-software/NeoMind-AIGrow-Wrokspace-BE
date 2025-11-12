@@ -24,16 +24,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     
     
     List<Task> findBySprintIdAndStatusColumn_IdAndArchivedAtIsNull(Integer sprintId, Integer columnId);
-    
-    // CHUẨN HÓA: Đổi từ assignedTo → assigneeId
+
     List<Task> findByAssigneeIdAndArchivedAtIsNull(String assigneeId);
-    
-    // Tìm tất cả tasks trong một column (dùng cho deleteColumn)
+
     List<Task> findByStatusColumn_Id(Integer columnId);
-    
-    // XÓA method trùng tên - đã có findByProjectId(String, Pageable) ở trên
-    // List<Task> findByProjectId(String projectId);
-    
+
+    Page<Task> findByProjectIdAndArchivedAtIsNull(String projectId, Pageable pageable);
+
+    Page<Task> findByProjectIdAndArchivedAtIsNotNull(String projectId, Pageable pageable);
    
     @Query("SELECT COUNT(t) FROM Task t WHERE t.sprintId = :sprintId AND t.statusColumn.id = :columnId AND t.archivedAt IS NULL")
     long countBySprintIdAndStatus(@Param("sprintId") Integer sprintId, @Param("columnId") Integer columnId);

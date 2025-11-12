@@ -63,7 +63,7 @@ public class TaskServiceImpl implements TaskService {
         
         // Remember if task was created from Board (has statusColumn)
         boolean isCreatedFromBoard = task.getStatusColumn() != null && task.getStatusColumn().getId() != null;
-        
+
         // Auto-assign default column if not set (To Do / first column)
         if (!isCreatedFromBoard) {
             // Find board of this project
@@ -85,10 +85,8 @@ public class TaskServiceImpl implements TaskService {
             }
         }
         
-        // Auto-assign to active sprint ONLY if created from Board (had statusColumn from frontend)
-        // If created from Backlog/Sprint page, sprintId is explicitly set (or null for backlog)
-        if (task.getSprintId() == null && isCreatedFromBoard) {
-            // Created from Board → Auto-assign to active sprint
+        // Auto-assign to active sprint if not set (khi tạo từ Board)
+        if (task.getSprintId() == null) {
             Optional<Sprint> activeSprint = sprintRepo.findByProjectIdAndStatus(task.getProjectId(), SprintStatus.active);
             if (activeSprint.isPresent()) {
                 task.setSprintId(activeSprint.get().getId());
@@ -175,14 +173,6 @@ public class TaskServiceImpl implements TaskService {
         return task;
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Task> listByProject(String projectId, String currentUserId, Pageable pageable) {
-        checkProjectAccess(projectId, currentUserId);
-        return taskRepo.findByProjectId(projectId, pageable);
-    }
-
-    
     @Override
     @Transactional
     public Task moveTask(Long taskId, TaskMoveRequest request, String currentUserId) {
@@ -294,5 +284,42 @@ public class TaskServiceImpl implements TaskService {
         // 3. Cập nhật task hiện tại
         task.setStatusColumn(newColumn);
         task.setOrderIndex(newOrderIndex);
+    }
+    @Override
+    @Transactional
+    public Task archive(Long taskId, String userId) {
+        Task task = taskRepo.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        checkProjectAccess(task.getProjectId(), userId);
+
+        task.setArchivedAt(java.time.LocalDateTime.now());
+        return taskRepo.save(task);
+    }
+
+    @Override
+    @Transactional
+    public Task restore(Long taskId, String userId) {
+        Task task = taskRepo.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        checkProjectAccess(task.getProjectId(), userId);
+
+        task.setArchivedAt(null);
+        return taskRepo.save(task);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Task> listByProject(String projectId, String currentUserId, Pageable pageable) {
+        checkProjectAccess(projectId, currentUserId);
+        return taskRepo.findByProjectIdAndArchivedAtIsNull(projectId, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Task> listArchivedByProject(String projectId, String userId, Pageable pageable) {
+        checkProjectAccess(projectId, userId);
+        return taskRepo.findByProjectIdAndArchivedAtIsNotNull(projectId, pageable);
     }
 }

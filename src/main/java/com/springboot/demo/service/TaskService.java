@@ -12,10 +12,8 @@ public interface TaskService {
     void delete(Long taskId, String currentUserId);
     Task get(Long taskId, String currentUserId);
     Page<Task> listByProject(String projectId, String currentUserId, Pageable pageable);
-    
-    /**
-     * API 6 (MỚI): Di chuyển Task (Kéo thả) - Chuẩn Jira
-     * Logic xử lý cả di chuyển trong cùng cột và sang cột khác
-     */
     Task moveTask(Long taskId, TaskMoveRequest request, String currentUserId);
+    Task archive(Long taskId, String userId);
+    Task restore(Long taskId, String userId);
+    Page<Task> listArchivedByProject(String projectId, String userId, Pageable pageable);
 }
