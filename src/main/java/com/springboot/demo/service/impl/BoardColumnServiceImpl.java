@@ -2,6 +2,7 @@ package com.springboot.demo.service.impl;
 
 import com.springboot.demo.dto.board.*;
 import com.springboot.demo.model.BoardColumn;
+import com.springboot.demo.model.Task;
 import com.springboot.demo.repository.BoardColumnRepository;
 import com.springboot.demo.repository.TaskRepository;
 import com.springboot.demo.service.BoardColumnService;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 public class BoardColumnServiceImpl implements BoardColumnService {
 
     private final BoardColumnRepository boardColumnRepository;
+    private final TaskRepository taskRepository;
 
     /**
      * API 2: Tạo column mới
@@ -96,19 +98,39 @@ public class BoardColumnServiceImpl implements BoardColumnService {
      * API 4: Xóa column
      * DELETE /api/columns/{columnId}
      * 
-     * Lưu ý: Khi xóa column, các tasks trong column đó sẽ có column_id = NULL
-     * (Vì foreign key constraint: ON DELETE SET NULL)
+     * Lưu ý: Khi xóa column, các tasks trong column đó sẽ chuyển về column đầu tiên (TODO)
      */
     @Override
     @Transactional
     public void deleteColumn(Integer columnId) {
-        if (!boardColumnRepository.existsById(columnId)) {
-            throw new RuntimeException("Column not found: " + columnId);
-        }
+        BoardColumn column = boardColumnRepository.findById(columnId)
+            .orElseThrow(() -> new RuntimeException("Column not found: " + columnId));
 
-        // Optional: Di chuyển tasks sang cột khác trước khi xóa
-        // Ở đây để đơn giản, chúng ta để database handle (SET NULL)
+        // Lấy tất cả tasks trong column này
+        List<Task> tasksInColumn = taskRepository.findByStatusColumn_Id(columnId);
         
+        if (!tasksInColumn.isEmpty()) {
+            // Tìm column đầu tiên (position = 0) trong cùng board
+            List<BoardColumn> allColumns = boardColumnRepository.findByBoardIdOrderByPositionAsc(column.getBoardId());
+            
+            // Tìm column đầu tiên khác với column đang xóa
+            BoardColumn firstColumn = allColumns.stream()
+                .filter(col -> !col.getId().equals(columnId))
+                .findFirst()
+                .orElse(null);
+            
+            if (firstColumn == null) {
+                throw new RuntimeException("Cannot delete the last column in the board");
+            }
+            
+            // Chuyển tất cả tasks về column đầu tiên
+            for (Task task : tasksInColumn) {
+                task.setStatusColumn(firstColumn);
+            }
+            taskRepository.saveAll(tasksInColumn);
+        }
+        
+        // Giờ mới xóa column
         boardColumnRepository.deleteById(columnId);
     }
 

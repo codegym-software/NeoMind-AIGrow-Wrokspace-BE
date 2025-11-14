@@ -2,6 +2,8 @@ package com.springboot.demo.repository;
 
 import com.springboot.demo.model.Board;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -27,4 +29,10 @@ public interface BoardRepository extends JpaRepository<Board, Integer> {
      * Kiểm tra project đã có board mặc định chưa
      */
     boolean existsByProjectIdAndIsDefaultTrue(String projectId);
+    
+    /**
+     * Lấy projectId từ boardId
+     */
+    @Query("SELECT b.projectId FROM Board b WHERE b.id = :boardId")
+    Optional<String> findProjectIdByBoardId(@Param("boardId") Integer boardId);
 }

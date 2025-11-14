@@ -20,4 +20,8 @@ public class BoardResponse {
     private String description;
     private Boolean isDefault;
     private List<BoardColumnResponse> columns;
+    
+    // Sprint info - Board luôn hiện tasks của sprint đang active
+    private Integer activeSprintId;
+    private String activeSprintName;
 }

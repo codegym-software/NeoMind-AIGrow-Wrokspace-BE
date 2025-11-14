@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository cho BoardColumn entity
@@ -47,4 +48,10 @@ public interface BoardColumnRepository extends JpaRepository<BoardColumn, Intege
     @Modifying
     @Query("UPDATE BoardColumn bc SET bc.position = :position WHERE bc.id = :columnId")
     void updatePosition(@Param("columnId") Integer columnId, @Param("position") Integer position);
+    
+    /**
+     * Lấy projectId từ columnId (qua board)
+     */
+    @Query("SELECT bc.board.projectId FROM BoardColumn bc WHERE bc.id = :columnId")
+    Optional<String> findProjectIdByColumnId(@Param("columnId") Integer columnId);
 }

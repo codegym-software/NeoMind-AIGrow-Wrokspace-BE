@@ -118,6 +118,11 @@ public class GateManagerImpl implements GateManager {
             // If target is a concrete projectId, owner of that project is allowed
             if (wsId != null && pmRepo.isOwner(maybeProjectId, userId)) return true;
 
+            // If target was a concrete projectId, check if user is project member (including owner)
+            if (wsId != null && pmRepo.existsByProjectIdAndUserId(maybeProjectId, userId)) {
+                return true;
+            }
+
             // Allow via workspace-level permissions
             if (abilityService.hasPermission(userId, Scope.workspace, workspaceId, "project:read")
                     || abilityService.hasPermission(userId, Scope.workspace, workspaceId, "project:crud")

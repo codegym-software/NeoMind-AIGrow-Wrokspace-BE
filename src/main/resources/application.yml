@@ -35,7 +35,7 @@ spring:
       max-request-size: 5MB
 
 cognito:
-  issuer-uri: ${ISSUER_URI}
+  issuer-uri: ${ISSUER_URL}
   client-id: ${CLIENT_ID}
   userinfo-url: https://ap-southeast-2tespims7c.auth.ap-southeast-2.amazoncognito.com/oauth2/userInfo
 

@@ -5,11 +5,17 @@ import com.springboot.demo.dto.board.TaskMoveRequest;
 import com.springboot.demo.exception.AccessDeniedException;
 import com.springboot.demo.exception.ResourceNotFoundException;
 
+import com.springboot.demo.model.Board;
 import com.springboot.demo.model.BoardColumn;
+import com.springboot.demo.model.Sprint;
 import com.springboot.demo.model.Task;
+import com.springboot.demo.model.enums.SprintStatus;
+import com.springboot.demo.model.enums.TaskPriority;
+import com.springboot.demo.repository.BoardRepository;
 import com.springboot.demo.repository.BoardColumnRepository;
 import com.springboot.demo.repository.ProjectMemberRepository;
 import com.springboot.demo.repository.ProjectRepository;
+import com.springboot.demo.repository.SprintRepository;
 import com.springboot.demo.repository.TaskRepository;
 import com.springboot.demo.service.TaskService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +33,9 @@ public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepo;
     private final ProjectMemberRepository pmRepo;
     private final ProjectRepository projectRepo;
+    private final BoardRepository boardRepo;
     private final BoardColumnRepository boardColumnRepo;
+    private final SprintRepository sprintRepo;
 
     private void checkProjectAccess(String projectId, String userId) {
         if (!projectRepo.existsById(projectId)) {
@@ -41,6 +50,49 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public Task create(Task task, String currentUserId) {
         checkProjectAccess(task.getProjectId(), currentUserId);
+        
+        // Set default priority if not provided
+        if (task.getPriority() == null) {
+            task.setPriority(TaskPriority.medium);
+        }
+        
+        // Set default orderIndex if not provided
+        if (task.getOrderIndex() == null) {
+            task.setOrderIndex(0);
+        }
+        
+        // Remember if task was created from Board (has statusColumn)
+        boolean isCreatedFromBoard = task.getStatusColumn() != null && task.getStatusColumn().getId() != null;
+
+        // Auto-assign default column if not set (To Do / first column)
+        if (!isCreatedFromBoard) {
+            // Find board of this project
+            Optional<Board> boardOpt = boardRepo.findByProjectIdAndIsDefaultTrue(task.getProjectId());
+            
+            if (boardOpt.isPresent()) {
+                // Find columns of this board
+                List<BoardColumn> columns = boardColumnRepo.findByBoardIdOrderByPositionAsc(boardOpt.get().getId());
+                
+                if (!columns.isEmpty()) {
+                    // Try to find "To Do" column first
+                    BoardColumn toDoColumn = columns.stream()
+                        .filter(col -> "To Do".equalsIgnoreCase(col.getName()) || "TODO".equalsIgnoreCase(col.getName()))
+                        .findFirst()
+                        .orElse(columns.get(0)); // Fallback to first column
+                    
+                    task.setStatusColumn(toDoColumn);
+                }
+            }
+        }
+        
+        // Auto-assign to active sprint ONLY if created from Board (not from Backlog/Sprint page)
+        if (task.getSprintId() == null && isCreatedFromBoard) {
+            Optional<Sprint> activeSprint = sprintRepo.findByProjectIdAndStatus(task.getProjectId(), SprintStatus.active);
+            if (activeSprint.isPresent()) {
+                task.setSprintId(activeSprint.get().getId());
+            }
+        }
+        
         return taskRepo.save(task);
     }
 
@@ -73,11 +125,23 @@ public class TaskServiceImpl implements TaskService {
             existing.setEstimatedHours(task.getEstimatedHours());
         }
         
-        // CHUẨN HÓA: Đổi assignedTo → assigneeId (allow explicit null to unassign)
-        existing.setAssigneeId(task.getAssigneeId());
         
-        // Handle sprintId - allow explicit null to move to backlog
-        existing.setSprintId(task.getSprintId());
+        if (task.getAssigneeId() != null) {
+            existing.setAssigneeId(task.getAssigneeId());
+        }
+        
+        
+        if (task.getStatusColumn() == null || task.getStatusColumn().getId() == null) {
+            // Không có statusColumn → Đây là SPRINT drag & drop
+            if (task.getOrderIndex() != null) {
+                // Sprint drag: cho phép update sprintId (kể cả null để về backlog)
+                existing.setSprintId(task.getSprintId());
+            } else if (task.getSprintId() != null) {
+                // Regular update với sprintId không null
+                existing.setSprintId(task.getSprintId());
+            }
+        }
+        // Nếu có statusColumn → Đây là BOARD drag, KHÔNG update sprintId (giữ nguyên)
         
         if (task.getTags() != null) {
             existing.setTags(task.getTags());
@@ -109,27 +173,6 @@ public class TaskServiceImpl implements TaskService {
         return task;
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Page<Task> listByProject(String projectId, String currentUserId, Pageable pageable) {
-        checkProjectAccess(projectId, currentUserId);
-        return taskRepo.findByProjectId(projectId, pageable);
-    }
-
-    /**
-     * API 6 (MỚI): Di chuyển Task (Kéo thả) - Chuẩn Jira
-     * PATCH /api/projects/{projectId}/tasks/{taskId}/move
-     * 
-     * Logic:
-     * 1. Load task từ database
-     * 2. Kiểm tra xem có thay đổi column không
-     * 3. Trường hợp 1: Di chuyển trong cùng cột
-     *    - Chỉ cập nhật orderIndex của task này và các task xung quanh
-     * 4. Trường hợp 2: Di chuyển sang cột khác
-     *    - Cập nhật columnId và orderIndex
-     *    - Cập nhật orderIndex của các task trong cột cũ (lấp chỗ trống)
-     *    - Cập nhật orderIndex của các task trong cột mới (chèn vào)
-     */
     @Override
     @Transactional
     public Task moveTask(Long taskId, TaskMoveRequest request, String currentUserId) {
@@ -241,5 +284,42 @@ public class TaskServiceImpl implements TaskService {
         // 3. Cập nhật task hiện tại
         task.setStatusColumn(newColumn);
         task.setOrderIndex(newOrderIndex);
+    }
+    @Override
+    @Transactional
+    public Task archive(Long taskId, String userId) {
+        Task task = taskRepo.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        checkProjectAccess(task.getProjectId(), userId);
+
+        task.setArchivedAt(java.time.LocalDateTime.now());
+        return taskRepo.save(task);
+    }
+
+    @Override
+    @Transactional
+    public Task restore(Long taskId, String userId) {
+        Task task = taskRepo.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        checkProjectAccess(task.getProjectId(), userId);
+
+        task.setArchivedAt(null);
+        return taskRepo.save(task);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Task> listByProject(String projectId, String currentUserId, Pageable pageable) {
+        checkProjectAccess(projectId, currentUserId);
+        return taskRepo.findByProjectIdAndArchivedAtIsNull(projectId, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Task> listArchivedByProject(String projectId, String userId, Pageable pageable) {
+        checkProjectAccess(projectId, userId);
+        return taskRepo.findByProjectIdAndArchivedAtIsNotNull(projectId, pageable);
     }
 }

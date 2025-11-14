@@ -6,8 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public enum TaskPriority {
     low("Low", 1),
     medium("Medium", 2),
-    high("High", 3),
-    urgent("Urgent", 4);
+    high("High", 3);
 
     private final String displayName;
     private final int level;

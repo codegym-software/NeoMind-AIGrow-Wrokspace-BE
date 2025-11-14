@@ -4,9 +4,12 @@ import com.springboot.demo.dto.board.*;
 import com.springboot.demo.dto.task.TaskResponse;
 import com.springboot.demo.model.Board;
 import com.springboot.demo.model.BoardColumn;
+import com.springboot.demo.model.Sprint;
 import com.springboot.demo.model.Task;
+import com.springboot.demo.model.enums.SprintStatus;
 import com.springboot.demo.repository.BoardRepository;
 import com.springboot.demo.repository.BoardColumnRepository;
+import com.springboot.demo.repository.SprintRepository;
 import com.springboot.demo.repository.TaskRepository;
 import com.springboot.demo.service.BoardService;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -29,6 +33,7 @@ public class BoardServiceImpl implements BoardService {
     private final BoardRepository boardRepository;
     private final BoardColumnRepository boardColumnRepository;
     private final TaskRepository taskRepository;
+    private final SprintRepository sprintRepository;
 
     /**
      * API 1: Lấy toàn bộ Board với columns và tasks (Quan trọng nhất)
@@ -36,10 +41,11 @@ public class BoardServiceImpl implements BoardService {
      * 
      * Logic:
      * 1. Tìm board mặc định của project
-     * 2. Lấy tất cả columns của board (sắp xếp theo position)
-     * 3. Lấy tất cả tasks của project (sắp xếp theo orderIndex)
-     * 4. Gom tasks theo column_id
-     * 5. Trả về JSON lồng nhau (nested)
+     * 2. Tìm sprint đang active (status = 'active')
+     * 3. Lấy tất cả columns của board (sắp xếp theo position)
+     * 4. Lấy tasks của sprint đang active (hoặc tất cả nếu không có sprint active)
+     * 5. Gom tasks theo column_id
+     * 6. Trả về JSON lồng nhau (nested)
      */
     @Override
     @Transactional(readOnly = true)
@@ -48,18 +54,31 @@ public class BoardServiceImpl implements BoardService {
         Board board = boardRepository.findByProjectIdAndIsDefaultTrue(projectId)
             .orElseThrow(() -> new RuntimeException("Board not found for project: " + projectId));
 
-        // 2. Lấy tất cả columns của board
+        // 2. Tìm sprint đang active
+        Optional<Sprint> activeSprint = sprintRepository.findByProjectIdAndStatus(projectId, SprintStatus.active);
+
+        // 3. Lấy tất cả columns của board
         List<BoardColumn> columns = boardColumnRepository.findByBoardIdOrderByPositionAsc(board.getId());
 
-        // 3. Lấy tất cả tasks của project (chưa archived)
-        List<Task> allTasks = taskRepository.findByProjectIdAndArchivedAtIsNull(projectId);
+        // 4. Lấy tasks theo sprint
+        List<Task> allTasks;
+        if (activeSprint.isPresent()) {
+            // Chỉ lấy tasks của sprint đang active
+            Integer sprintId = activeSprint.get().getId();
+            allTasks = taskRepository.findByProjectIdAndArchivedAtIsNull(projectId).stream()
+                .filter(task -> task.getSprintId() != null && task.getSprintId().equals(sprintId))
+                .collect(Collectors.toList());
+        } else {
+            // Nếu không có sprint active, lấy tất cả tasks (fallback)
+            allTasks = taskRepository.findByProjectIdAndArchivedAtIsNull(projectId);
+        }
 
-        // 4. Gom tasks theo column_id
+        // 5. Gom tasks theo column_id
         Map<Integer, List<Task>> tasksByColumn = allTasks.stream()
             .filter(task -> task.getStatusColumn() != null)
             .collect(Collectors.groupingBy(task -> task.getStatusColumn().getId()));
 
-        // 5. Convert sang DTO
+        // 6. Convert sang DTO
         List<BoardColumnResponse> columnResponses = columns.stream()
             .map(column -> {
                 List<Task> tasksInColumn = tasksByColumn.getOrDefault(column.getId(), new ArrayList<>());
@@ -84,7 +103,9 @@ public class BoardServiceImpl implements BoardService {
             board.getName(),
             board.getDescription(),
             board.getIsDefault(),
-            columnResponses
+            columnResponses,
+            activeSprint.map(Sprint::getId).orElse(null),
+            activeSprint.map(Sprint::getName).orElse(null)
         );
     }
 
@@ -119,9 +140,9 @@ public class BoardServiceImpl implements BoardService {
      */
     private void createDefaultColumns(Integer boardId) {
         List<BoardColumn> defaultColumns = List.of(
-            createColumn(boardId, "TO DO", 0, "#6B7280"),
-            createColumn(boardId, "IN PROGRESS", 1, "#3B82F6"),
-            createColumn(boardId, "DONE", 2, "#10B981")
+            createColumn(boardId, "To Do", 0, "#6B7280"),
+            createColumn(boardId, "In Progress", 1, "#3B82F6"),
+            createColumn(boardId, "Done", 2, "#10B981")
         );
         boardColumnRepository.saveAll(defaultColumns);
     }

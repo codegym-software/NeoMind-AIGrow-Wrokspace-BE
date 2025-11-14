@@ -5,6 +5,7 @@ import com.springboot.demo.service.BoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,7 +17,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class BoardController {
 
     private final BoardService boardService;
@@ -39,16 +39,23 @@ public class BoardController {
      *   ]
      * }
      */
+    @PreAuthorize("@gate.allows('project:read', authentication, #projectId)")
     @GetMapping("/projects/{projectId}/board")
     public ResponseEntity<BoardResponse> getBoardByProjectId(@PathVariable String projectId) {
-        BoardResponse response = boardService.getBoardByProjectId(projectId);
-        return ResponseEntity.ok(response);
+        try {
+            BoardResponse response = boardService.getBoardByProjectId(projectId);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            // Return 404 when board not found - frontend will catch this and auto-create board
+            return ResponseEntity.notFound().build();
+        }
     }
 
     /**
      * Tạo board mới cho project
      * POST /api/boards
      */
+    @PreAuthorize("@gate.allows('project:update', authentication, #request.projectId)")
     @PostMapping("/boards")
     public ResponseEntity<BoardResponse> createBoard(@RequestBody BoardCreateRequest request) {
         BoardResponse response = boardService.createBoard(request);
@@ -59,6 +66,7 @@ public class BoardController {
      * Lấy tất cả boards của project
      * GET /api/projects/{projectId}/boards
      */
+    @PreAuthorize("@gate.allows('project:read', authentication, #projectId)")
     @GetMapping("/projects/{projectId}/boards")
     public ResponseEntity<List<BoardResponse>> getBoardsByProjectId(@PathVariable String projectId) {
         List<BoardResponse> responses = boardService.getBoardsByProjectId(projectId);

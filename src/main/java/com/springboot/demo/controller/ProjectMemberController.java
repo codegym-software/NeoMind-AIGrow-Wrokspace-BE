@@ -3,6 +3,7 @@ package com.springboot.demo.controller;
 import com.springboot.demo.dto.project.AddProjectMemberReq;
 import com.springboot.demo.dto.project.AssignProjectRoleReq;
 import com.springboot.demo.dto.project.TransferProjectOwnershipReq;
+import com.springboot.demo.dto.project.ProjectMemberDto;
 import com.springboot.demo.model.ProjectMember;
 import com.springboot.demo.security.UserIdResolver;
 import com.springboot.demo.service.ProjectMemberService;
@@ -24,8 +25,8 @@ public class ProjectMemberController {
 
     @GetMapping("/members")
     @PreAuthorize("@gate.allows('project:member:read', authentication, #projectId)")
-    public List<ProjectMember> listMembers(@PathVariable String projectId) {
-        return service.listMembers(projectId);
+    public List<ProjectMemberDto> listMembers(@PathVariable String projectId) {
+        return service.listMembersWithDetails(projectId);
     }
 
     @PostMapping("/members")

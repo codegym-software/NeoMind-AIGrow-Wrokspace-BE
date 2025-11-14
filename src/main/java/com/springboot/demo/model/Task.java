@@ -61,8 +61,8 @@ public class Task {
     // --- KẾT THÚC THAY ĐỔI LỚN ---
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "priority", nullable = false, columnDefinition = "ENUM('LOW', 'MEDIUM', 'HIGH', 'URGENT') DEFAULT 'MEDIUM'")
-    private TaskPriority priority = TaskPriority.medium; // Giữ nguyên vì Enum Priority của bạn dùng chữ thường
+    @Column(name = "priority", nullable = false, columnDefinition = "ENUM('LOW', 'MEDIUM', 'HIGH') DEFAULT 'MEDIUM'")
+    private TaskPriority priority; // Removed default = TaskPriority.medium to avoid overwriting during PATCH updates
 
     @Column(name = "due_date")
     private LocalDate dueDate;
@@ -74,7 +74,7 @@ public class Task {
     private String tags;
 
     @Column(name = "order_index", nullable = false, columnDefinition = "INT DEFAULT 0")
-    private Integer orderIndex = 0;
+    private Integer orderIndex; // Removed default = 0 to avoid overwriting during PATCH updates
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
