@@ -50,42 +50,34 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public Task create(Task task, String currentUserId) {
         checkProjectAccess(task.getProjectId(), currentUserId);
-        
-        // Set default priority if not provided
+
         if (task.getPriority() == null) {
             task.setPriority(TaskPriority.medium);
         }
-        
-        // Set default orderIndex if not provided
+
         if (task.getOrderIndex() == null) {
             task.setOrderIndex(0);
         }
-        
-        // Remember if task was created from Board (has statusColumn)
+
         boolean isCreatedFromBoard = task.getStatusColumn() != null && task.getStatusColumn().getId() != null;
 
-        // Auto-assign default column if not set (To Do / first column)
         if (!isCreatedFromBoard) {
-            // Find board of this project
             Optional<Board> boardOpt = boardRepo.findByProjectIdAndIsDefaultTrue(task.getProjectId());
             
             if (boardOpt.isPresent()) {
-                // Find columns of this board
                 List<BoardColumn> columns = boardColumnRepo.findByBoardIdOrderByPositionAsc(boardOpt.get().getId());
                 
                 if (!columns.isEmpty()) {
-                    // Try to find "To Do" column first
                     BoardColumn toDoColumn = columns.stream()
                         .filter(col -> "To Do".equalsIgnoreCase(col.getName()) || "TODO".equalsIgnoreCase(col.getName()))
                         .findFirst()
-                        .orElse(columns.get(0)); // Fallback to first column
+                        .orElse(columns.get(0));
                     
                     task.setStatusColumn(toDoColumn);
                 }
             }
         }
-        
-        // Auto-assign to active sprint ONLY if created from Board (not from Backlog/Sprint page)
+
         if (task.getSprintId() == null && isCreatedFromBoard) {
             Optional<Sprint> activeSprint = sprintRepo.findByProjectIdAndStatus(task.getProjectId(), SprintStatus.active);
             if (activeSprint.isPresent()) {
@@ -104,14 +96,12 @@ public class TaskServiceImpl implements TaskService {
 
         checkProjectAccess(existing.getProjectId(), currentUserId);
 
-        // --- Logic PATCH (vá lỗi) ---
         if (task.getTitle() != null) {
             existing.setTitle(task.getTitle());
         }
         if (task.getDescription() != null) {
             existing.setDescription(task.getDescription());
         }
-        // CRITICAL: Update statusColumn - Check both null and valid ID
         if (task.getStatusColumn() != null && task.getStatusColumn().getId() != null) {
             existing.setStatusColumn(task.getStatusColumn());
         }
@@ -124,24 +114,17 @@ public class TaskServiceImpl implements TaskService {
         if (task.getEstimatedHours() != null) {
             existing.setEstimatedHours(task.getEstimatedHours());
         }
-        
-        
         if (task.getAssigneeId() != null) {
             existing.setAssigneeId(task.getAssigneeId());
         }
-        
-        
+
         if (task.getStatusColumn() == null || task.getStatusColumn().getId() == null) {
-            // Không có statusColumn → Đây là SPRINT drag & drop
             if (task.getOrderIndex() != null) {
-                // Sprint drag: cho phép update sprintId (kể cả null để về backlog)
                 existing.setSprintId(task.getSprintId());
             } else if (task.getSprintId() != null) {
-                // Regular update với sprintId không null
                 existing.setSprintId(task.getSprintId());
             }
         }
-        // Nếu có statusColumn → Đây là BOARD drag, KHÔNG update sprintId (giữ nguyên)
         
         if (task.getTags() != null) {
             existing.setTags(task.getTags());
@@ -176,13 +159,11 @@ public class TaskServiceImpl implements TaskService {
     @Override
     @Transactional
     public Task moveTask(Long taskId, TaskMoveRequest request, String currentUserId) {
-        // 1. Load task và validate
         Task task = taskRepo.findById(taskId)
             .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
         
         checkProjectAccess(task.getProjectId(), currentUserId);
 
-        // 2. Validate column tồn tại
         BoardColumn newColumn = boardColumnRepo.findById(request.getNewColumnId())
             .orElseThrow(() -> new ResourceNotFoundException("Column not found with id: " + request.getNewColumnId()));
 
@@ -191,11 +172,9 @@ public class TaskServiceImpl implements TaskService {
         Integer newColumnId = request.getNewColumnId();
         Integer newOrderIndex = request.getNewOrderIndex();
 
-        // 3. Trường hợp 1: Di chuyển trong cùng cột
         if (oldColumnId != null && oldColumnId.equals(newColumnId)) {
             reorderWithinSameColumn(task, oldOrderIndex, newOrderIndex);
-        } 
-        // 4. Trường hợp 2: Di chuyển sang cột khác
+        }
         else {
             moveToDifferentColumn(task, oldColumnId, newColumn, newOrderIndex);
         }
@@ -203,15 +182,9 @@ public class TaskServiceImpl implements TaskService {
         return taskRepo.save(task);
     }
 
-    /**
-     * Helper: Sắp xếp lại tasks trong cùng một cột
-     * Ví dụ: Di chuyển task từ position 2 lên position 0
-     * - Tasks ở position 0, 1 sẽ bị đẩy xuống (+ 1)
-     * - Task này nhận position 0
-     */
     private void reorderWithinSameColumn(Task task, Integer oldOrderIndex, Integer newOrderIndex) {
         if (oldOrderIndex.equals(newOrderIndex)) {
-            return; // Không thay đổi gì
+            return;
         }
 
         Integer columnId = task.getStatusColumn().getId();
@@ -219,22 +192,19 @@ public class TaskServiceImpl implements TaskService {
             task.getProjectId(), columnId
         );
 
-        // Sắp xếp lại orderIndex
         for (Task t : tasksInColumn) {
             if (t.getId().equals(task.getId())) {
-                continue; // Skip task đang di chuyển
+                continue;
             }
 
             int currentIndex = t.getOrderIndex();
-            
-            // Task kéo xuống (từ trên xuống dưới)
+
             if (oldOrderIndex < newOrderIndex) {
                 if (currentIndex > oldOrderIndex && currentIndex <= newOrderIndex) {
                     t.setOrderIndex(currentIndex - 1);
                     taskRepo.save(t);
                 }
             }
-            // Task kéo lên (từ dưới lên trên)
             else {
                 if (currentIndex >= newOrderIndex && currentIndex < oldOrderIndex) {
                     t.setOrderIndex(currentIndex + 1);
@@ -246,13 +216,7 @@ public class TaskServiceImpl implements TaskService {
         task.setOrderIndex(newOrderIndex);
     }
 
-    /**
-     * Helper: Di chuyển task sang cột khác
-     * 1. Lấp chỗ trống trong cột cũ (các task phía sau đẩy lên)
-     * 2. Chèn vào cột mới (các task phía sau đẩy xuống)
-     */
     private void moveToDifferentColumn(Task task, Integer oldColumnId, BoardColumn newColumn, Integer newOrderIndex) {
-        // 1. Cập nhật cột cũ - Lấp chỗ trống
         if (oldColumnId != null) {
             List<Task> tasksInOldColumn = taskRepo.findByProjectIdAndStatusColumn_IdAndArchivedAtIsNull(
                 task.getProjectId(), oldColumnId
@@ -269,7 +233,6 @@ public class TaskServiceImpl implements TaskService {
             }
         }
 
-        // 2. Cập nhật cột mới - Chèn vào
         List<Task> tasksInNewColumn = taskRepo.findByProjectIdAndStatusColumn_IdAndArchivedAtIsNull(
             task.getProjectId(), newColumn.getId()
         );
@@ -281,7 +244,6 @@ public class TaskServiceImpl implements TaskService {
             }
         }
 
-        // 3. Cập nhật task hiện tại
         task.setStatusColumn(newColumn);
         task.setOrderIndex(newOrderIndex);
     }
@@ -322,4 +284,5 @@ public class TaskServiceImpl implements TaskService {
         checkProjectAccess(projectId, userId);
         return taskRepo.findByProjectIdAndArchivedAtIsNotNull(projectId, pageable);
     }
+
 }
