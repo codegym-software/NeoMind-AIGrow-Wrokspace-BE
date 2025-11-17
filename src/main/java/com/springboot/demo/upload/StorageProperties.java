@@ -32,6 +32,7 @@ public class StorageProperties {
             case COMPANY_LOGO -> "company-logo";
             case USER_AVATAR -> "user-avatar";
             case TEMP -> "temp";
+            case TASK_ATTACHMENT -> "task-attachment";
         });
     }
 }

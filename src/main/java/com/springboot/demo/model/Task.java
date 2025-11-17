@@ -88,6 +88,9 @@ public class Task {
     @Column(name = "archived_at")
     private LocalDateTime archivedAt;
 
+    @Column(name = "attachments", columnDefinition = "JSON")
+    private String attachments; // Lưu danh sách file dạng JSON: [{"filename":"abc.pdf","url":"...","size":123}]
+
     // --- SỬA LẠI CÁC BUSINESS METHODS ---
     
     public boolean isArchived() {
