@@ -1,13 +1,21 @@
+
+
 package com.springboot.demo.model;
 
 import com.springboot.demo.model.enums.Scope;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "permissions",
         uniqueConstraints = @UniqueConstraint(name = "uk_perms_scope_code", columnNames = {"scope","code"}))
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter 
+@Setter 
+@NoArgsConstructor 
+@AllArgsConstructor
 public class Permission {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

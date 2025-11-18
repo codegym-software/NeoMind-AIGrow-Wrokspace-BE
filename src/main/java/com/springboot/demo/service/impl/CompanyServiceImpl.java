@@ -31,6 +31,7 @@ public class CompanyServiceImpl implements CompanyService {
     private final RoleRepository roleRepo;
     private final PermissionRepository permissionRepo;
     private final RolePermissionService rolePermissionService;
+    private final MembershipCleanupRepository membershipCleanup;
 
     @Override
     @Transactional
@@ -158,8 +159,69 @@ public class CompanyServiceImpl implements CompanyService {
         if (!repo.existsById(companyId)) {
             throw new NoSuchElementException("Company not found: " + companyId);
         }
+
+        // Delete in order: child entities first, then parent entities
+        // 1. Delete comment mentions (most nested)
+        membershipCleanup.deleteCommentMentionsByCompany(companyId);
+        
+        // 2. Delete comments
+        membershipCleanup.deleteCommentsByCompany(companyId);
+        
+        // 3. Delete task tags
+        membershipCleanup.deleteTaskTagsByCompany(companyId);
+        
+        // 4. Delete tags
+        membershipCleanup.deleteTagsByCompany(companyId);
+        
+        // 5. Delete tasks
+        membershipCleanup.deleteTasksByCompany(companyId);
+        
+        // 6. Delete sprints
+        membershipCleanup.deleteSprintsByCompany(companyId);
+        
+        // 7. Delete epics
+        membershipCleanup.deleteEpicsByCompany(companyId);
+        
+        // 8. Delete board columns
+        membershipCleanup.deleteBoardColumnsByCompany(companyId);
+        
+        // 9. Delete boards
+        membershipCleanup.deleteBoardsByCompany(companyId);
+        
+        // 10. Delete project members
+        membershipCleanup.deleteProjectMembersByCompany(companyId);
+        
+        // 11. Delete project role permissions
+        membershipCleanup.deleteProjectRolePermissionsByCompany(companyId);
+        
+        // 12. Delete project roles
+        membershipCleanup.deleteProjectRolesByCompany(companyId);
+        
+        // 13. Delete projects
+        membershipCleanup.deleteProjectsByCompany(companyId);
+        
+        // 14. Delete workspace members
+        membershipCleanup.deleteWorkspaceMembersByCompany(companyId);
+        
+        // 15. Delete workspace role permissions
+        membershipCleanup.deleteWorkspaceRolePermissionsByCompany(companyId);
+        
+        // 16. Delete workspace roles
+        membershipCleanup.deleteWorkspaceRolesByCompany(companyId);
+        
+        // 17. Delete workspaces
         workspaceRepo.deleteByCompanyId(companyId);
+        
+        // 18. Delete company role permissions
+        membershipCleanup.deleteCompanyRolePermissionsByCompany(companyId);
+        
+        // 19. Delete company roles
+        membershipCleanup.deleteCompanyRolesByCompany(companyId);
+        
+        // 20. Delete company members
         memberRepo.deleteByCompanyId(companyId);
+        
+        // 21. Finally, delete the company itself
         repo.deleteById(companyId);
     }
 }
