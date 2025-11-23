@@ -285,4 +285,10 @@ public class TaskServiceImpl implements TaskService {
         return taskRepo.findByProjectIdAndArchivedAtIsNotNull(projectId, pageable);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Task> listMyTasks(String userId, Pageable pageable) {
+        return taskRepo.findByAssigneeIdAndArchivedAtIsNull(userId, pageable);
+    }
+
 }

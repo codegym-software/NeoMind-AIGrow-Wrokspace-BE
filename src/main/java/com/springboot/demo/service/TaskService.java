@@ -2,7 +2,6 @@ package com.springboot.demo.service;
 
 import com.springboot.demo.dto.board.TaskMoveRequest;
 import com.springboot.demo.model.Task;
-import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -16,4 +15,5 @@ public interface TaskService {
     Task archive(Long taskId, String userId);
     Task restore(Long taskId, String userId);
     Page<Task> listArchivedByProject(String projectId, String userId, Pageable pageable);
+    Page<Task> listMyTasks(String userId, Pageable pageable);
 }

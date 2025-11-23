@@ -11,7 +11,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import java.util.List;
 
 record ApiResponse<T>(String message, T data) {
 }
@@ -131,5 +130,13 @@ public class TaskController {
         String userId = userIdResolver.resolveInternalId(authentication);
         Page<Task> archivedTasks = taskService.listArchivedByProject(projectId, userId, pageable);
         return new ApiResponse<>("Archived tasks listed successfully", archivedTasks);
+    }
+
+    @GetMapping("/api/my-tasks")
+    public ApiResponse<Page<Task>> listMyTasks(Authentication authentication,
+                                                Pageable pageable) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        Page<Task> myTasks = taskService.listMyTasks(userId, pageable);
+        return new ApiResponse<>("My tasks retrieved successfully", myTasks);
     }
 }

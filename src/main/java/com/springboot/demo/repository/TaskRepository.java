@@ -27,6 +27,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findByAssigneeIdAndArchivedAtIsNull(String assigneeId);
 
+    Page<Task> findByAssigneeIdAndArchivedAtIsNull(String assigneeId, Pageable pageable);
+
     List<Task> findByStatusColumn_Id(Integer columnId);
 
     Page<Task> findByProjectIdAndArchivedAtIsNull(String projectId, Pageable pageable);
