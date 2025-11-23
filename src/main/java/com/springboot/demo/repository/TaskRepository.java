@@ -7,6 +7,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -41,4 +43,10 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     
     @Query("SELECT COUNT(t) FROM Task t WHERE t.projectId = :projectId AND t.statusColumn.id = :columnId AND t.archivedAt IS NULL")
     long countByProjectIdAndStatus(@Param("projectId") String projectId, @Param("columnId") Integer columnId);
+
+    List<Task> findByProjectIdAndArchivedAtIsNullAndCreatedAtBetween(String projectId, LocalDateTime start, LocalDateTime end);
+
+    List<Task> findByProjectIdAndArchivedAtIsNullAndUpdatedAtBetween(String projectId, LocalDateTime start, LocalDateTime end);
+
+    List<Task> findByProjectIdAndArchivedAtIsNullAndDueDateBetween(String projectId, LocalDate start, LocalDate end);
 }

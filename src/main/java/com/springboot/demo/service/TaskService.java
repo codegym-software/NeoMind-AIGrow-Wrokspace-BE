@@ -4,6 +4,7 @@ import com.springboot.demo.dto.board.TaskMoveRequest;
 import com.springboot.demo.model.Task;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import java.util.Map;
 
 public interface TaskService {
     Task create(Task task, String currentUserId);
@@ -16,4 +17,5 @@ public interface TaskService {
     Task restore(Long taskId, String userId);
     Page<Task> listArchivedByProject(String projectId, String userId, Pageable pageable);
     Page<Task> listMyTasks(String userId, Pageable pageable);
+    Map<String, Long> metricsLast7Days(String projectId, String userId);
 }

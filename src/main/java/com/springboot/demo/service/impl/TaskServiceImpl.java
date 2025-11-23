@@ -24,8 +24,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -291,4 +296,38 @@ public class TaskServiceImpl implements TaskService {
         return taskRepo.findByAssigneeIdAndArchivedAtIsNull(userId, pageable);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> metricsLast7Days(String projectId, String userId) {
+        checkProjectAccess(projectId, userId);
+
+        LocalDateTime end = LocalDateTime.now();
+        LocalDateTime start = LocalDate.now().minusDays(6).atStartOfDay();
+
+        List<Task> created = taskRepo.findByProjectIdAndArchivedAtIsNullAndCreatedAtBetween(projectId, start, end);
+        List<Task> updated = taskRepo.findByProjectIdAndArchivedAtIsNullAndUpdatedAtBetween(projectId, start, end);
+
+        long createdCount = created.size();
+        long updatedCount = updated.stream()
+                .filter(t -> t.getUpdatedAt() != null && t.getCreatedAt() != null && t.getUpdatedAt().isAfter(t.getCreatedAt()))
+                .count();
+
+        long completedCount = updated.stream()
+                .filter(Task::isCompleted)
+                .count();
+
+        LocalDate dueStart = LocalDate.now();
+        LocalDate dueEnd = dueStart.plusDays(6);
+        List<Task> dueSoon = taskRepo.findByProjectIdAndArchivedAtIsNullAndDueDateBetween(projectId, dueStart, dueEnd);
+        long dueSoonCount = dueSoon.stream()
+                .filter(t -> !t.isCompleted())
+                .count();
+
+        Map<String, Long> result = new HashMap<>();
+        result.put("created", createdCount);
+        result.put("updated", updatedCount);
+        result.put("completed", completedCount);
+        result.put("dueSoon", dueSoonCount);
+        return result;
+    }
 }

@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import java.util.Map;
 
 record ApiResponse<T>(String message, T data) {
 }
@@ -78,6 +79,15 @@ public class TaskController {
 
         Page<Task> tasksPage = taskService.listByProject(projectId, userId, pageable);
         return new ApiResponse<>("Tasks listed successfully", tasksPage);
+    }
+
+    @GetMapping("/metrics/7d")
+    @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
+    public ApiResponse<Map<String, Long>> metricsLast7Days(@PathVariable String projectId,
+                                                           Authentication authentication) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        Map<String, Long> metrics = taskService.metricsLast7Days(projectId, userId);
+        return new ApiResponse<>("Metrics retrieved successfully", metrics);
     }
     
     @PatchMapping("/{taskId}/move")
