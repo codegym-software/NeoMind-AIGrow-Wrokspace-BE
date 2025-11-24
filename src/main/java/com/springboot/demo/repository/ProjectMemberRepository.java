@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface ProjectMemberRepository extends JpaRepository<ProjectMember, String> {
+public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Long> {
 
     boolean existsByProjectIdAndUserId(String projectId, String userId);
 

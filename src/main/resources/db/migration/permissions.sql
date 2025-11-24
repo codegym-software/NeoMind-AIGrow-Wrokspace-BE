@@ -44,8 +44,7 @@ INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (9
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (100, 'project:member:read', 'project', 'Read project member list', 'Permission to read the list of project members');
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (101, 'project:member:set_user_permissions', 'project', 'Set project member permissions', 'Permission to set a project member\'s permissions/role');
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (102, 'project:member:delete', 'project', 'Remove member from project', 'Permission to remove a member from a project');
-INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (103, 'project:member:transfer_ownership', 'project', 'Chuyển quyền sở hữu project
-', null);
+INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (103, 'project:member:transfer_ownership', 'project', 'Chuyển quyền sở hữu project', null);
 -- New company invite permission
 INSERT INTO `ai-grow`.permissions (id, code, scope, name, description) VALUES (104, 'company:member:invite', 'company', 'Invite member to company', 'Permission to invite/add a member to a company');
 -- Company member delete permission

@@ -14,4 +14,6 @@ import lombok.NoArgsConstructor;
 public class TaskMoveRequest {
     private Integer newColumnId;
     private Integer newOrderIndex;
+    private Integer newSprintId;
+    private boolean moveToBacklog;
 }

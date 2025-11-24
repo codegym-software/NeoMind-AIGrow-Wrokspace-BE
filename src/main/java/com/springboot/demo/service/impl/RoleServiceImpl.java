@@ -172,6 +172,11 @@ public class RoleServiceImpl implements RoleService {
             throw new IllegalArgumentException("Role không thuộc company này");
         }
 
+        // Chặn sửa permissions của role mặc định: chỉ ADMIN
+        if (r.getTargetId() != null && ("admin".equalsIgnoreCase(r.getCode()))) {
+            throw new AccessDeniedException("Không thể sửa permissions của role mặc định (admin)");
+        }
+
         // Validate permissionIds đều thuộc scope 'company'
         if (permissionIds != null && !permissionIds.isEmpty()) {
             Integer cnt = jdbc.queryForObject(
@@ -267,9 +272,9 @@ public class RoleServiceImpl implements RoleService {
             throw new IllegalArgumentException("Role không thuộc workspace này");
         }
 
-        // Chặn sửa permissions của role mặc định (admin/member) thông qua API/public service
-        if (r.getTargetId() != null && ("admin".equalsIgnoreCase(r.getCode()) || "member".equalsIgnoreCase(r.getCode()))) {
-            throw new AccessDeniedException("Không thể sửa permissions của role mặc định (admin/member)");
+        // Chặn sửa permissions của role mặc định: chỉ ADMIN
+        if (r.getTargetId() != null && ("admin".equalsIgnoreCase(r.getCode()))) {
+            throw new AccessDeniedException("Không thể sửa permissions của role mặc định (admin)");
         }
 
         // Thực thi thay đổi (đã kiểm tra guard ở trên)
@@ -345,9 +350,9 @@ public class RoleServiceImpl implements RoleService {
             throw new IllegalArgumentException("Role không thuộc project này");
         }
 
-        // Chặn sửa permissions của role mặc định (admin/member) thông qua API/public service
-        if (r.getTargetId() != null && ("admin".equalsIgnoreCase(r.getCode()) || "member".equalsIgnoreCase(r.getCode()))) {
-            throw new AccessDeniedException("Không thể sửa permissions của role mặc định (admin/member)");
+        // Chặn sửa permissions của role mặc định: chỉ ADMIN
+        if (r.getTargetId() != null && ("admin".equalsIgnoreCase(r.getCode()))) {
+            throw new AccessDeniedException("Không thể sửa permissions của role mặc định (admin)");
         }
 
         // Thực thi thay đổi (đã kiểm tra guard ở trên)
@@ -364,7 +369,7 @@ public class RoleServiceImpl implements RoleService {
     @Transactional
     public void createDefaultWorkspaceRoles(String workspaceId) {
         // Tạo role admin với tất cả quyền
-        CreateRoleReq adminRoleReq = new CreateRoleReq("workspace", workspaceId, "admin", "Admin", "Quản trị viên workspace");
+        CreateRoleReq adminRoleReq = new CreateRoleReq("workspace", workspaceId, "admin", "Workspace Admin", "Quản trị viên workspace");
         RoleDto adminRole = createWorkspaceRole(workspaceId, adminRoleReq);
         
         // Lấy tất cả permission của scope workspace
@@ -396,7 +401,7 @@ public class RoleServiceImpl implements RoleService {
         replaceWorkspaceRolePermissionsUnchecked(workspaceId, adminRole.id(), adminPermissionIds);
         
         // Tạo role member với các quyền cơ bản
-        CreateRoleReq memberRoleReq = new CreateRoleReq("workspace", workspaceId, "member", "Member", "Thành viên workspace");
+        CreateRoleReq memberRoleReq = new CreateRoleReq("workspace", workspaceId, "member", "Workspace Member", "Thành viên workspace");
         RoleDto memberRole = createWorkspaceRole(workspaceId, memberRoleReq);
         
         // Lấy các permission cơ bản cho member
@@ -416,12 +421,6 @@ public class RoleServiceImpl implements RoleService {
         
         // Gán permission cho role member (bỏ qua guard mặc định vì đây là khởi tạo hệ thống)
         replaceWorkspaceRolePermissionsUnchecked(workspaceId, memberRole.id(), memberPermissionIds);
-        
-        // Xóa role Workspace Admin nếu có
-        jdbc.update(
-            "DELETE FROM roles WHERE scope = 'workspace' AND target_id = :workspaceId AND name = 'Workspace Admin'",
-            new MapSqlParameterSource().addValue("workspaceId", workspaceId)
-        );
     }
 
     /**
@@ -472,7 +471,7 @@ public class RoleServiceImpl implements RoleService {
     @Transactional
     public void createDefaultProjectRoles(String projectId) {
         // Tạo role admin với các quyền theo yêu cầu
-        CreateRoleReq adminRoleReq = new CreateRoleReq("project", projectId, "admin", "Admin", "Quản trị viên project");
+        CreateRoleReq adminRoleReq = new CreateRoleReq("project", projectId, "admin", "Project Admin", "Quản trị viên project");
         RoleDto adminRole = createProjectRole(projectId, adminRoleReq);
 
         List<String> adminPermissionCodes = Arrays.asList(
@@ -509,7 +508,7 @@ public class RoleServiceImpl implements RoleService {
         replaceProjectRolePermissionsUnchecked(projectId, adminRole.id(), adminPermissionIds);
 
         // Tạo role member với các quyền theo yêu cầu
-        CreateRoleReq memberRoleReq = new CreateRoleReq("project", projectId, "member", "Member", "Thành viên project");
+        CreateRoleReq memberRoleReq = new CreateRoleReq("project", projectId, "member", "Project Member", "Thành viên project");
         RoleDto memberRole = createProjectRole(projectId, memberRoleReq);
 
         List<String> memberPermissionCodes = Arrays.asList(

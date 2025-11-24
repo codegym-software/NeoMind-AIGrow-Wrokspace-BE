@@ -1,8 +1,11 @@
 package com.springboot.demo.service.impl;
 
+import com.springboot.demo.model.Role;
 import com.springboot.demo.model.RolePermission;
 import com.springboot.demo.model.RolePermissionId;
+import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.repository.RolePermissionRepository;
+import com.springboot.demo.repository.RoleRepository;
 import com.springboot.demo.service.RolePermissionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +18,7 @@ import java.util.List;
 public class RolePermissionServiceImpl implements RolePermissionService {
 
     private final RolePermissionRepository rpRepo;
+    private final RoleRepository roleRepo;
 
 
     @Override
@@ -28,6 +32,15 @@ public class RolePermissionServiceImpl implements RolePermissionService {
     @Override
     @Transactional
     public void replaceRolePermissions(Integer roleId, List<Integer> permissionIds) {
+        Role role = roleRepo.findById(roleId)
+                .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleId));
+
+        String codeLower = role.getCode() == null ? "" : role.getCode().toLowerCase();
+        boolean isDefault = "admin".equals(codeLower) || "member".equals(codeLower);
+        if (isDefault && (role.getScope() == Scope.workspace || role.getScope() == Scope.project)) {
+            throw new IllegalStateException("Default roles (admin/member) cannot be modified for this scope.");
+        }
+
         rpRepo.deleteByIdRoleId(roleId);
 
         List<RolePermission> toSave = permissionIds.stream()
