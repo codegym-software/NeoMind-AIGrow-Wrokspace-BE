@@ -1,6 +1,7 @@
 package com.springboot.demo.controller;
 
 import com.springboot.demo.dto.board.TaskMoveRequest;
+import com.springboot.demo.dto.task.TaskSearchRequest;
 import com.springboot.demo.model.Task;
 import com.springboot.demo.security.UserIdResolver;
 import com.springboot.demo.service.TaskService;
@@ -85,6 +86,17 @@ public class TaskController {
 
         Page<Task> tasksPage = taskService.listByProject(projectId, userId, pageable);
         return new ApiResponse<>("Tasks listed successfully", tasksPage);
+    }
+
+    @PostMapping("/search")
+    @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
+    public ApiResponse<Page<Task>> search(@PathVariable String projectId,
+                                          @RequestBody TaskSearchRequest request,
+                                          Authentication authentication,
+                                          Pageable pageable) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        Page<Task> tasksPage = taskService.search(projectId, userId, request, pageable);
+        return new ApiResponse<>("Tasks searched successfully", tasksPage);
     }
     
     @PatchMapping("/{taskId}/move")

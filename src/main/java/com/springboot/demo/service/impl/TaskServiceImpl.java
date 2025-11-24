@@ -2,6 +2,7 @@ package com.springboot.demo.service.impl;
 
 
 import com.springboot.demo.dto.board.TaskMoveRequest;
+import com.springboot.demo.dto.task.TaskSearchRequest;
 import com.springboot.demo.exception.AccessDeniedException;
 import com.springboot.demo.exception.ResourceNotFoundException;
 
@@ -23,9 +24,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
+import jakarta.persistence.criteria.Predicate;
 
 @Service
 @RequiredArgsConstructor
@@ -330,5 +334,58 @@ public class TaskServiceImpl implements TaskService {
     public Page<Task> listArchivedByProject(String projectId, String userId, Pageable pageable) {
         checkProjectAccess(projectId, userId);
         return taskRepo.findByProjectIdAndArchivedAtIsNotNull(projectId, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Task> search(String projectId, String currentUserId, TaskSearchRequest req, Pageable pageable) {
+        checkProjectAccess(projectId, currentUserId);
+
+        Specification<Task> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("projectId"), projectId));
+
+            Boolean includeArchived = req.getIncludeArchived();
+            if (includeArchived == null || !includeArchived) {
+                predicates.add(cb.isNull(root.get("archivedAt")));
+            }
+
+            String q = req.getQ();
+            if (q != null) {
+                String trimmed = q.trim();
+                if (!trimmed.isEmpty()) {
+                    String pattern = "%" + trimmed.toLowerCase() + "%";
+                    Predicate titleLike = cb.like(cb.lower(root.get("title")), pattern);
+                    Predicate descLike = cb.like(cb.lower(root.get("description")), pattern);
+                    Predicate tagsLike = cb.like(cb.lower(root.get("tags")), pattern);
+                    predicates.add(cb.or(titleLike, descLike, tagsLike));
+                }
+            }
+
+            if (req.getPriorities() != null && !req.getPriorities().isEmpty()) {
+                predicates.add(root.get("priority").in(req.getPriorities()));
+            }
+            if (req.getAssigneeIds() != null && !req.getAssigneeIds().isEmpty()) {
+                predicates.add(root.get("assigneeId").in(req.getAssigneeIds()));
+            }
+            if (req.getColumnIds() != null && !req.getColumnIds().isEmpty()) {
+                predicates.add(root.get("statusColumn").get("id").in(req.getColumnIds()));
+            }
+
+            Integer sprintId = req.getSprintId();
+            if (sprintId != null) {
+                predicates.add(cb.equal(root.get("sprintId"), sprintId));
+            } else {
+                Boolean onlyActive = req.getOnlyActiveSprint();
+                if (onlyActive != null && onlyActive) {
+                    Optional<Sprint> activeSprint = sprintRepo.findByProjectIdAndStatus(projectId, SprintStatus.active);
+                    activeSprint.ifPresent(s -> predicates.add(cb.equal(root.get("sprintId"), s.getId())));
+                }
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return taskRepo.findAll(spec, pageable);
     }
 }
