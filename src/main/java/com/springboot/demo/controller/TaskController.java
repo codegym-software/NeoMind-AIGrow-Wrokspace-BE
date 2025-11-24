@@ -2,6 +2,7 @@ package com.springboot.demo.controller;
 
 import com.springboot.demo.dto.board.TaskMoveRequest;
 import com.springboot.demo.dto.task.TaskSearchRequest;
+import com.springboot.demo.dto.task.TaskGroupedResponse;
 import com.springboot.demo.model.Task;
 import com.springboot.demo.security.UserIdResolver;
 import com.springboot.demo.service.TaskService;
@@ -102,6 +103,29 @@ public class TaskController {
         String userId = userIdResolver.resolveInternalId(authentication);
         Task moved = taskService.moveTask(taskId, request, userId);
         return new ApiResponse<>("Task moved successfully", moved);
+    }
+
+    @PatchMapping("/{taskId}/assign")
+    @PreAuthorize("@gate.allows('project:task:update', authentication, #projectId)")
+    public ApiResponse<Task> assign(@PathVariable String projectId,
+                                    @PathVariable Long taskId,
+                                    @RequestParam(required = false) String assigneeId,
+                                    Authentication authentication) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        String sanitized = assigneeId != null && !assigneeId.isBlank() ? assigneeId.trim() : null;
+        Task updated = taskService.assign(taskId, sanitized, userId);
+        return new ApiResponse<>("Task assigned successfully", updated);
+    }
+
+    @GetMapping("/group")
+    @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
+    public ApiResponse<TaskGroupedResponse> group(
+            @PathVariable String projectId,
+            @RequestParam String groupBy,
+            Authentication authentication) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        TaskGroupedResponse result = taskService.groupBy(projectId, groupBy, userId);
+        return new ApiResponse<>("Tasks grouped successfully", result);
     }
 
     @PatchMapping("/{taskId}/archive")

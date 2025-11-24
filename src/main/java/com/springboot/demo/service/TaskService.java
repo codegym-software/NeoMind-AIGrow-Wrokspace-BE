@@ -1,6 +1,7 @@
 package com.springboot.demo.service;
 
 import com.springboot.demo.dto.board.TaskMoveRequest;
+import com.springboot.demo.dto.task.TaskGroupedResponse;
 import com.springboot.demo.dto.task.TaskSearchRequest;
 import com.springboot.demo.model.Task;
 import java.util.List;
@@ -18,4 +19,6 @@ public interface TaskService {
     Task restore(Long taskId, String userId);
     Page<Task> listArchivedByProject(String projectId, String userId, Pageable pageable);
     Page<Task> search(String projectId, String currentUserId, TaskSearchRequest req, Pageable pageable);
+    Task assign(Long taskId, String assigneeId, String currentUserId);
+    TaskGroupedResponse groupBy(String projectId, String groupBy, String currentUserId);
 }

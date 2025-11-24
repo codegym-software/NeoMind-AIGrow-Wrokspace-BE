@@ -2,6 +2,10 @@ package com.springboot.demo.service.impl;
 
 
 import com.springboot.demo.dto.board.TaskMoveRequest;
+import com.springboot.demo.dto.task.TaskSearchRequest;
+import com.springboot.demo.dto.task.TaskGroupedResponse;
+import com.springboot.demo.dto.task.TaskGroup;
+import com.springboot.demo.dto.task.TaskResponse;
 import com.springboot.demo.exception.AccessDeniedException;
 import com.springboot.demo.exception.ResourceNotFoundException;
 
@@ -116,7 +120,14 @@ public class TaskServiceImpl implements TaskService {
         }
         // CRITICAL: Update statusColumn - Check both null and valid ID
         if (task.getStatusColumn() != null && task.getStatusColumn().getId() != null) {
-            existing.setStatusColumn(task.getStatusColumn());
+            // Fetch the actual BoardColumn entity from database
+            Integer columnId = task.getStatusColumn().getId();
+            BoardColumn statusColumn = boardColumnRepo.findById(columnId)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                        "Status column not found with id: " + columnId + 
+                        ". Please refresh the page to reload the latest columns."
+                    ));
+            existing.setStatusColumn(statusColumn);
         }
         if (task.getPriority() != null) {
             existing.setPriority(task.getPriority());
@@ -129,8 +140,10 @@ public class TaskServiceImpl implements TaskService {
         }
         
         
+        // Handle assigneeId: null check but also handle empty string to unassign
         if (task.getAssigneeId() != null) {
-            existing.setAssigneeId(task.getAssigneeId());
+            // Empty string means unassign (set to null)
+            existing.setAssigneeId(task.getAssigneeId().isEmpty() ? null : task.getAssigneeId());
         }
         
         
@@ -204,6 +217,18 @@ public class TaskServiceImpl implements TaskService {
         }
 
         return taskRepo.save(task);
+    }
+
+    @Override
+    @Transactional
+    public Task assign(Long taskId, String assigneeId, String currentUserId) {
+        Task existing = taskRepo.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
+
+        checkProjectAccess(existing.getProjectId(), currentUserId);
+
+        existing.setAssigneeId(assigneeId == null || assigneeId.isEmpty() ? null : assigneeId);
+        return taskRepo.save(existing);
     }
 
     /**
@@ -377,5 +402,66 @@ public class TaskServiceImpl implements TaskService {
         };
 
         return taskRepo.findAll(spec, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TaskGroupedResponse groupBy(String projectId, String groupBy, String currentUserId) {
+        checkProjectAccess(projectId, currentUserId);
+        List<Task> tasks = taskRepo.findByProjectIdAndArchivedAtIsNull(projectId);
+
+        java.util.Map<String, java.util.List<Task>> grouped = tasks.stream()
+                .collect(java.util.stream.Collectors.groupingBy(t -> resolveGroupKey(t, groupBy)));
+
+        java.util.List<TaskGroup> groups = grouped.entrySet().stream()
+                .map(e -> new TaskGroup(
+                        e.getKey(),
+                        e.getValue().size(),
+                        e.getValue().stream()
+                                .sorted(java.util.Comparator
+                                        .comparing(Task::getOrderIndex, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                                        .thenComparing(Task::getCreatedAt, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                                )
+                                .map(this::toTaskResponse)
+                                .toList()
+                ))
+                .sorted(java.util.Comparator.comparing(TaskGroup::getCount).reversed()
+                        .thenComparing(TaskGroup::getKey, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+                .toList();
+
+        return new TaskGroupedResponse(groupBy, groups);
+    }
+
+    private String resolveGroupKey(Task t, String groupBy) {
+        String gb = groupBy == null ? "status" : groupBy.trim().toLowerCase();
+        switch (gb) {
+            case "assignee":
+                return t.getAssigneeId() != null ? t.getAssigneeId() : "UNASSIGNED";
+            case "priority":
+                return t.getPriority() != null ? t.getPriority().name() : "UNSPECIFIED";
+            case "status":
+                return t.getStatusColumn() != null ? t.getStatusColumn().getName() : "UNSPECIFIED";
+            case "sprint":
+                return t.getSprintId() != null ? t.getSprintId().toString() : "BACKLOG";
+            default:
+                return "UNSPECIFIED";
+        }
+    }
+
+    private TaskResponse toTaskResponse(Task task) {
+        TaskResponse r = new TaskResponse();
+        r.setId(task.getId());
+        r.setTitle(task.getTitle());
+        r.setDescription(task.getDescription());
+        r.setStatus(task.getStatusColumn() != null ? task.getStatusColumn().getName() : null);
+        r.setPriority(task.getPriority() != null ? task.getPriority().name() : null);
+        r.setDueDate(task.getDueDate());
+        r.setEstimatedHours(task.getEstimatedHours());
+        r.setAssigneeId(task.getAssigneeId());
+        r.setSprintId(task.getSprintId() != null ? task.getSprintId().toString() : null);
+        r.setTags(task.getTags());
+        r.setOrderIndex(task.getOrderIndex());
+        r.setProjectId(task.getProjectId());
+        return r;
     }
 }
