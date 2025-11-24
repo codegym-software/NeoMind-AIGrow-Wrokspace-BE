@@ -14,7 +14,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
 
-// DTO phản hồi chung
 record ApiResponse<T>(String message, T data) {
 }
 
@@ -26,7 +25,6 @@ public class TaskController {
     private final TaskService taskService;
     private final UserIdResolver userIdResolver;
 
-    // Create task
     @PostMapping
     @PreAuthorize("@gate.allows('project:task:create', authentication, #projectId)")
     @ResponseStatus(HttpStatus.CREATED)
@@ -39,7 +37,6 @@ public class TaskController {
         return new ApiResponse<>("Task created successfully", created);
     }
 
-    // Update task
     @PutMapping("/{taskId}")
     @PreAuthorize("@gate.allows('project:task:update', authentication, #projectId)")
     public ApiResponse<Task> update(@PathVariable String projectId,
@@ -52,7 +49,6 @@ public class TaskController {
         return new ApiResponse<>("Task updated successfully", updated);
     }
 
-    // Delete task
     @DeleteMapping("/{taskId}")
     @PreAuthorize("@gate.allows('project:task:delete', authentication, #projectId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -64,7 +60,6 @@ public class TaskController {
         return new ApiResponse<>("Task deleted successfully", null);
     }
 
-    // Get task detail
     @GetMapping("/{taskId}")
     @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
     public ApiResponse<Task> get(@PathVariable String projectId,
@@ -75,7 +70,6 @@ public class TaskController {
         return new ApiResponse<>("Task retrieved successfully", task);
     }
 
-    // List tasks by project
     @GetMapping
     @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
     public ApiResponse<Page<Task>> listByProject(@PathVariable String projectId,
@@ -120,7 +114,6 @@ public class TaskController {
         return new ApiResponse<>("Task archived successfully", archived);
     }
 
-    // Hard delete
     @DeleteMapping("/{taskId}/permanent")
     @PreAuthorize("@gate.allows('project:task:delete', authentication, #projectId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -132,7 +125,6 @@ public class TaskController {
         return new ApiResponse<>("Task permanently deleted", null);
     }
 
-    // Restore
     @PatchMapping("/{taskId}/restore")
     @PreAuthorize("@gate.allows('project:task:update', authentication, #projectId)")
     public ApiResponse<Task> restore(@PathVariable String projectId,
@@ -142,6 +134,7 @@ public class TaskController {
         Task restored = taskService.restore(taskId, userId);
         return new ApiResponse<>("Task restored successfully", restored);
     }
+
     @GetMapping("/archived")
     @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
     public ApiResponse<Page<Task>> listArchivedTasks(@PathVariable String projectId,

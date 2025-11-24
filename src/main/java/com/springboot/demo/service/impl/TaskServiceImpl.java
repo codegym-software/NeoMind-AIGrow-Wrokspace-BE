@@ -2,7 +2,6 @@ package com.springboot.demo.service.impl;
 
 
 import com.springboot.demo.dto.board.TaskMoveRequest;
-import com.springboot.demo.dto.task.TaskSearchRequest;
 import com.springboot.demo.exception.AccessDeniedException;
 import com.springboot.demo.exception.ResourceNotFoundException;
 
@@ -117,14 +116,7 @@ public class TaskServiceImpl implements TaskService {
         }
         // CRITICAL: Update statusColumn - Check both null and valid ID
         if (task.getStatusColumn() != null && task.getStatusColumn().getId() != null) {
-            // Fetch the actual BoardColumn entity from database
-            Integer columnId = task.getStatusColumn().getId();
-            BoardColumn statusColumn = boardColumnRepo.findById(columnId)
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                        "Status column not found with id: " + columnId + 
-                        ". Please refresh the page to reload the latest columns."
-                    ));
-            existing.setStatusColumn(statusColumn);
+            existing.setStatusColumn(task.getStatusColumn());
         }
         if (task.getPriority() != null) {
             existing.setPriority(task.getPriority());
@@ -137,10 +129,8 @@ public class TaskServiceImpl implements TaskService {
         }
         
         
-        // Handle assigneeId: null check but also handle empty string to unassign
         if (task.getAssigneeId() != null) {
-            // Empty string means unassign (set to null)
-            existing.setAssigneeId(task.getAssigneeId().isEmpty() ? null : task.getAssigneeId());
+            existing.setAssigneeId(task.getAssigneeId());
         }
         
         
