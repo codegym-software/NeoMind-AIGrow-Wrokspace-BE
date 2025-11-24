@@ -89,6 +89,15 @@ public class TaskController {
         Map<String, Long> metrics = taskService.metricsLast7Days(projectId, userId);
         return new ApiResponse<>("Metrics retrieved successfully", metrics);
     }
+
+    @GetMapping("/metrics/status")
+    @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
+    public ApiResponse<Map<String, Long>> statusDistribution(@PathVariable String projectId,
+                                                             Authentication authentication) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        Map<String, Long> dist = taskService.statusDistribution(projectId, userId);
+        return new ApiResponse<>("Status distribution retrieved successfully", dist);
+    }
     
     @PatchMapping("/{taskId}/move")
     @PreAuthorize("@gate.allows('project:task:update', authentication, #projectId)")

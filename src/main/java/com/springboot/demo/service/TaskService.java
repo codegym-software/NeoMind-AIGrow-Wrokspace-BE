@@ -18,4 +18,5 @@ public interface TaskService {
     Page<Task> listArchivedByProject(String projectId, String userId, Pageable pageable);
     Page<Task> listMyTasks(String userId, Pageable pageable);
     Map<String, Long> metricsLast7Days(String projectId, String userId);
+    Map<String, Long> statusDistribution(String projectId, String userId);
 }

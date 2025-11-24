@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -330,4 +331,30 @@ public class TaskServiceImpl implements TaskService {
         result.put("dueSoon", dueSoonCount);
         return result;
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> statusDistribution(String projectId, String userId) {
+        checkProjectAccess(projectId, userId);
+
+        Board board = boardRepo.findByProjectIdAndIsDefaultTrue(projectId)
+                .orElse(null);
+
+        if (board == null) {
+            return new LinkedHashMap<>();
+        }
+
+        List<BoardColumn> columns =
+                boardColumnRepo.findByBoardIdOrderByPositionAsc(board.getId());
+
+        Map<String, Long> dist = new LinkedHashMap<>();
+
+        for (BoardColumn col : columns) {
+            Long count = taskRepo.countByProjectIdAndStatus(projectId, col.getId());
+            dist.put(col.getName(), count);
+        }
+
+        return dist;
+    }
+
 }
