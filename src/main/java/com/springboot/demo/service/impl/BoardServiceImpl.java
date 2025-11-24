@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Comparator;
 
 /**
  * Implementation của BoardService
@@ -83,6 +84,7 @@ public class BoardServiceImpl implements BoardService {
             .map(column -> {
                 List<Task> tasksInColumn = tasksByColumn.getOrDefault(column.getId(), new ArrayList<>());
                 List<TaskResponse> taskResponses = tasksInColumn.stream()
+                    .sorted(Comparator.comparing(Task::getOrderIndex, Comparator.nullsLast(Integer::compareTo)))
                     .map(this::mapTaskToResponse)
                     .collect(Collectors.toList());
 

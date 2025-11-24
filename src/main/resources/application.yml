@@ -55,6 +55,7 @@ file:
       company-logo: company-logos
       user-avatar: user-avatars
       temp: temp
+      task-attachment: task-attachments
 
 logging:
   level:

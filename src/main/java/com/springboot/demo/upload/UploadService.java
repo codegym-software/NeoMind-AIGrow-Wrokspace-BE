@@ -30,6 +30,13 @@ public class UploadService {
     public StoredFile store(MultipartFile file, UploadBucket bucket) throws IOException {
         if (file.isEmpty()) throw new IllegalArgumentException("Empty file");
         String contentType = safeContentType(file);
+        
+        // For task attachments, allow all file types
+        if (bucket == UploadBucket.TASK_ATTACHMENT) {
+            return storeAnyFile(file, bucket, contentType);
+        }
+        
+        // For other buckets (avatars, logos), only allow images
         if (!ALLOWED_TYPES.contains(contentType)) {
             throw new IllegalArgumentException("Unsupported content type: " + contentType);
         }
@@ -49,6 +56,32 @@ public class UploadService {
         // companies.id(from db when edit comapany) + time (ms) + base_name
         String newName = Instant.now().toEpochMilli() + "-" + UUID.randomUUID() + "-" + baseName;
         if (ext != null && !newName.endsWith(ext)) newName += ext;
+
+        Path dstDir = Path.of(props.getBaseDir(), props.folderFor(bucket));
+        Files.createDirectories(dstDir);
+
+        Path target = dstDir.resolve(newName);
+        Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+
+        String publicUrl = "/files/" + props.folderFor(bucket) + "/" + newName;
+        return new StoredFile(newName, contentType, file.getSize(), publicUrl, target.toAbsolutePath().toString());
+    }
+    
+    // Store any file type (for task attachments)
+    private StoredFile storeAnyFile(MultipartFile file, UploadBucket bucket, String contentType) throws IOException {
+        String original = StringUtils.hasText(file.getOriginalFilename())
+                ? Path.of(file.getOriginalFilename()).getFileName().toString()
+                : "upload";
+        
+        // Keep original extension
+        String ext = getExtensionFromOriginal(original);
+        String baseName = SAFE.matcher(original.toLowerCase().replace(' ', '-')).replaceAll("");
+        if (baseName.isBlank()) baseName = "upload";
+        
+        String newName = Instant.now().toEpochMilli() + "-" + UUID.randomUUID() + "-" + baseName;
+        if (ext != null && !ext.isEmpty() && !newName.endsWith(ext)) {
+            newName += ext;
+        }
 
         Path dstDir = Path.of(props.getBaseDir(), props.folderFor(bucket));
         Files.createDirectories(dstDir);

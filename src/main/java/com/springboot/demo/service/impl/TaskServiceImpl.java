@@ -1,7 +1,7 @@
 package com.springboot.demo.service.impl;
 
-
 import com.springboot.demo.dto.board.TaskMoveRequest;
+import com.springboot.demo.dto.task.TaskSearchRequest;
 import com.springboot.demo.exception.AccessDeniedException;
 import com.springboot.demo.exception.ResourceNotFoundException;
 
@@ -18,20 +18,22 @@ import com.springboot.demo.repository.ProjectRepository;
 import com.springboot.demo.repository.SprintRepository;
 import com.springboot.demo.repository.TaskRepository;
 import com.springboot.demo.service.TaskService;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -109,7 +111,14 @@ public class TaskServiceImpl implements TaskService {
             existing.setDescription(task.getDescription());
         }
         if (task.getStatusColumn() != null && task.getStatusColumn().getId() != null) {
-            existing.setStatusColumn(task.getStatusColumn());
+            // Fetch the actual BoardColumn entity from database
+            Integer columnId = task.getStatusColumn().getId();
+            BoardColumn statusColumn = boardColumnRepo.findById(columnId)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                        "Status column not found with id: " + columnId + 
+                        ". Please refresh the page to reload the latest columns."
+                    ));
+            existing.setStatusColumn(statusColumn);
         }
         if (task.getPriority() != null) {
             existing.setPriority(task.getPriority());
@@ -120,8 +129,11 @@ public class TaskServiceImpl implements TaskService {
         if (task.getEstimatedHours() != null) {
             existing.setEstimatedHours(task.getEstimatedHours());
         }
+        
+        // Handle assigneeId: null check but also handle empty string to unassign
         if (task.getAssigneeId() != null) {
-            existing.setAssigneeId(task.getAssigneeId());
+            // Empty string means unassign (set to null)
+            existing.setAssigneeId(task.getAssigneeId().isEmpty() ? null : task.getAssigneeId());
         }
 
         if (task.getStatusColumn() == null || task.getStatusColumn().getId() == null) {
@@ -170,19 +182,31 @@ public class TaskServiceImpl implements TaskService {
         
         checkProjectAccess(task.getProjectId(), currentUserId);
 
-        BoardColumn newColumn = boardColumnRepo.findById(request.getNewColumnId())
+        // Nếu di chuyển sang cột khác (Status change)
+        if (request.getNewColumnId() != null) {
+             BoardColumn newColumn = boardColumnRepo.findById(request.getNewColumnId())
             .orElseThrow(() -> new ResourceNotFoundException("Column not found with id: " + request.getNewColumnId()));
+            
+             Integer oldColumnId = task.getStatusColumn() != null ? task.getStatusColumn().getId() : null;
+             Integer newColumnId = request.getNewColumnId();
+             Integer newOrderIndex = request.getNewOrderIndex();
+             Integer oldOrderIndex = task.getOrderIndex();
 
-        Integer oldColumnId = task.getStatusColumn() != null ? task.getStatusColumn().getId() : null;
-        Integer oldOrderIndex = task.getOrderIndex();
-        Integer newColumnId = request.getNewColumnId();
-        Integer newOrderIndex = request.getNewOrderIndex();
-
-        if (oldColumnId != null && oldColumnId.equals(newColumnId)) {
-            reorderWithinSameColumn(task, oldOrderIndex, newOrderIndex);
+             if (oldColumnId != null && oldColumnId.equals(newColumnId)) {
+                reorderWithinSameColumn(task, oldOrderIndex, newOrderIndex);
+             } else {
+                moveToDifferentColumn(task, oldColumnId, newColumn, newOrderIndex);
+             }
         }
-        else {
-            moveToDifferentColumn(task, oldColumnId, newColumn, newOrderIndex);
+        
+        // Nếu di chuyển sang Sprint khác (Planning)
+        if (request.getNewSprintId() != null || request.isMoveToBacklog()) {
+             Integer newSprintId = request.isMoveToBacklog() ? null : request.getNewSprintId();
+             task.setSprintId(newSprintId);
+             if(request.getNewOrderIndex() != null) {
+                 task.setOrderIndex(request.getNewOrderIndex());
+             }
+             // TODO: Cần logic reorder trong sprint nếu muốn chính xác tuyệt đối
         }
 
         return taskRepo.save(task);
@@ -253,6 +277,7 @@ public class TaskServiceImpl implements TaskService {
         task.setStatusColumn(newColumn);
         task.setOrderIndex(newOrderIndex);
     }
+
     @Override
     @Transactional
     public Task archive(Long taskId, String userId) {
@@ -291,6 +316,61 @@ public class TaskServiceImpl implements TaskService {
         return taskRepo.findByProjectIdAndArchivedAtIsNotNull(projectId, pageable);
     }
 
+    // --- HÀM TỪ NHÁNH LIST (Search) ---
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Task> search(String projectId, String currentUserId, TaskSearchRequest req, Pageable pageable) {
+        checkProjectAccess(projectId, currentUserId);
+
+        Specification<Task> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("projectId"), projectId));
+
+            Boolean includeArchived = req.getIncludeArchived();
+            if (includeArchived == null || !includeArchived) {
+                predicates.add(cb.isNull(root.get("archivedAt")));
+            }
+
+            String q = req.getQ();
+            if (q != null) {
+                String trimmed = q.trim();
+                if (!trimmed.isEmpty()) {
+                    String pattern = "%" + trimmed.toLowerCase() + "%";
+                    Predicate titleLike = cb.like(cb.lower(root.get("title")), pattern);
+                    Predicate descLike = cb.like(cb.lower(root.get("description")), pattern);
+                    Predicate tagsLike = cb.like(cb.lower(root.get("tags")), pattern);
+                    predicates.add(cb.or(titleLike, descLike, tagsLike));
+                }
+            }
+
+            if (req.getPriorities() != null && !req.getPriorities().isEmpty()) {
+                predicates.add(root.get("priority").in(req.getPriorities()));
+            }
+            if (req.getAssigneeIds() != null && !req.getAssigneeIds().isEmpty()) {
+                predicates.add(root.get("assigneeId").in(req.getAssigneeIds()));
+            }
+            if (req.getColumnIds() != null && !req.getColumnIds().isEmpty()) {
+                predicates.add(root.get("statusColumn").get("id").in(req.getColumnIds()));
+            }
+
+            Integer sprintId = req.getSprintId();
+            if (sprintId != null) {
+                predicates.add(cb.equal(root.get("sprintId"), sprintId));
+            } else {
+                Boolean onlyActive = req.getOnlyActiveSprint();
+                if (onlyActive != null && onlyActive) {
+                    Optional<Sprint> activeSprint = sprintRepo.findByProjectIdAndStatus(projectId, SprintStatus.active);
+                    activeSprint.ifPresent(s -> predicates.add(cb.equal(root.get("sprintId"), s.getId())));
+                }
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return taskRepo.findAll(spec, pageable);
+    }
+
+    // --- CÁC HÀM TỪ NHÁNH MAIN (Metrics & MyTasks) ---
     @Override
     @Transactional(readOnly = true)
     public Page<Task> listMyTasks(String userId, Pageable pageable) {
@@ -356,5 +436,4 @@ public class TaskServiceImpl implements TaskService {
 
         return dist;
     }
-
 }
