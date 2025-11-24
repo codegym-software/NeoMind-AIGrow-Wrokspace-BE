@@ -1,6 +1,5 @@
 package com.springboot.demo.service.impl;
 
-
 import com.springboot.demo.dto.board.TaskMoveRequest;
 import com.springboot.demo.dto.task.TaskSearchRequest;
 import com.springboot.demo.dto.task.TaskGroupedResponse;
@@ -22,6 +21,7 @@ import com.springboot.demo.repository.ProjectRepository;
 import com.springboot.demo.repository.SprintRepository;
 import com.springboot.demo.repository.TaskRepository;
 import com.springboot.demo.service.TaskService;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +29,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ArrayList;
 import jakarta.persistence.criteria.Predicate;
@@ -216,6 +222,16 @@ public class TaskServiceImpl implements TaskService {
             moveToDifferentColumn(task, oldColumnId, newColumn, newOrderIndex);
         }
 
+        // Nếu di chuyển sang Sprint khác (Planning)
+        if (request.getNewSprintId() != null || request.isMoveToBacklog()) {
+             Integer newSprintId = request.isMoveToBacklog() ? null : request.getNewSprintId();
+             task.setSprintId(newSprintId);
+             if(request.getNewOrderIndex() != null) {
+                 task.setOrderIndex(request.getNewOrderIndex());
+             }
+             // TODO: Cần logic reorder trong sprint nếu muốn chính xác tuyệt đối
+        }
+
         return taskRepo.save(task);
     }
 
@@ -231,12 +247,7 @@ public class TaskServiceImpl implements TaskService {
         return taskRepo.save(existing);
     }
 
-    /**
-     * Helper: Sắp xếp lại tasks trong cùng một cột
-     * Ví dụ: Di chuyển task từ position 2 lên position 0
-     * - Tasks ở position 0, 1 sẽ bị đẩy xuống (+ 1)
-     * - Task này nhận position 0
-     */
+
     private void reorderWithinSameColumn(Task task, Integer oldOrderIndex, Integer newOrderIndex) {
         if (oldOrderIndex.equals(newOrderIndex)) {
             return; // Không thay đổi gì
@@ -313,6 +324,7 @@ public class TaskServiceImpl implements TaskService {
         task.setStatusColumn(newColumn);
         task.setOrderIndex(newOrderIndex);
     }
+
     @Override
     @Transactional
     public Task archive(Long taskId, String userId) {
@@ -402,6 +414,73 @@ public class TaskServiceImpl implements TaskService {
         };
 
         return taskRepo.findAll(spec, pageable);
+    }
+
+    // --- CÁC HÀM TỪ NHÁNH MAIN (Metrics & MyTasks) ---
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Task> listMyTasks(String userId, Pageable pageable) {
+        return taskRepo.findByAssigneeIdAndArchivedAtIsNull(userId, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> metricsLast7Days(String projectId, String userId) {
+        checkProjectAccess(projectId, userId);
+
+        LocalDateTime end = LocalDateTime.now();
+        LocalDateTime start = LocalDate.now().minusDays(6).atStartOfDay();
+
+        List<Task> created = taskRepo.findByProjectIdAndArchivedAtIsNullAndCreatedAtBetween(projectId, start, end);
+        List<Task> updated = taskRepo.findByProjectIdAndArchivedAtIsNullAndUpdatedAtBetween(projectId, start, end);
+
+        long createdCount = created.size();
+        long updatedCount = updated.stream()
+                .filter(t -> t.getUpdatedAt() != null && t.getCreatedAt() != null && t.getUpdatedAt().isAfter(t.getCreatedAt()))
+                .count();
+
+        long completedCount = updated.stream()
+                .filter(Task::isCompleted)
+                .count();
+
+        LocalDate dueStart = LocalDate.now();
+        LocalDate dueEnd = dueStart.plusDays(6);
+        List<Task> dueSoon = taskRepo.findByProjectIdAndArchivedAtIsNullAndDueDateBetween(projectId, dueStart, dueEnd);
+        long dueSoonCount = dueSoon.stream()
+                .filter(t -> !t.isCompleted())
+                .count();
+
+        Map<String, Long> result = new HashMap<>();
+        result.put("created", createdCount);
+        result.put("updated", updatedCount);
+        result.put("completed", completedCount);
+        result.put("dueSoon", dueSoonCount);
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> statusDistribution(String projectId, String userId) {
+        checkProjectAccess(projectId, userId);
+
+        Board board = boardRepo.findByProjectIdAndIsDefaultTrue(projectId)
+                .orElse(null);
+
+        if (board == null) {
+            return new LinkedHashMap<>();
+        }
+
+        List<BoardColumn> columns =
+                boardColumnRepo.findByBoardIdOrderByPositionAsc(board.getId());
+
+        Map<String, Long> dist = new LinkedHashMap<>();
+
+        for (BoardColumn col : columns) {
+            Long count = taskRepo.countByProjectIdAndStatus(projectId, col.getId());
+            dist.put(col.getName(), count);
+        }
+
+        return dist;
     }
 
     @Override

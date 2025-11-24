@@ -5,6 +5,8 @@ import com.springboot.demo.dto.task.TaskGroupedResponse;
 import com.springboot.demo.dto.task.TaskSearchRequest;
 import com.springboot.demo.model.Task;
 import java.util.List;
+import java.util.Map;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -21,4 +23,9 @@ public interface TaskService {
     Page<Task> search(String projectId, String currentUserId, TaskSearchRequest req, Pageable pageable);
     Task assign(Long taskId, String assigneeId, String currentUserId);
     TaskGroupedResponse groupBy(String projectId, String groupBy, String currentUserId);
+
+    // Hàm từ nhánh 'main'
+    Page<Task> listMyTasks(String userId, Pageable pageable);
+    Map<String, Long> metricsLast7Days(String projectId, String userId);
+    Map<String, Long> statusDistribution(String projectId, String userId);
 }
