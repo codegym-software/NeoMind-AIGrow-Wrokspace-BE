@@ -436,4 +436,37 @@ public class TaskServiceImpl implements TaskService {
 
         return dist;
     }
+
+    @Override
+    @Transactional
+    public void transferTasksFromColumn(String projectId, Integer sourceColumnId, Integer targetColumnId, String userId) {
+        checkProjectAccess(projectId, userId);
+
+        BoardColumn source = boardColumnRepo.findById(sourceColumnId)
+                .orElseThrow(() -> new ResourceNotFoundException("Source column not found: " + sourceColumnId));
+
+        BoardColumn target = boardColumnRepo.findById(targetColumnId)
+                .orElseThrow(() -> new ResourceNotFoundException("Target column not found: " + targetColumnId));
+
+        if (!projectId.equals(source.getBoard().getProjectId()) || !projectId.equals(target.getBoard().getProjectId())) {
+            throw new AccessDeniedException("Columns must belong to the same project");
+        }
+
+        List<Task> tasksInTarget = taskRepo.findByProjectIdAndStatusColumn_IdAndArchivedAtIsNull(projectId, target.getId());
+        int nextIndex = tasksInTarget.stream()
+                .map(Task::getOrderIndex)
+                .filter(java.util.Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(-1) + 1;
+
+        List<Task> toMove = taskRepo.findByProjectIdAndStatusColumn_IdAndArchivedAtIsNull(projectId, source.getId());
+        for (Task t : toMove) {
+            t.setStatusColumn(target);
+            t.setOrderIndex(nextIndex);
+            nextIndex++;
+        }
+        if (!toMove.isEmpty()) {
+            taskRepo.saveAll(toMove);
+        }
+    }
 }

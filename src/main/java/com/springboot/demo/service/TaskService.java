@@ -25,4 +25,5 @@ public interface TaskService {
     Page<Task> listMyTasks(String userId, Pageable pageable);
     Map<String, Long> metricsLast7Days(String projectId, String userId);
     Map<String, Long> statusDistribution(String projectId, String userId);
+    void transferTasksFromColumn(String projectId, Integer sourceColumnId, Integer targetColumnId, String userId);
 }
