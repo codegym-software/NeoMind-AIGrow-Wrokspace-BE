@@ -204,4 +204,14 @@ public class TaskController {
         Page<Task> myTasks = taskService.listMyTasks(userId, pageable);
         return new ApiResponse<>("My tasks retrieved successfully", myTasks);
     }
+
+    // Backward-compatible alias for legacy frontend route
+    @GetMapping("/api/my-tasks")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<Page<Task>> listMyTasksAlias(Authentication authentication,
+                                                    Pageable pageable) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        Page<Task> myTasks = taskService.listMyTasks(userId, pageable);
+        return new ApiResponse<>("My tasks retrieved successfully", myTasks);
+    }
 }
