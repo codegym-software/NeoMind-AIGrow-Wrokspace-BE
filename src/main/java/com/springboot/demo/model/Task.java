@@ -36,6 +36,9 @@ public class Task {
     @Column(name = "project_id", columnDefinition = "CHAR(36)", nullable = false)
     private String projectId;
 
+    @Column(name = "epic_id")
+    private Integer epicId;
+
     // SỬA LẠI: Xóa 'columnDefinition' vì kiểu dữ liệu là INT, không phải CHAR(36)
     @Column(name = "sprint_id") 
     private Integer sprintId;

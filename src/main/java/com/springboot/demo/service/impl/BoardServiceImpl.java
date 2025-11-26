@@ -173,7 +173,7 @@ public class BoardServiceImpl implements BoardService {
         
         // CHUẨN HÓA: Đổi assignedTo → assigneeId
         response.setAssigneeId(task.getAssigneeId());
-        
+        response.setEpicId(task.getEpicId());
         response.setSprintId(task.getSprintId() != null ? task.getSprintId().toString() : null);
         response.setTags(task.getTags());
         response.setOrderIndex(task.getOrderIndex());

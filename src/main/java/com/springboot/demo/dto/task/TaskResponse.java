@@ -18,6 +18,7 @@ public class TaskResponse {
     private String assigneeId;
     
     private String sprintId;
+    private Integer epicId;
     private String tags;
     private Integer orderIndex;
     private String projectId;
