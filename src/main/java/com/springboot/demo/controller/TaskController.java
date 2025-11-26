@@ -119,7 +119,17 @@ public class TaskController {
         Map<String, Long> dist = taskService.statusDistribution(projectId, userId);
         return new ApiResponse<>("Status distribution retrieved successfully", dist);
     }
-    // --- KẾT THÚC PHẦN HỢP NHẤT ---
+
+    @PatchMapping("/columns/{sourceColumnId}/transfer/{targetColumnId}")
+    @PreAuthorize("@gate.allows('project:update', authentication, #projectId)")
+    public ApiResponse<Void> transferTasksFromColumn(@PathVariable String projectId,
+                                                     @PathVariable Integer sourceColumnId,
+                                                     @PathVariable Integer targetColumnId,
+                                                     Authentication authentication) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        taskService.transferTasksFromColumn(projectId, sourceColumnId, targetColumnId, userId);
+        return new ApiResponse<>("Tasks transferred successfully", null);
+    }
 
     // Move Task (Drag & Drop)
     @PatchMapping("/{taskId}/move")
@@ -179,6 +189,16 @@ public class TaskController {
     @PreAuthorize("isAuthenticated()") // Không cần #projectId vì đây là global
     public ApiResponse<Page<Task>> listMyTasks(Authentication authentication,
                                                Pageable pageable) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        Page<Task> myTasks = taskService.listMyTasks(userId, pageable);
+        return new ApiResponse<>("My tasks retrieved successfully", myTasks);
+    }
+
+    // Backward-compatible alias for legacy frontend route
+    @GetMapping("/api/my-tasks")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<Page<Task>> listMyTasksAlias(Authentication authentication,
+                                                    Pageable pageable) {
         String userId = userIdResolver.resolveInternalId(authentication);
         Page<Task> myTasks = taskService.listMyTasks(userId, pageable);
         return new ApiResponse<>("My tasks retrieved successfully", myTasks);

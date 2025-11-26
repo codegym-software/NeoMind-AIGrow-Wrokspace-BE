@@ -111,4 +111,18 @@ public class BoardColumnController {
         List<BoardColumnResponse> responses = boardColumnService.getColumnsByBoardId(boardId);
         return ResponseEntity.ok(responses);
     }
+
+    /**
+     * Transfer tất cả tasks từ source column sang target column
+     * PATCH /api/columns/{sourceColumnId}/transfer/{targetColumnId}
+     */
+    @PreAuthorize("@gate.allows('project:update', authentication, @boardColumnRepository.findProjectIdByColumnId(#sourceColumnId).orElse(''))")
+    @PatchMapping("/columns/{sourceColumnId}/transfer/{targetColumnId}")
+    public ResponseEntity<Void> transferColumnTasks(
+            @PathVariable Integer sourceColumnId,
+            @PathVariable Integer targetColumnId,
+            Authentication authentication) {
+        boardColumnService.transferTasks(sourceColumnId, targetColumnId);
+        return ResponseEntity.ok().build();
+    }
 }

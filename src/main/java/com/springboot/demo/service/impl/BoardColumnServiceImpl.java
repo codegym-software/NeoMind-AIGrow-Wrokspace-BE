@@ -106,31 +106,11 @@ public class BoardColumnServiceImpl implements BoardColumnService {
         BoardColumn column = boardColumnRepository.findById(columnId)
             .orElseThrow(() -> new RuntimeException("Column not found: " + columnId));
 
-        // Lấy tất cả tasks trong column này
-        List<Task> tasksInColumn = taskRepository.findByStatusColumn_Id(columnId);
-        
-        if (!tasksInColumn.isEmpty()) {
-            // Tìm column đầu tiên (position = 0) trong cùng board
-            List<BoardColumn> allColumns = boardColumnRepository.findByBoardIdOrderByPositionAsc(column.getBoardId());
-            
-            // Tìm column đầu tiên khác với column đang xóa
-            BoardColumn firstColumn = allColumns.stream()
-                .filter(col -> !col.getId().equals(columnId))
-                .findFirst()
-                .orElse(null);
-            
-            if (firstColumn == null) {
-                throw new RuntimeException("Cannot delete the last column in the board");
-            }
-            
-            // Chuyển tất cả tasks về column đầu tiên
-            for (Task task : tasksInColumn) {
-                task.setStatusColumn(firstColumn);
-            }
-            taskRepository.saveAll(tasksInColumn);
+        long activeCount = taskRepository.countByStatusColumn_IdAndArchivedAtIsNull(columnId);
+        if (activeCount > 0) {
+            throw new RuntimeException("Cannot delete column because it still contains " + activeCount + " active tasks. Please transfer them first.");
         }
-        
-        // Giờ mới xóa column
+
         boardColumnRepository.deleteById(columnId);
     }
 
@@ -161,6 +141,38 @@ public class BoardColumnServiceImpl implements BoardColumnService {
         return columns.stream()
             .map(this::mapToResponse)
             .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void transferTasks(Integer sourceColumnId, Integer targetColumnId) {
+        BoardColumn source = boardColumnRepository.findById(sourceColumnId)
+                .orElseThrow(() -> new RuntimeException("Source column not found: " + sourceColumnId));
+        BoardColumn target = boardColumnRepository.findById(targetColumnId)
+                .orElseThrow(() -> new RuntimeException("Target column not found: " + targetColumnId));
+
+        if (!source.getBoardId().equals(target.getBoardId())) {
+            throw new RuntimeException("Columns must belong to the same board");
+        }
+
+        List<Task> tasksInTarget = taskRepository.findByStatusColumn_IdAndArchivedAtIsNull(targetColumnId);
+        int nextIndex = tasksInTarget.stream()
+                .map(Task::getOrderIndex)
+                .filter(java.util.Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(0);
+        // If there are tasks, next index should be last+1
+        nextIndex = tasksInTarget.isEmpty() ? 0 : (nextIndex + 1);
+
+        List<Task> toMove = taskRepository.findByStatusColumn_IdAndArchivedAtIsNull(sourceColumnId);
+        for (Task t : toMove) {
+            t.setStatusColumn(target);
+            t.setOrderIndex(nextIndex);
+            nextIndex++;
+        }
+        if (!toMove.isEmpty()) {
+            taskRepository.saveAll(toMove);
+        }
     }
 
     /**

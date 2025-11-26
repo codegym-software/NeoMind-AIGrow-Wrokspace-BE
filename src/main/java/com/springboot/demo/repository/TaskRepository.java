@@ -24,6 +24,7 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
     List<Task> findBySprintIdAndArchivedAtIsNull(Integer sprintId);
     List<Task> findByAssigneeIdAndArchivedAtIsNull(String assigneeId);
     List<Task> findByStatusColumn_Id(Integer columnId);
+    List<Task> findByStatusColumn_IdAndArchivedAtIsNull(Integer columnId);
     List<Task> findByProjectIdAndStatusColumn_IdAndArchivedAtIsNull(String projectId, Integer columnId);
     
     
@@ -45,4 +46,6 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
     
     @Query("SELECT COUNT(t) FROM Task t WHERE t.projectId = :projectId AND t.statusColumn.id = :columnId AND t.archivedAt IS NULL")
     long countByProjectIdAndStatus(@Param("projectId") String projectId, @Param("columnId") Integer columnId);
+
+    long countByStatusColumn_IdAndArchivedAtIsNull(Integer columnId);
 }

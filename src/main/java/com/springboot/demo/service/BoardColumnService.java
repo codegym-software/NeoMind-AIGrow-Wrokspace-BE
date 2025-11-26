@@ -37,4 +37,6 @@ public interface BoardColumnService {
      * Lấy danh sách columns của board
      */
     List<BoardColumnResponse> getColumnsByBoardId(Integer boardId);
+
+    void transferTasks(Integer sourceColumnId, Integer targetColumnId);
 }
