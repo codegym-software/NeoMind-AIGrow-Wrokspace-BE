@@ -2,6 +2,7 @@ package com.springboot.demo.controller;
 
 import com.springboot.demo.dto.board.TaskMoveRequest;
 import com.springboot.demo.dto.task.TaskSearchRequest;
+import com.springboot.demo.model.Epic;
 import com.springboot.demo.dto.task.TaskGroupedResponse;
 import com.springboot.demo.dto.task.TaskUpdateRequest;
 import com.springboot.demo.model.Task;
@@ -182,6 +183,17 @@ public class TaskController {
         String userId = userIdResolver.resolveInternalId(authentication);
         Page<Task> archivedTasks = taskService.listArchivedByProject(projectId, userId, pageable);
         return new ApiResponse<>("Archived tasks listed successfully", archivedTasks);
+    }
+
+    @PatchMapping("/{taskId}/epic")
+    @PreAuthorize("@gate.allows('project:task:update', authentication, #projectId)")
+    public ApiResponse<Task> setEpic(@PathVariable String projectId,
+                                     @PathVariable Long taskId,
+                                     @RequestParam(required = false) Integer epicId,
+                                     Authentication authentication) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        Task updated = taskService.setEpic(taskId, epicId, userId);
+        return new ApiResponse<>("Task epic updated successfully", updated);
     }
 
     // List My Tasks (Global/Assigned to current user)

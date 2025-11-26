@@ -34,6 +34,8 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
     
     
     Page<Task> findByProjectIdAndArchivedAtIsNotNull(String projectId, Pageable pageable);
+    long countByEpicId(Integer epicId);
+    Page<Task> findByEpicIdAndArchivedAtIsNull(Integer epicId, Pageable pageable);
 
     
     List<Task> findByProjectIdAndArchivedAtIsNullAndCreatedAtBetween(String projectId, LocalDateTime start, LocalDateTime end);
