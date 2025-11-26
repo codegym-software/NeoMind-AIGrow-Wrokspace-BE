@@ -128,6 +128,31 @@ public class BoardColumnServiceImpl implements BoardColumnService {
     @Override
     @Transactional
     public void reorderColumns(Integer boardId, List<Integer> columnIds) {
+        if (columnIds == null || columnIds.isEmpty()) {
+            return;
+        }
+
+        List<BoardColumn> existingColumns = boardColumnRepository.findByBoardIdOrderByPositionAsc(boardId);
+        if (existingColumns.size() != columnIds.size()) {
+            throw new IllegalArgumentException("Column list does not match board state");
+        }
+
+        // Ensure all provided ids belong to the target board
+        java.util.Set<Integer> existingIds = existingColumns.stream()
+                .map(BoardColumn::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        if (!existingIds.containsAll(columnIds)) {
+            throw new IllegalArgumentException("Invalid column id in reorder request");
+        }
+
+        // Bump positions to temporary values to avoid unique (board_id, position) collisions
+        int offset = columnIds.size();
+        for (int i = 0; i < columnIds.size(); i++) {
+            Integer columnId = columnIds.get(i);
+            boardColumnRepository.updatePosition(columnId, offset + i);
+        }
+
+        // Apply final ordering
         for (int i = 0; i < columnIds.size(); i++) {
             Integer columnId = columnIds.get(i);
             boardColumnRepository.updatePosition(columnId, i);
