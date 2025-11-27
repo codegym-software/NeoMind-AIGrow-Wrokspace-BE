@@ -297,6 +297,7 @@ if (pmRepo.isOwner(projectId, userId))
             String projectId = (String) target;
             String userId = ctx.userId();
             if (pmRepo.isOwner(projectId, userId)) return true;
+            // Allow if user has explicit permission
             return abilityService.hasPermission(userId, Scope.project, projectId, "project:epic:create");
         });
 
