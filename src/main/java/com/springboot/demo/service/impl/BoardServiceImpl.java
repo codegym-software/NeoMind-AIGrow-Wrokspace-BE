@@ -11,6 +11,7 @@ import com.springboot.demo.repository.BoardRepository;
 import com.springboot.demo.repository.BoardColumnRepository;
 import com.springboot.demo.repository.SprintRepository;
 import com.springboot.demo.repository.TaskRepository;
+import com.springboot.demo.repository.EpicRepository;
 import com.springboot.demo.service.BoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ public class BoardServiceImpl implements BoardService {
     private final BoardColumnRepository boardColumnRepository;
     private final TaskRepository taskRepository;
     private final SprintRepository sprintRepository;
+    private final EpicRepository epicRepository;
 
     /**
      * API 1: Lấy toàn bộ Board với columns và tasks (Quan trọng nhất)
@@ -174,6 +176,13 @@ public class BoardServiceImpl implements BoardService {
         // CHUẨN HÓA: Đổi assignedTo → assigneeId
         response.setAssigneeId(task.getAssigneeId());
         response.setEpicId(task.getEpicId());
+        
+        // Populate epic title if epic exists
+        if (task.getEpicId() != null) {
+            epicRepository.findById(task.getEpicId())
+                .ifPresent(epic -> response.setEpicTitle(epic.getTitle()));
+        }
+        
         response.setSprintId(task.getSprintId() != null ? task.getSprintId().toString() : null);
         response.setTags(task.getTags());
         response.setOrderIndex(task.getOrderIndex());

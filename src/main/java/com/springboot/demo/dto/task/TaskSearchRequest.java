@@ -16,6 +16,7 @@ public class TaskSearchRequest {
     private List<String> assigneeIds; // multi-select
     private List<Integer> columnIds; // status (BoardColumn ids), multi-select
     private Integer sprintId; // optional explicit sprint
+    private List<Integer> epicIds; // epic filter, multi-select
     private Boolean onlyActiveSprint; // default true: filter by active sprint if present
     private Boolean includeArchived; // default false
 }
