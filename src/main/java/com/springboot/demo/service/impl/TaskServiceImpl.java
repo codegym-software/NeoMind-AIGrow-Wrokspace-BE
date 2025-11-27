@@ -400,6 +400,9 @@ public class TaskServiceImpl implements TaskService {
             if (req.getColumnIds() != null && !req.getColumnIds().isEmpty()) {
                 predicates.add(root.get("statusColumn").get("id").in(req.getColumnIds()));
             }
+            if (req.getEpicIds() != null && !req.getEpicIds().isEmpty()) {
+                predicates.add(root.get("epicId").in(req.getEpicIds()));
+            }
 
             Integer sprintId = req.getSprintId();
             if (sprintId != null) {
