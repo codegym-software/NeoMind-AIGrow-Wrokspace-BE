@@ -1,11 +1,14 @@
 package com.springboot.demo.service;
 
 import com.springboot.demo.dto.board.TaskMoveRequest;
+import com.springboot.demo.dto.task.TaskGroupedResponse;
 import com.springboot.demo.dto.task.TaskSearchRequest;
 import com.springboot.demo.model.Task;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import java.util.Map;
 
 public interface TaskService {
     Task create(Task task, String currentUserId);
@@ -17,9 +20,10 @@ public interface TaskService {
     Task archive(Long taskId, String userId);
     Task restore(Long taskId, String userId);
     Page<Task> listArchivedByProject(String projectId, String userId, Pageable pageable);
-    
-    // Hàm từ nhánh 'list'
     Page<Task> search(String projectId, String currentUserId, TaskSearchRequest req, Pageable pageable);
+    Task assign(Long taskId, String assigneeId, String currentUserId);
+    TaskGroupedResponse groupBy(String projectId, String groupBy, String currentUserId);
+    Task setEpic(Long taskId, Integer epicId, String currentUserId);
     
     // Hàm từ nhánh 'main'
     Page<Task> listMyTasks(String userId, Pageable pageable);

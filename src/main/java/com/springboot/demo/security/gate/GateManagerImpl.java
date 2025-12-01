@@ -293,6 +293,35 @@ if (pmRepo.isOwner(projectId, userId))
             return abilityService.hasPermission(userId, Scope.project, projectId, "project:sprint:delete");
         });
 
+        dynamicGates.put("project:epic:create", (ctx, target) -> {
+            String projectId = (String) target;
+            String userId = ctx.userId();
+            if (pmRepo.isOwner(projectId, userId)) return true;
+            // Allow if user has explicit permission
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:epic:create");
+        });
+
+        dynamicGates.put("project:epic:read", (ctx, target) -> {
+            String projectId = (String) target;
+            String userId = ctx.userId();
+            if (pmRepo.isOwner(projectId, userId)) return true;
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:epic:read");
+        });
+
+        dynamicGates.put("project:epic:update", (ctx, target) -> {
+            String projectId = (String) target;
+            String userId = ctx.userId();
+            if (pmRepo.isOwner(projectId, userId)) return true;
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:epic:update");
+        });
+
+        dynamicGates.put("project:epic:delete", (ctx, target) -> {
+            String projectId = (String) target;
+            String userId = ctx.userId();
+            if (pmRepo.isOwner(projectId, userId)) return true;
+            return abilityService.hasPermission(userId, Scope.project, projectId, "project:epic:delete");
+        });
+
         // Project members management
         dynamicGates.put("project:member:invite", (ctx, target) -> {
             String projectId = (String) target;

@@ -349,13 +349,11 @@ public class RoleServiceImpl implements RoleService {
         if (r.getTargetId() != null && !r.getTargetId().equals(projectId)) {
             throw new IllegalArgumentException("Role không thuộc project này");
         }
-
-        // Chặn sửa permissions của role mặc định: chỉ ADMIN
+        // Chặn sửa permissions của role admin (admin code): chỉ ADMIN không cho sửa trực tiếp ở đây!
         if (r.getTargetId() != null && ("admin".equalsIgnoreCase(r.getCode()))) {
             throw new AccessDeniedException("Không thể sửa permissions của role mặc định (admin)");
         }
-
-        // Thực thi thay đổi (đã kiểm tra guard ở trên)
+        // Cho phép mọi quyền hợp lệ (bao gồm CRUD epic) khi gán cho các role bình thường!
         replaceProjectRolePermissionsUnchecked(projectId, roleId, permissionIds);
     }
     
@@ -495,7 +493,11 @@ public class RoleServiceImpl implements RoleService {
                 "project:member:read",
                 "project:member:set_user_permissions",
                 "project:member:delete",
-                "project:member:transfer_ownership"
+                "project:member:transfer_ownership",
+                "project:epic:read",
+                "project:epic:update",
+                "project:epic:create",
+                "project:epic:delete"
         );
 
         List<Integer> adminPermissionIds = jdbc.queryForList(

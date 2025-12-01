@@ -2,6 +2,8 @@ package com.springboot.demo.controller;
 
 import com.springboot.demo.dto.board.TaskMoveRequest;
 import com.springboot.demo.dto.task.TaskSearchRequest;
+import com.springboot.demo.model.Epic;
+import com.springboot.demo.dto.task.TaskGroupedResponse;
 import com.springboot.demo.dto.task.TaskUpdateRequest;
 import com.springboot.demo.model.Task;
 import com.springboot.demo.security.UserIdResolver;
@@ -28,7 +30,6 @@ public class TaskController {
     private final TaskService taskService;
     private final UserIdResolver userIdResolver;
 
-    // Create task
     @PostMapping
     @PreAuthorize("@gate.allows('project:task:create', authentication, #projectId)")
     @ResponseStatus(HttpStatus.CREATED)
@@ -36,46 +37,41 @@ public class TaskController {
                                     @RequestBody Task task,
                                     Authentication authentication) {
         String userId = userIdResolver.resolveInternalId(authentication);
-        // Lưu ý: Nếu bạn muốn dùng DTO với @Valid, bạn cần sửa TaskService.create
-        // task.setProjectId(projectId); // Đã bị xóa ở bản DTO
+        task.setProjectId(projectId);
         Task created = taskService.create(task, userId);
         return new ApiResponse<>("Task created successfully", created);
     }
 
-    // Update task
     @PutMapping("/{taskId}")
     @PreAuthorize("@gate.allows('project:task:update', authentication, #projectId)")
     public ApiResponse<Task> update(@PathVariable String projectId,
-                                    @PathVariable Long taskId, // <-- Dùng Long
+                                    @PathVariable Long taskId, // <-- SỬA Ở ĐÂY
                                     @RequestBody Task task,
                                     Authentication authentication) {
         String userId = userIdResolver.resolveInternalId(authentication);
-        // task.setProjectId(projectId); // Đã bị xóa ở bản DTO
-        Task updated = taskService.update(taskId, task, userId); 
+        task.setProjectId(projectId);
+        Task updated = taskService.update(taskId, task, userId); // <-- Truyền Long vào
         return new ApiResponse<>("Task updated successfully", updated);
     }
 
-    // Delete task (Soft Delete/Archive)
     @DeleteMapping("/{taskId}")
     @PreAuthorize("@gate.allows('project:task:delete', authentication, #projectId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public ApiResponse<Void> delete(@PathVariable String projectId,
-                                    @PathVariable Long taskId, // <-- Dùng Long
+                                    @PathVariable Long taskId, // <-- SỬA Ở ĐÂY
                                     Authentication authentication) {
         String userId = userIdResolver.resolveInternalId(authentication);
-        // Gọi hàm soft delete (hoặc hàm deletePermanent nếu bạn sửa service)
-        taskService.delete(taskId, userId); 
-        return new ApiResponse<>("Task deleted (archived) successfully", null);
+        taskService.delete(taskId, userId); // <-- Truyền Long vào
+        return new ApiResponse<>("Task deleted successfully", null);
     }
 
-    // Get task detail
     @GetMapping("/{taskId}")
     @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
     public ApiResponse<Task> get(@PathVariable String projectId,
-                                 @PathVariable Long taskId, // <-- Dùng Long
+                                 @PathVariable Long taskId, // <-- SỬA Ở ĐÂY
                                  Authentication authentication) {
         String userId = userIdResolver.resolveInternalId(authentication);
-        Task task = taskService.get(taskId, userId);
+        Task task = taskService.get(taskId, userId); // <-- Truyền Long vào
         return new ApiResponse<>("Task retrieved successfully", task);
     }
 
@@ -86,6 +82,7 @@ public class TaskController {
                                                  Authentication authentication,
                                                  Pageable pageable) {
         String userId = userIdResolver.resolveInternalId(authentication);
+
         Page<Task> tasksPage = taskService.listByProject(projectId, userId, pageable);
         return new ApiResponse<>("Tasks listed successfully", tasksPage);
     }
@@ -147,7 +144,6 @@ public class TaskController {
         return new ApiResponse<>("Task moved successfully", moved);
     }
 
-    // Explicit Archive (Soft Delete)
     @PatchMapping("/{taskId}/archive")
     @PreAuthorize("@gate.allows('project:task:delete', authentication, #projectId)")
     public ApiResponse<Task> archive(@PathVariable String projectId,
@@ -156,10 +152,8 @@ public class TaskController {
         String userId = userIdResolver.resolveInternalId(authentication);
         Task archived = taskService.archive(taskId, userId);
         return new ApiResponse<>("Task archived successfully", archived);
-        // Lưu ý: Cần đảm bảo hàm delete (ở trên) gọi soft delete hoặc hàm này thay thế delete
     }
 
-    // Permanent Delete
     @DeleteMapping("/{taskId}/permanent")
     @PreAuthorize("@gate.allows('project:task:delete', authentication, #projectId)")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -167,13 +161,10 @@ public class TaskController {
                                              @PathVariable Long taskId,
                                              Authentication authentication) {
         String userId = userIdResolver.resolveInternalId(authentication);
-        // Lỗi: Hàm này đang gọi taskService.delete, nên nó là Soft Delete
-        // Nếu muốn là Permanent Delete, cần gọi hàm deletePermanent(taskId, userId) trong service
-        taskService.delete(taskId, userId); 
+        taskService.delete(taskId, userId);
         return new ApiResponse<>("Task permanently deleted", null);
     }
 
-    // Restore Task
     @PatchMapping("/{taskId}/restore")
     @PreAuthorize("@gate.allows('project:task:update', authentication, #projectId)")
     public ApiResponse<Task> restore(@PathVariable String projectId,
@@ -184,7 +175,6 @@ public class TaskController {
         return new ApiResponse<>("Task restored successfully", restored);
     }
 
-    // List Archived Tasks
     @GetMapping("/archived")
     @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
     public ApiResponse<Page<Task>> listArchivedTasks(@PathVariable String projectId,
@@ -193,6 +183,17 @@ public class TaskController {
         String userId = userIdResolver.resolveInternalId(authentication);
         Page<Task> archivedTasks = taskService.listArchivedByProject(projectId, userId, pageable);
         return new ApiResponse<>("Archived tasks listed successfully", archivedTasks);
+    }
+
+    @PatchMapping("/{taskId}/epic")
+    @PreAuthorize("@gate.allows('project:task:update', authentication, #projectId)")
+    public ApiResponse<Task> setEpic(@PathVariable String projectId,
+                                     @PathVariable Long taskId,
+                                     @RequestParam(required = false) Integer epicId,
+                                     Authentication authentication) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        Task updated = taskService.setEpic(taskId, epicId, userId);
+        return new ApiResponse<>("Task epic updated successfully", updated);
     }
 
     // List My Tasks (Global/Assigned to current user)
