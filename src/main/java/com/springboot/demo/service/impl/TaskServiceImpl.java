@@ -22,6 +22,8 @@ import com.springboot.demo.repository.SprintRepository;
 import com.springboot.demo.repository.EpicRepository;
 import com.springboot.demo.repository.TaskRepository;
 import com.springboot.demo.service.TaskService;
+import com.springboot.demo.service.ActivityLogService;
+import org.springframework.beans.BeanUtils;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -50,6 +52,7 @@ public class TaskServiceImpl implements TaskService {
     private final BoardRepository boardRepo;
     private final BoardColumnRepository boardColumnRepo;
     private final SprintRepository sprintRepo;
+    private final ActivityLogService activityLogService;
     private final EpicRepository epicRepo;
 
     private void checkProjectAccess(String projectId, String userId) {
@@ -108,7 +111,9 @@ public class TaskServiceImpl implements TaskService {
             }
         }
         
-        return taskRepo.save(task);
+        Task saved = taskRepo.save(task);
+        activityLogService.logTaskCreated(saved, currentUserId);
+        return saved;
     }
 
     @Override
@@ -174,7 +179,12 @@ public class TaskServiceImpl implements TaskService {
             existing.setOrderIndex(task.getOrderIndex());
         }
 
-        return taskRepo.save(existing);
+        Task before = new Task();
+        BeanUtils.copyProperties(existing, before);
+
+        Task after = taskRepo.save(existing);
+        activityLogService.logTaskUpdated(before, after, currentUserId);
+        return after;
     }
 
     @Override
