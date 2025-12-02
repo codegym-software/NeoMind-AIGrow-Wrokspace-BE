@@ -499,6 +499,17 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> priorityDistribution(String projectId, String userId) {
+        checkProjectAccess(projectId, userId);
+        Map<String, Long> dist = new HashMap<>();
+        dist.put("Low", taskRepo.countByProjectIdAndPriorityAndArchivedAtIsNull(projectId, com.springboot.demo.model.enums.TaskPriority.low));
+        dist.put("Medium", taskRepo.countByProjectIdAndPriorityAndArchivedAtIsNull(projectId, com.springboot.demo.model.enums.TaskPriority.medium));
+        dist.put("High", taskRepo.countByProjectIdAndPriorityAndArchivedAtIsNull(projectId, com.springboot.demo.model.enums.TaskPriority.high));
+        return dist;
+    }
+
+    @Override
     @Transactional
     public void transferTasksFromColumn(String projectId, Integer sourceColumnId, Integer targetColumnId, String userId) {
         checkProjectAccess(projectId, userId);
