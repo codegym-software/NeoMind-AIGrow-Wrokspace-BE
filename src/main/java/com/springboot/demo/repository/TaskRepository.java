@@ -51,6 +51,8 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
     long countByProjectIdAndStatus(@Param("projectId") String projectId, @Param("columnId") Integer columnId);
 
     long countByProjectIdAndPriorityAndArchivedAtIsNull(String projectId, TaskPriority priority);
-    
+    long countByProjectIdAndAssigneeIdAndArchivedAtIsNull(String projectId, String assigneeId);
+    long countByProjectIdAndArchivedAtIsNullAndAssigneeIdIsNull(String projectId);
+
     long countByStatusColumn_IdAndArchivedAtIsNull(Integer columnId);
 }

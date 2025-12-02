@@ -54,6 +54,7 @@ public class TaskServiceImpl implements TaskService {
     private final SprintRepository sprintRepo;
     private final ActivityLogService activityLogService;
     private final EpicRepository epicRepo;
+    private final ProjectMemberRepository projectMemberRepo;
 
     private void checkProjectAccess(String projectId, String userId) {
         if (!projectRepo.existsById(projectId)) {
@@ -508,6 +509,23 @@ public class TaskServiceImpl implements TaskService {
         dist.put("High", taskRepo.countByProjectIdAndPriorityAndArchivedAtIsNull(projectId, com.springboot.demo.model.enums.TaskPriority.high));
         return dist;
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> workloadByAssignee(String projectId, String userId) {
+        checkProjectAccess(projectId, userId);
+        Map<String, Long> dist = new HashMap<>();
+        List<com.springboot.demo.model.ProjectMember> members = projectMemberRepo.findByProjectId(projectId);
+        for (com.springboot.demo.model.ProjectMember pm : members) {
+            String uid = pm.getUserId();
+            long cnt = taskRepo.countByProjectIdAndAssigneeIdAndArchivedAtIsNull(projectId, uid);
+            dist.put(uid, cnt);
+        }
+        long unassigned = taskRepo.countByProjectIdAndArchivedAtIsNullAndAssigneeIdIsNull(projectId);
+        dist.put("unassigned", unassigned);
+        return dist;
+    }
+
 
     @Override
     @Transactional

@@ -31,4 +31,5 @@ public interface TaskService {
     Map<String, Long> statusDistribution(String projectId, String userId);
     void transferTasksFromColumn(String projectId, Integer sourceColumnId, Integer targetColumnId, String userId);
     Map<String, Long> priorityDistribution(String projectId, String userId);
+    Map<String, Long> workloadByAssignee(String projectId, String userId);
 }

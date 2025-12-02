@@ -141,6 +141,15 @@ public class TaskController {
         return new ApiResponse<>("Priority distribution retrieved successfully", dist);
     }
 
+    @GetMapping("/metrics/workload")
+    @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
+    public ApiResponse<Map<String, Long>> workloadByAssignee(@PathVariable String projectId,
+                                                             Authentication authentication) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        Map<String, Long> dist = taskService.workloadByAssignee(projectId, userId);
+        return new ApiResponse<>("Workload distribution retrieved successfully", dist);
+    }
+
     @PatchMapping("/{taskId}/move")
     @PreAuthorize("@gate.allows('project:task:update', authentication, #projectId)")
     public ApiResponse<Task> moveTask(@PathVariable String projectId,
