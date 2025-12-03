@@ -125,6 +125,9 @@ public class TaskServiceImpl implements TaskService {
 
         checkProjectAccess(existing.getProjectId(), currentUserId);
 
+        Task before = new Task();
+        BeanUtils.copyProperties(existing, before);
+
         // --- Logic PATCH (vá lỗi) ---
         if (task.getTitle() != null) {
             existing.setTitle(task.getTitle());
@@ -179,9 +182,6 @@ public class TaskServiceImpl implements TaskService {
         if (task.getOrderIndex() != null) {
             existing.setOrderIndex(task.getOrderIndex());
         }
-
-        Task before = new Task();
-        BeanUtils.copyProperties(existing, before);
 
         Task after = taskRepo.save(existing);
         activityLogService.logTaskUpdated(before, after, currentUserId);

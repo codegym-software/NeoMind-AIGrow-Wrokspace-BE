@@ -31,69 +31,54 @@ public class ActivityLogServiceImpl implements ActivityLogService {
     @Override
     public void logTaskUpdated(Task before, Task after, String userId) {
         if (before == null || after == null) return;
-        if (before.getTitle() != null || after.getTitle() != null) {
-            if (!java.util.Objects.equals(before.getTitle(), after.getTitle())) {
-                logFieldChange(after.getProjectId(), after.getId(), userId, "title", before.getTitle(), after.getTitle());
-            }
+        String projectId = after.getProjectId();
+        Long taskId = after.getId();
+
+        if (!(before.getTitle() == null && after.getTitle() == null) && !java.util.Objects.equals(before.getTitle(), after.getTitle())) {
+            logFieldChange(projectId, taskId, userId, "title");
         }
-        if (before.getDescription() != null || after.getDescription() != null) {
-            if (!java.util.Objects.equals(before.getDescription(), after.getDescription())) {
-                logFieldChange(after.getProjectId(), after.getId(), userId, "description", before.getDescription(), after.getDescription());
-            }
+        if (!(before.getDescription() == null && after.getDescription() == null) && !java.util.Objects.equals(before.getDescription(), after.getDescription())) {
+            logFieldChange(projectId, taskId, userId, "description");
         }
         String beforeCol = before.getStatusColumn() != null ? before.getStatusColumn().getName() : null;
         String afterCol = after.getStatusColumn() != null ? after.getStatusColumn().getName() : null;
-        if (beforeCol != null || afterCol != null) {
-            if (!java.util.Objects.equals(beforeCol, afterCol)) {
-                logFieldChange(after.getProjectId(), after.getId(), userId, "statusColumn", beforeCol, afterCol);
-            }
+        if (!(beforeCol == null && afterCol == null) && !java.util.Objects.equals(beforeCol, afterCol)) {
+            logFieldChange(projectId, taskId, userId, "statusColumn");
         }
         String beforeAssignee = before.getAssigneeId();
         String afterAssignee = after.getAssigneeId();
-        if (beforeAssignee != null || afterAssignee != null) {
-            if (!java.util.Objects.equals(beforeAssignee, afterAssignee)) {
-                logFieldChange(after.getProjectId(), after.getId(), userId, "assigneeId", beforeAssignee, afterAssignee);
-            }
+        if (!(beforeAssignee == null && afterAssignee == null) && !java.util.Objects.equals(beforeAssignee, afterAssignee)) {
+            logFieldChange(projectId, taskId, userId, "assigneeId");
         }
         String beforeTags = before.getTags();
         String afterTags = after.getTags();
-        if (beforeTags != null || afterTags != null) {
-            if (!java.util.Objects.equals(beforeTags, afterTags)) {
-                logFieldChange(after.getProjectId(), after.getId(), userId, "tags", beforeTags, afterTags);
-            }
+        if (!(beforeTags == null && afterTags == null) && !java.util.Objects.equals(beforeTags, afterTags)) {
+            logFieldChange(projectId, taskId, userId, "tags");
         }
         Integer beforeOrder = before.getOrderIndex();
         Integer afterOrder = after.getOrderIndex();
-        if (beforeOrder != null || afterOrder != null) {
-            if (!java.util.Objects.equals(beforeOrder, afterOrder)) {
-                logFieldChange(after.getProjectId(), after.getId(), userId, "orderIndex", beforeOrder != null ? String.valueOf(beforeOrder) : null, afterOrder != null ? String.valueOf(afterOrder) : null);
-            }
+        if (!(beforeOrder == null && afterOrder == null) && !java.util.Objects.equals(beforeOrder, afterOrder)) {
+            logFieldChange(projectId, taskId, userId, "orderIndex");
         }
         java.time.LocalDate beforeDue = before.getDueDate();
         java.time.LocalDate afterDue = after.getDueDate();
-        if (beforeDue != null || afterDue != null) {
-            if (!java.util.Objects.equals(beforeDue, afterDue)) {
-                logFieldChange(after.getProjectId(), after.getId(), userId, "dueDate", beforeDue != null ? beforeDue.toString() : null, afterDue != null ? afterDue.toString() : null);
-            }
+        if (!(beforeDue == null && afterDue == null) && !java.util.Objects.equals(beforeDue, afterDue)) {
+            logFieldChange(projectId, taskId, userId, "dueDate");
         }
         Integer beforeSprint = before.getSprintId();
         Integer afterSprint = after.getSprintId();
-        if (beforeSprint != null || afterSprint != null) {
-            if (!java.util.Objects.equals(beforeSprint, afterSprint)) {
-                logFieldChange(after.getProjectId(), after.getId(), userId, "sprintId", beforeSprint != null ? String.valueOf(beforeSprint) : null, afterSprint != null ? String.valueOf(afterSprint) : null);
-            }
+        if (!(beforeSprint == null && afterSprint == null) && !java.util.Objects.equals(beforeSprint, afterSprint)) {
+            logFieldChange(projectId, taskId, userId, "sprintId");
         }
         com.springboot.demo.model.enums.TaskPriority beforePr = before.getPriority();
         com.springboot.demo.model.enums.TaskPriority afterPr = after.getPriority();
-        if (beforePr != null || afterPr != null) {
-            if (!java.util.Objects.equals(beforePr, afterPr)) {
-                logFieldChange(after.getProjectId(), after.getId(), userId, "priority", beforePr != null ? beforePr.name() : null, afterPr != null ? afterPr.name() : null);
-            }
+        if (!(beforePr == null && afterPr == null) && !java.util.Objects.equals(beforePr, afterPr)) {
+            logFieldChange(projectId, taskId, userId, "priority");
         }
     }
 
     @Override
-    public void logFieldChange(String projectId, Long taskId, String userId, String fieldName, String fromValue, String toValue) {
+    public void logFieldChange(String projectId, Long taskId, String userId, String fieldName) {
         ActivityLog log = new ActivityLog();
         log.setLogId(UUID.randomUUID().toString());
         log.setProjectId(projectId);
@@ -101,9 +86,7 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         log.setUserId(userId);
         log.setAction(ActivityAction.updated);
         log.setFieldName(fieldName);
-        String from = fromValue == null ? "" : fromValue;
-        String to = toValue == null ? "" : toValue;
-        log.setDescription("" + from + " -> " + to);
+        log.setDescription(userId + " updated field " + fieldName + " on task " + taskId);
         repo.save(log);
     }
 }
