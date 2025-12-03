@@ -4,6 +4,8 @@ import com.springboot.demo.model.ActivityLog;
 import com.springboot.demo.model.Task;
 import com.springboot.demo.model.enums.ActivityAction;
 import com.springboot.demo.repository.ActivityLogRepository;
+import com.springboot.demo.repository.UserRepository;
+import com.springboot.demo.repository.TaskRepository;
 import com.springboot.demo.service.ActivityLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,8 @@ import java.util.UUID;
 public class ActivityLogServiceImpl implements ActivityLogService {
 
     private final ActivityLogRepository repo;
+    private final UserRepository userRepo;
+    private final TaskRepository taskRepo;
 
     @Override
     public void logTaskCreated(Task task, String userId) {
@@ -86,7 +90,13 @@ public class ActivityLogServiceImpl implements ActivityLogService {
         log.setUserId(userId);
         log.setAction(ActivityAction.updated);
         log.setFieldName(fieldName);
-        log.setDescription(userId + " updated field " + fieldName + " on task " + taskId);
+        String userName = userRepo.findById(userId)
+                .map(u -> u.getDisplayName())
+                .orElse(userId);
+        String taskTitle = taskRepo.findById(taskId)
+                .map(t -> t.getTitle())
+                .orElse(String.valueOf(taskId));
+        log.setDescription(userName + " updated field \"" + fieldName + "\" on task \"" + taskTitle + "\"");
         repo.save(log);
     }
 }
