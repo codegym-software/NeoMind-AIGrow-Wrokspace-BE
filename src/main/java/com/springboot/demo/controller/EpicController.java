@@ -38,12 +38,12 @@ public class EpicController {
 
     @GetMapping
     @PreAuthorize("@gate.allows('project:epic:read', authentication, #projectId)")
-    public ApiResponse<Page<EpicDto>> list(@PathVariable String projectId,
+    public ApiResponse<EpicListResponse> list(@PathVariable String projectId,
                                            Authentication authentication,
                                            Pageable pageable) {
         String userId = userIdResolver.resolveInternalId(authentication);
-        Page<EpicDto> page = epicService.listByProject(projectId, userId, pageable);
-        return new ApiResponse<>("Epics listed successfully", page);
+        EpicListResponse res = epicService.listByProject(projectId, userId, pageable);
+        return new ApiResponse<>("Epics listed successfully", res);
     }
 
     @PostMapping("/search")

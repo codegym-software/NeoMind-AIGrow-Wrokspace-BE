@@ -57,9 +57,12 @@ public class EpicServiceImpl implements EpicService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<EpicDto> listByProject(String projectId, String currentUserId, Pageable pageable) {
+    public EpicListResponse listByProject(String projectId, String currentUserId, Pageable pageable) {
         checkProjectAccess(projectId, currentUserId);
-        return epicRepo.findByProjectId(projectId, pageable).map(this::toDtoWithStats);
+        Page<EpicDto> page = epicRepo.findByProjectId(projectId, pageable).map(this::toDtoWithStats);
+        long totalEpics = page.getTotalElements();
+        long totalTasks = taskRepo.countByProjectIdAndArchivedAtIsNull(projectId);
+        return new EpicListResponse(totalEpics, totalTasks, page);
     }
 
     @Override
