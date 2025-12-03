@@ -4,6 +4,7 @@ import com.springboot.demo.dto.board.TaskMoveRequest;
 import com.springboot.demo.dto.task.TaskGroupedResponse;
 import com.springboot.demo.dto.task.TaskSearchRequest;
 import com.springboot.demo.model.Task;
+import com.springboot.demo.model.ActivityLog;
 import java.util.List;
 import java.util.Map;
 
@@ -32,4 +33,5 @@ public interface TaskService {
     void transferTasksFromColumn(String projectId, Integer sourceColumnId, Integer targetColumnId, String userId);
     Map<String, Long> priorityDistribution(String projectId, String userId);
     Map<String, Long> workloadByAssignee(String projectId, String userId);
+    List<ActivityLog> recentLogs(String projectId, String userId);
 }

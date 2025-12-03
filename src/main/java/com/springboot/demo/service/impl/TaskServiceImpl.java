@@ -21,6 +21,7 @@ import com.springboot.demo.repository.ProjectRepository;
 import com.springboot.demo.repository.SprintRepository;
 import com.springboot.demo.repository.EpicRepository;
 import com.springboot.demo.repository.TaskRepository;
+import com.springboot.demo.repository.ActivityLogRepository;
 import com.springboot.demo.service.TaskService;
 import com.springboot.demo.service.ActivityLogService;
 import org.springframework.beans.BeanUtils;
@@ -53,6 +54,7 @@ public class TaskServiceImpl implements TaskService {
     private final BoardColumnRepository boardColumnRepo;
     private final SprintRepository sprintRepo;
     private final ActivityLogService activityLogService;
+    private final ActivityLogRepository activityLogRepo;
     private final EpicRepository epicRepo;
     private final ProjectMemberRepository projectMemberRepo;
 
@@ -526,6 +528,12 @@ public class TaskServiceImpl implements TaskService {
         return dist;
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<com.springboot.demo.model.ActivityLog> recentLogs(String projectId, String userId) {
+        checkProjectAccess(projectId, userId);
+        return activityLogRepo.findByProjectIdOrderByCreatedAtDesc(projectId);
+    }
 
     @Override
     @Transactional

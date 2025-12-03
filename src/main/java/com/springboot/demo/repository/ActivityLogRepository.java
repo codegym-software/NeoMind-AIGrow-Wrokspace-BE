@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ActivityLogRepository extends JpaRepository<ActivityLog, String> {
+    java.util.List<ActivityLog> findByProjectIdOrderByCreatedAtDesc(String projectId);
 }
