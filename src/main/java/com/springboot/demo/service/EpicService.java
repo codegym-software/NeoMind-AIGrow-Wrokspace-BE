@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface EpicService {
     EpicDto create(String projectId, EpicCreateRequest req, String currentUserId);
-    Page<EpicDto> listByProject(String projectId, String currentUserId, Pageable pageable);
+    EpicListResponse listByProject(String projectId, String currentUserId, Pageable pageable);
     Page<EpicDto> search(String projectId, String currentUserId, EpicSearchRequest req, Pageable pageable);
     EpicDto get(String projectId, Integer epicId, String currentUserId);
     EpicDto update(String projectId, Integer epicId, EpicUpdateRequest req, String currentUserId);

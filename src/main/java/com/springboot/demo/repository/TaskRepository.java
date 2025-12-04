@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.springboot.demo.model.enums.TaskPriority;
 
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificationExecutor<Task> {
@@ -36,6 +37,7 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
     Page<Task> findByProjectIdAndArchivedAtIsNotNull(String projectId, Pageable pageable);
     long countByEpicId(Integer epicId);
     Page<Task> findByEpicIdAndArchivedAtIsNull(Integer epicId, Pageable pageable);
+    long countByProjectIdAndArchivedAtIsNull(String projectId);
 
     
     List<Task> findByProjectIdAndArchivedAtIsNullAndCreatedAtBetween(String projectId, LocalDateTime start, LocalDateTime end);
@@ -48,6 +50,10 @@ public interface TaskRepository extends JpaRepository<Task, Long>, JpaSpecificat
     
     @Query("SELECT COUNT(t) FROM Task t WHERE t.projectId = :projectId AND t.statusColumn.id = :columnId AND t.archivedAt IS NULL")
     long countByProjectIdAndStatus(@Param("projectId") String projectId, @Param("columnId") Integer columnId);
+
+    long countByProjectIdAndPriorityAndArchivedAtIsNull(String projectId, TaskPriority priority);
+    long countByProjectIdAndAssigneeIdAndArchivedAtIsNull(String projectId, String assigneeId);
+    long countByProjectIdAndArchivedAtIsNullAndAssigneeIdIsNull(String projectId);
 
     long countByStatusColumn_IdAndArchivedAtIsNull(Integer columnId);
 }

@@ -21,7 +21,10 @@ import com.springboot.demo.repository.ProjectRepository;
 import com.springboot.demo.repository.SprintRepository;
 import com.springboot.demo.repository.EpicRepository;
 import com.springboot.demo.repository.TaskRepository;
+import com.springboot.demo.repository.ActivityLogRepository;
 import com.springboot.demo.service.TaskService;
+import com.springboot.demo.service.ActivityLogService;
+import org.springframework.beans.BeanUtils;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -50,7 +53,10 @@ public class TaskServiceImpl implements TaskService {
     private final BoardRepository boardRepo;
     private final BoardColumnRepository boardColumnRepo;
     private final SprintRepository sprintRepo;
+    private final ActivityLogService activityLogService;
+    private final ActivityLogRepository activityLogRepo;
     private final EpicRepository epicRepo;
+    private final ProjectMemberRepository projectMemberRepo;
 
     private void checkProjectAccess(String projectId, String userId) {
         if (!projectRepo.existsById(projectId)) {
@@ -108,7 +114,9 @@ public class TaskServiceImpl implements TaskService {
             }
         }
         
-        return taskRepo.save(task);
+        Task saved = taskRepo.save(task);
+        activityLogService.logTaskCreated(saved, currentUserId);
+        return saved;
     }
 
     @Override
@@ -118,6 +126,9 @@ public class TaskServiceImpl implements TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
 
         checkProjectAccess(existing.getProjectId(), currentUserId);
+
+        Task before = new Task();
+        BeanUtils.copyProperties(existing, before);
 
         // --- Logic PATCH (vá lỗi) ---
         if (task.getTitle() != null) {
@@ -174,7 +185,9 @@ public class TaskServiceImpl implements TaskService {
             existing.setOrderIndex(task.getOrderIndex());
         }
 
-        return taskRepo.save(existing);
+        Task after = taskRepo.save(existing);
+        activityLogService.logTaskUpdated(before, after, currentUserId);
+        return after;
     }
 
     @Override
@@ -486,6 +499,40 @@ public class TaskServiceImpl implements TaskService {
         }
 
         return dist;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> priorityDistribution(String projectId, String userId) {
+        checkProjectAccess(projectId, userId);
+        Map<String, Long> dist = new HashMap<>();
+        dist.put("Low", taskRepo.countByProjectIdAndPriorityAndArchivedAtIsNull(projectId, com.springboot.demo.model.enums.TaskPriority.low));
+        dist.put("Medium", taskRepo.countByProjectIdAndPriorityAndArchivedAtIsNull(projectId, com.springboot.demo.model.enums.TaskPriority.medium));
+        dist.put("High", taskRepo.countByProjectIdAndPriorityAndArchivedAtIsNull(projectId, com.springboot.demo.model.enums.TaskPriority.high));
+        return dist;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<String, Long> workloadByAssignee(String projectId, String userId) {
+        checkProjectAccess(projectId, userId);
+        Map<String, Long> dist = new HashMap<>();
+        List<com.springboot.demo.model.ProjectMember> members = projectMemberRepo.findByProjectId(projectId);
+        for (com.springboot.demo.model.ProjectMember pm : members) {
+            String uid = pm.getUserId();
+            long cnt = taskRepo.countByProjectIdAndAssigneeIdAndArchivedAtIsNull(projectId, uid);
+            dist.put(uid, cnt);
+        }
+        long unassigned = taskRepo.countByProjectIdAndArchivedAtIsNullAndAssigneeIdIsNull(projectId);
+        dist.put("unassigned", unassigned);
+        return dist;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.List<com.springboot.demo.model.ActivityLog> recentLogs(String projectId, String userId) {
+        checkProjectAccess(projectId, userId);
+        return activityLogRepo.findByProjectIdOrderByCreatedAtDesc(projectId);
     }
 
     @Override

@@ -132,7 +132,33 @@ public class TaskController {
         return new ApiResponse<>("Tasks transferred successfully", null);
     }
 
-    // Move Task (Drag & Drop)
+    @GetMapping("/metrics/priority")
+    @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
+    public ApiResponse<Map<String, Long>> priorityDistribution(@PathVariable String projectId,
+                                                               Authentication authentication) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        Map<String, Long> dist = taskService.priorityDistribution(projectId, userId);
+        return new ApiResponse<>("Priority distribution retrieved successfully", dist);
+    }
+
+    @GetMapping("/metrics/workload")
+    @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
+    public ApiResponse<Map<String, Long>> workloadByAssignee(@PathVariable String projectId,
+                                                             Authentication authentication) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        Map<String, Long> dist = taskService.workloadByAssignee(projectId, userId);
+        return new ApiResponse<>("Workload distribution retrieved successfully", dist);
+    }
+
+    @GetMapping("/metrics/recent-log")
+    @PreAuthorize("@gate.allows('project:task:read', authentication, #projectId)")
+    public ApiResponse<java.util.List<com.springboot.demo.model.ActivityLog>> recentLogs(@PathVariable String projectId,
+                                                                                        Authentication authentication) {
+        String userId = userIdResolver.resolveInternalId(authentication);
+        java.util.List<com.springboot.demo.model.ActivityLog> logs = taskService.recentLogs(projectId, userId);
+        return new ApiResponse<>("Recent logs retrieved successfully", logs);
+    }
+
     @PatchMapping("/{taskId}/move")
     @PreAuthorize("@gate.allows('project:task:update', authentication, #projectId)")
     public ApiResponse<Task> moveTask(@PathVariable String projectId,
