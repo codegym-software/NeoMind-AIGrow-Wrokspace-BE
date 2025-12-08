@@ -54,4 +54,10 @@ public interface BoardColumnRepository extends JpaRepository<BoardColumn, Intege
      */
     @Query("SELECT bc.board.projectId FROM BoardColumn bc WHERE bc.id = :columnId")
     Optional<String> findProjectIdByColumnId(@Param("columnId") Integer columnId);
+    
+    /**
+     * Tìm column theo projectId và name (để complete task)
+     */
+    @Query("SELECT bc FROM BoardColumn bc WHERE bc.board.projectId = :projectId AND bc.name = :name")
+    List<BoardColumn> findByProjectIdAndName(@Param("projectId") String projectId, @Param("name") String name);
 }

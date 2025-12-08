@@ -1,0 +1,138 @@
+{
+  "info": {
+    "name": "Timeline/Gantt Chart APIs v2.0",
+    "description": "Collection of Timeline/Gantt Chart endpoints with Sprint Data support (Updated: 2025-12-06)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Get Timeline",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/projects/{{project_id}}/timeline",
+          "host": ["{{base_url}}"],
+          "path": ["api", "projects", "{{project_id}}", "timeline"]
+        },
+        "description": "Lấy dữ liệu Timeline cho Gantt Chart (v2.0 - WITH SPRINT DATA)\n\n**NEW Features:**\n✅ Response structure: { items: [], sprints: [] }\n✅ Sprint headers for Gantt Chart visualization\n✅ Soft inheritance: Task date fallback to Sprint date\n✅ Progress calculation tự động\n\n**Response Structure (v2.0):**\n```json\n{\n  \"message\": \"Timeline retrieved successfully\",\n  \"data\": {\n    \"items\": [\n      {\n        \"id\": \"epic-1\",\n        \"text\": \"User Authentication Module\",\n        \"startDate\": \"2025-12-01\",\n        \"endDate\": \"2026-03-31\",\n        \"parent\": null,\n        \"progress\": 0.65,\n        \"type\": \"epic\"\n      },\n      {\n        \"id\": \"task-10\",\n        \"text\": \"Implement JWT Login\",\n        \"startDate\": \"2025-12-01\",\n        \"endDate\": \"2025-12-15\",\n        \"parent\": \"epic-1\",\n        \"progress\": 1.0,\n        \"type\": \"task\",\n        \"sprintId\": 22\n      },\n      {\n        \"id\": \"task-11\",\n        \"text\": \"Create User Registration\",\n        \"startDate\": \"2025-12-15\",\n        \"endDate\": \"2025-12-28\",\n        \"parent\": \"epic-1\",\n        \"progress\": 0.0,\n        \"type\": \"task\",\n        \"sprintId\": 23\n      }\n    ],\n    \"sprints\": [\n      {\n        \"id\": 22,\n        \"name\": \"Sprint 1: Authentication Core\",\n        \"startDate\": \"2025-12-01\",\n        \"endDate\": \"2025-12-14\",\n        \"status\": \"active\"\n      },\n      {\n        \"id\": 23,\n        \"name\": \"Sprint 2: User Management\",\n        \"startDate\": \"2025-12-15\",\n        \"endDate\": \"2025-12-28\",\n        \"status\": \"planned\"\n      },\n      {\n        \"id\": 24,\n        \"name\": \"Sprint 3: Profile & Settings\",\n        \"startDate\": \"2025-12-29\",\n        \"endDate\": \"2026-01-11\",\n        \"status\": \"planned\"\n      }\n    ]\n  }\n}\n```\n\n**Sprint Status Values:**\n- `active`: Sprint đang chạy (màu xanh lá)\n- `planned`: Sprint sắp tới (màu xanh dương)\n- `completed`: Sprint đã kết thúc (màu xám)\n\n**Frontend Integration:**\n1. Render `sprints[]` như background layers trên Gantt Chart\n2. Render `items[]` như Epic/Task bars overlay lên trên\n3. Use `sprintId` trong Task để link với Sprint data"
+      },
+      "response": []
+    },
+    {
+      "name": "2. Update Task Timeline (Drag & Drop)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"startDate\": \"2025-12-05\",\n  \"dueDate\": \"2025-12-20\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/projects/{{project_id}}/timeline/tasks/{{task_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "projects", "{{project_id}}", "timeline", "tasks", "{{task_id}}"]
+        },
+        "description": "Cập nhật Timeline khi kéo thả task trên Gantt Chart\n\n**Request Body:**\n- `startDate` (optional): Ngày bắt đầu mới (YYYY-MM-DD)\n- `dueDate` (optional): Ngày kết thúc mới (YYYY-MM-DD)\n\n**Validation:**\n- ✅ `dueDate >= startDate` (nếu cả 2 đều có giá trị)\n- ✅ Có thể update 1 trong 2 hoặc cả 2 fields\n- ✅ Có thể set null để clear dates\n\n**Hành động:**\n- Update `task.start_date` và `task.due_date`\n- Ghi đè kế hoạch mặc định của Sprint\n- **KHÔNG** thay đổi `end_date` (thời gian hoàn thành thực tế)\n\n**Response (v2.0):**\n```json\n{\n  \"message\": \"Task timeline updated successfully\",\n  \"data\": {\n    \"id\": \"task-10\",\n    \"text\": \"Implement JWT Login\",\n    \"startDate\": \"2025-12-05\",\n    \"endDate\": \"2025-12-20\",\n    \"parent\": \"epic-1\",\n    \"progress\": 0.0,\n    \"type\": \"task\",\n    \"sprintId\": 22\n  }\n}\n```\n\n**Common Test Cases:**\n1. Update both dates: `{\"startDate\": \"2025-12-05\", \"dueDate\": \"2025-12-20\"}`\n2. Update only startDate: `{\"startDate\": \"2025-12-05\"}`\n3. Update only dueDate: `{\"dueDate\": \"2025-12-20\"}`\n4. Clear dates: `{\"startDate\": null, \"dueDate\": null}`\n5. Invalid range (should fail): `{\"startDate\": \"2025-12-20\", \"dueDate\": \"2025-12-05\"}`"
+      },
+      "response": []
+    },
+    {
+      "name": "3. Complete Task",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"completed\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/projects/{{project_id}}/timeline/tasks/{{task_id}}/complete",
+          "host": ["{{base_url}}"],
+          "path": ["api", "projects", "{{project_id}}", "timeline", "tasks", "{{task_id}}", "complete"]
+        },
+        "description": "Đánh dấu task hoàn thành hoặc uncomplete\n\n**Request Body:**\n- `completed`: `true` = Mark as Done, `false` = Unmark\n\n**Hành động khi completed = true:**\n- Set `end_date = NOW()` (LocalDateTime - thời gian chính xác hoàn thành)\n- Move task to \"Done\" column (nếu có)\n- ⚠️ **KHÔNG** thay đổi `due_date` (giữ nguyên kế hoạch)\n\n**Ý nghĩa các trường date:**\n- `startDate` = Khi bắt đầu task (thực tế)\n- `dueDate` = Kế hoạch hoàn thành (Plan)\n- `endDate` = Thực tế hoàn thành (Actual completion time)\n- So sánh `endDate` vs `dueDate` → biết: On-time / Delay / Early\n\n**Response (v2.0):**\n```json\n{\n  \"message\": \"Task marked as complete\",\n  \"data\": {\n    \"id\": \"task-10\",\n    \"text\": \"Implement JWT Login\",\n    \"startDate\": \"2025-12-01\",\n    \"endDate\": \"2025-12-13\",\n    \"parent\": \"epic-1\",\n    \"progress\": 1.0,\n    \"type\": \"task\",\n    \"sprintId\": 22\n  }\n}\n```\n\n**Analysis:**\n- `dueDate` was: \"2025-12-15\" (plan)\n- `endDate` is: \"2025-12-13\" (actual)\n- Result: ✅ Completed EARLY (2 days ahead)\n\n**Common Test Cases:**\n1. Complete task: `{\"completed\": true}` → endDate = now, progress = 1.0\n2. Uncomplete task: `{\"completed\": false}` → endDate = null, progress < 1.0"
+      },
+      "response": []
+    },
+    {
+      "name": "4. Uncomplete Task",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"completed\": false\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/projects/{{project_id}}/timeline/tasks/{{task_id}}/complete",
+          "host": ["{{base_url}}"],
+          "path": ["api", "projects", "{{project_id}}", "timeline", "tasks", "{{task_id}}", "complete"]
+        },
+        "description": "Bỏ đánh dấu hoàn thành\n\n**Request Body:**\n- `completed`: `false`\n\n**Hành động:**\n- Set `end_date = NULL`\n- Move task back to previous column (In Progress)\n- Progress recalculated based on column status\n\n**Response (v2.0):**\n```json\n{\n  \"message\": \"Task completion status updated successfully\",\n  \"data\": {\n    \"id\": \"task-10\",\n    \"text\": \"Implement JWT Login\",\n    \"startDate\": \"2025-12-01\",\n    \"endDate\": \"2025-12-15\",\n    \"parent\": \"epic-1\",\n    \"progress\": 0.0,\n    \"type\": \"task\",\n    \"sprintId\": 22\n  }\n}\n```\n\n**Note:**\n- `endDate` trong response là `dueDate` (kế hoạch)\n- `end_date` (completion timestamp) đã bị clear → null"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "your-project-id-here",
+      "type": "string"
+    },
+    {
+      "key": "task_id",
+      "value": "10",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "your-jwt-token-here",
+      "type": "string"
+    }
+  ]
+}

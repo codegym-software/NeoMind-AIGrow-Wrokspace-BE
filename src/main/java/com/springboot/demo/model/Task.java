@@ -67,8 +67,14 @@ public class Task {
     @Column(name = "priority", nullable = false, columnDefinition = "ENUM('LOW', 'MEDIUM', 'HIGH') DEFAULT 'MEDIUM'")
     private TaskPriority priority; // Removed default = TaskPriority.medium to avoid overwriting during PATCH updates
 
+    @Column(name = "start_date")
+    private LocalDate startDate; // Timeline: Ngày bắt đầu thực tế của task
+
     @Column(name = "due_date")
-    private LocalDate dueDate;
+    private LocalDate dueDate; // Timeline: Kế hoạch - Ngày dự kiến hoàn thành
+
+    @Column(name = "end_date")
+    private LocalDateTime endDate; // Timeline: Thực tế - Thời điểm hoàn thành
 
     @Column(name = "estimated_hours")
     private Integer estimatedHours;

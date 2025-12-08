@@ -3,6 +3,7 @@ package com.springboot.demo.controller;
 import com.springboot.demo.dto.epic.*;
 import com.springboot.demo.security.UserIdResolver;
 import com.springboot.demo.service.EpicService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -29,7 +30,7 @@ public class EpicController {
     @PostMapping
     @PreAuthorize("@gate.allows('project:epic:create', authentication, #projectId)")
     public ApiResponse<EpicDto> create(@PathVariable String projectId,
-                                       @RequestBody EpicCreateRequest req,
+                                       @Valid @RequestBody EpicCreateRequest req,
                                        Authentication authentication) {
         String userId = userIdResolver.resolveInternalId(authentication);
         EpicDto created = epicService.create(projectId, req, userId);
@@ -71,7 +72,7 @@ public class EpicController {
     @PreAuthorize("@gate.allows('project:epic:update', authentication, #projectId)")
     public ApiResponse<EpicDto> update(@PathVariable String projectId,
                                        @PathVariable Integer epicId,
-                                       @RequestBody EpicUpdateRequest req,
+                                       @Valid @RequestBody EpicUpdateRequest req,
                                        Authentication authentication) {
         String userId = userIdResolver.resolveInternalId(authentication);
         EpicDto updated = epicService.update(projectId, epicId, req, userId);
