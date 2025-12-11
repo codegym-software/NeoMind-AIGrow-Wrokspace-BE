@@ -1,9 +1,11 @@
 package com.springboot.demo.service.impl;
 
 import com.springboot.demo.dto.sprint.*;
+import com.springboot.demo.model.Epic;
 import com.springboot.demo.model.Sprint;
 import com.springboot.demo.model.Task;
 import com.springboot.demo.model.enums.SprintStatus;
+import com.springboot.demo.repository.EpicRepository;
 import com.springboot.demo.repository.ProjectRepository;
 import com.springboot.demo.repository.SprintRepository;
 import com.springboot.demo.repository.TaskRepository;
@@ -11,7 +13,10 @@ import com.springboot.demo.service.SprintService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +25,7 @@ public class SprintServiceImpl implements SprintService {
     private final SprintRepository sprintRepo;
     private final ProjectRepository projectRepo;
     private final TaskRepository taskRepo;
+    private final EpicRepository epicRepo;
 
     private SprintDto toDto(Sprint s) {
         return new SprintDto(
@@ -77,6 +83,13 @@ public class SprintServiceImpl implements SprintService {
         if (req.description() != null) s.setDescription(req.description().trim());
         if (req.isBacklog() != null) s.setIsBacklog(req.isBacklog());
         
+        // ========== AUTO-SET EPIC START DATE ==========
+        // Khi Sprint chuyển sang "active", auto-set startDate cho các Epics
+        if (req.status() != null && req.status() == SprintStatus.active 
+            && s.getStatus() != SprintStatus.active) {
+            updateEpicStartDatesOnSprintStart(s);
+        }
+        
         // ========== LOGIC COMPLETE SPRINT ==========
         // Khi status chuyển sang "completed", tự động chuyển tasks chưa Done về Backlog
         if (req.status() != null && req.status() == SprintStatus.completed 
@@ -102,12 +115,82 @@ public class SprintServiceImpl implements SprintService {
                 taskRepo.saveAll(incompleteTasks);
                 System.out.println("✅ Moved " + incompleteTasks.size() + " incomplete tasks to Backlog");
             }
+            
+            // ========== AUTO-SET EPIC END DATE ==========
+            // Khi Sprint complete, auto-set endDate cho các Epics
+            updateEpicEndDatesOnSprintComplete(s);
         }
         
         if (req.status() != null) s.setStatus(req.status());
 
         sprintRepo.save(s);
         return toDto(s);
+    }
+    
+    /**
+     * AUTO-SET EPIC DATES - Khi Sprint starts (status = active)
+     * Logic: Set epic.startDate = sprint.startDate cho tất cả Epics có tasks trong Sprint này
+     */
+    private void updateEpicStartDatesOnSprintStart(Sprint sprint) {
+        if (sprint.getStartDate() == null) return;
+        
+        // Lấy tất cả tasks trong sprint này
+        List<Task> sprintTasks = taskRepo.findBySprintIdAndArchivedAtIsNull(sprint.getId());
+        
+        // Lấy danh sách Epic IDs unique
+        Set<Integer> epicIds = sprintTasks.stream()
+            .filter(task -> task.getEpicId() != null)
+            .map(Task::getEpicId)
+            .collect(Collectors.toSet());
+        
+        if (epicIds.isEmpty()) return;
+        
+        // Update epic.startDate nếu chưa có hoặc sprint.startDate sớm hơn
+        List<Epic> epics = epicRepo.findAllById(epicIds);
+        epics.forEach(epic -> {
+            // Chỉ set nếu epic chưa có startDate HOẶC sprint start sớm hơn
+            if (epic.getStartDate() == null || sprint.getStartDate().isBefore(epic.getStartDate())) {
+                epic.setStartDate(sprint.getStartDate());
+                System.out.println("✅ Auto-set Epic[" + epic.getId() + "] startDate = " + sprint.getStartDate());
+            }
+        });
+        
+        if (!epics.isEmpty()) {
+            epicRepo.saveAll(epics);
+        }
+    }
+    
+    /**
+     * AUTO-SET EPIC DATES - Khi Sprint completes (status = completed)
+     * Logic: Set epic.endDate = sprint.endDate cho tất cả Epics có tasks trong Sprint này
+     */
+    private void updateEpicEndDatesOnSprintComplete(Sprint sprint) {
+        if (sprint.getEndDate() == null) return;
+        
+        // Lấy tất cả tasks trong sprint này
+        List<Task> sprintTasks = taskRepo.findBySprintIdAndArchivedAtIsNull(sprint.getId());
+        
+        // Lấy danh sách Epic IDs unique
+        Set<Integer> epicIds = sprintTasks.stream()
+            .filter(task -> task.getEpicId() != null)
+            .map(Task::getEpicId)
+            .collect(Collectors.toSet());
+        
+        if (epicIds.isEmpty()) return;
+        
+        // Update epic.endDate nếu chưa có hoặc sprint.endDate muộn hơn
+        List<Epic> epics = epicRepo.findAllById(epicIds);
+        epics.forEach(epic -> {
+            // Chỉ set nếu epic chưa có endDate HOẶC sprint end muộn hơn
+            if (epic.getEndDate() == null || sprint.getEndDate().isAfter(epic.getEndDate())) {
+                epic.setEndDate(sprint.getEndDate());
+                System.out.println("✅ Auto-set Epic[" + epic.getId() + "] endDate = " + sprint.getEndDate());
+            }
+        });
+        
+        if (!epics.isEmpty()) {
+            epicRepo.saveAll(epics);
+        }
     }
 
     @Override
