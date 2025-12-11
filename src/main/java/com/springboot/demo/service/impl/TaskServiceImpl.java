@@ -114,6 +114,14 @@ public class TaskServiceImpl implements TaskService {
             }
         }
         
+        // Auto-set startDate from Sprint's startDate if Task belongs to an active Sprint
+        if (task.getStartDate() == null && task.getSprintId() != null) {
+            Optional<Sprint> sprint = sprintRepo.findById(task.getSprintId());
+            if (sprint.isPresent() && sprint.get().getStatus() == SprintStatus.active) {
+                task.setStartDate(sprint.get().getStartDate());
+            }
+        }
+        
         Task saved = taskRepo.save(task);
         activityLogService.logTaskCreated(saved, currentUserId);
         return saved;
