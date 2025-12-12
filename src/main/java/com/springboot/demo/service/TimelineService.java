@@ -34,6 +34,17 @@ public interface TimelineService {
     TimelineItemDto updateTaskTimeline(Long taskId, TimelineUpdateRequest request, String userId);
     
     /**
+     * Cập nhật Timeline khi kéo thả Epic trên Gantt Chart
+     * Update start_date và end_date của Epic
+     * 
+     * @param epicId ID của Epic
+     * @param request Timeline update request
+     * @param userId ID của user hiện tại
+     * @return TimelineItemDto đã được update
+     */
+    TimelineItemDto updateEpicTimeline(Integer epicId, TimelineUpdateRequest request, String userId);
+    
+    /**
      * Đánh dấu task hoàn thành hoặc uncomplete
      * Update status và completed_at
      * LƯU Ý: KHÔNG thay đổi due_date để giữ nguyên kế hoạch

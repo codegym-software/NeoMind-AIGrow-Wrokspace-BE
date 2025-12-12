@@ -114,8 +114,13 @@ public class TaskServiceImpl implements TaskService {
             }
         }
         
-        // Auto-set startDate from Sprint's startDate if Task belongs to an active Sprint
-        if (task.getStartDate() == null && task.getSprintId() != null) {
+        // Set startDate mặc định là ngày hiện tại nếu chưa có
+        if (task.getStartDate() == null) {
+            task.setStartDate(LocalDate.now());
+        }
+        
+        // Auto-override startDate nếu Task thuộc Sprint đang active
+        if (task.getSprintId() != null) {
             Optional<Sprint> sprint = sprintRepo.findById(task.getSprintId());
             if (sprint.isPresent() && sprint.get().getStatus() == SprintStatus.active) {
                 task.setStartDate(sprint.get().getStartDate());
@@ -178,10 +183,30 @@ public class TaskServiceImpl implements TaskService {
             // Không có statusColumn → Đây là SPRINT drag & drop
             if (task.getOrderIndex() != null) {
                 // Sprint drag: cho phép update sprintId (kể cả null để về backlog)
-                existing.setSprintId(task.getSprintId());
+                Integer oldSprintId = existing.getSprintId();
+                Integer newSprintId = task.getSprintId();
+                existing.setSprintId(newSprintId);
+                
+                // Auto-update startDate nếu kéo vào Sprint đang active
+                if (newSprintId != null && !newSprintId.equals(oldSprintId)) {
+                    Optional<Sprint> sprint = sprintRepo.findById(newSprintId);
+                    if (sprint.isPresent() && sprint.get().getStatus() == SprintStatus.active) {
+                        existing.setStartDate(sprint.get().getStartDate());
+                    }
+                }
             } else if (task.getSprintId() != null) {
                 // Regular update với sprintId không null
-                existing.setSprintId(task.getSprintId());
+                Integer oldSprintId = existing.getSprintId();
+                Integer newSprintId = task.getSprintId();
+                existing.setSprintId(newSprintId);
+                
+                // Auto-update startDate nếu kéo vào Sprint đang active
+                if (!newSprintId.equals(oldSprintId)) {
+                    Optional<Sprint> sprint = sprintRepo.findById(newSprintId);
+                    if (sprint.isPresent() && sprint.get().getStatus() == SprintStatus.active) {
+                        existing.setStartDate(sprint.get().getStartDate());
+                    }
+                }
             }
         }
         // Nếu có statusColumn → Đây là BOARD drag, KHÔNG update sprintId (giữ nguyên)
@@ -249,6 +274,15 @@ public class TaskServiceImpl implements TaskService {
         if (request.getNewSprintId() != null || request.isMoveToBacklog()) {
              Integer newSprintId = request.isMoveToBacklog() ? null : request.getNewSprintId();
              task.setSprintId(newSprintId);
+             
+             // Auto-update startDate nếu kéo vào Sprint đang active
+             if (newSprintId != null) {
+                 Optional<Sprint> sprint = sprintRepo.findById(newSprintId);
+                 if (sprint.isPresent() && sprint.get().getStatus() == SprintStatus.active) {
+                     task.setStartDate(sprint.get().getStartDate());
+                 }
+             }
+             
              if(request.getNewOrderIndex() != null) {
                  task.setOrderIndex(request.getNewOrderIndex());
              }

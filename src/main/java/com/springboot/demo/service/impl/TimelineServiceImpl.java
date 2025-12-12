@@ -226,6 +226,29 @@ public class TimelineServiceImpl implements TimelineService {
     
     @Override
     @Transactional
+    public TimelineItemDto updateEpicTimeline(Integer epicId, TimelineUpdateRequest request, String userId) {
+        Epic epic = epicRepo.findById(epicId)
+            .orElseThrow(() -> new ResourceNotFoundException("Epic not found with id: " + epicId));
+        
+        checkProjectAccess(epic.getProjectId(), userId);
+        
+        // Update start_date và end_date (chỉ update nếu không null)
+        if (request.getStartDate() != null) {
+            epic.setStartDate(request.getStartDate());
+        }
+        
+        if (request.getDueDate() != null) {
+            epic.setEndDate(request.getDueDate());
+        }
+        
+        epicRepo.save(epic);
+        
+        // Trả về TimelineItemDto
+        return convertEpicToTimelineItem(epic);
+    }
+    
+    @Override
+    @Transactional
     public TimelineItemDto completeTask(Long taskId, TaskCompleteRequest request, String userId) {
         Task task = taskRepo.findById(taskId)
             .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
@@ -296,6 +319,31 @@ public class TimelineServiceImpl implements TimelineService {
         
         if (task.getEndDate() != null) {
             item.setCompletedDate(task.getEndDate().toLocalDate());
+        }
+        
+        return item;
+    }
+    
+    /**
+     * Helper: Convert Epic entity sang TimelineItemDto
+     */
+    private TimelineItemDto convertEpicToTimelineItem(Epic epic) {
+        TimelineItemDto item = new TimelineItemDto();
+        item.setId("epic-" + epic.getId());
+        item.setText(epic.getTitle());
+        item.setType("epic");
+        item.setProjectId(epic.getProjectId());
+        item.setStartDate(epic.getStartDate());
+        item.setEndDate(epic.getEndDate());
+        item.setParent(null); // Epic không có parent
+        
+        // Calculate progress from tasks (đơn giản hóa: chỉ đếm số tasks)
+        long totalTasks = taskRepo.countByEpicId(epic.getId());
+        if (totalTasks > 0) {
+            // Tính toán chính xác progress cần query thêm, tạm thời set 0.0
+            item.setProgress(0.0);
+        } else {
+            item.setProgress(0.0);
         }
         
         return item;
