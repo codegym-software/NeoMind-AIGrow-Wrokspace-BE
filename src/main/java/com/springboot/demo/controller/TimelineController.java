@@ -68,6 +68,26 @@ public class TimelineController {
     }
     
     /**
+     * PATCH /api/projects/{projectId}/timeline/epics/{epicId}
+     * Cập nhật Timeline khi kéo thả Epic trên Gantt Chart
+     * 
+     * Update trực tiếp start_date và end_date của Epic
+     */
+    @PatchMapping("/epics/{epicId}")
+    @PreAuthorize("@gate.allows('project:epic:update', authentication, #projectId)")
+    public ApiResponse<TimelineItemDto> updateEpicTimeline(
+            @PathVariable String projectId,
+            @PathVariable Integer epicId,
+            @Valid @RequestBody TimelineUpdateRequest request,
+            Authentication authentication) {
+        
+        String userId = userIdResolver.resolveInternalId(authentication);
+        TimelineItemDto updated = timelineService.updateEpicTimeline(epicId, request, userId);
+        
+        return new ApiResponse<>("Epic timeline updated successfully", updated);
+    }
+    
+    /**
      * PATCH /api/projects/{projectId}/timeline/tasks/{taskId}/complete
      * Đánh dấu task hoàn thành hoặc uncomplete
      * 

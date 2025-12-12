@@ -88,6 +88,7 @@ public class SprintServiceImpl implements SprintService {
         if (req.status() != null && req.status() == SprintStatus.active 
             && s.getStatus() != SprintStatus.active) {
             updateEpicStartDatesOnSprintStart(s);
+            updateTaskStartDatesOnSprintStart(s);
         }
         
         // ========== LOGIC COMPLETE SPRINT ==========
@@ -158,6 +159,27 @@ public class SprintServiceImpl implements SprintService {
         if (!epics.isEmpty()) {
             epicRepo.saveAll(epics);
         }
+    }
+    
+    /**
+     * AUTO-UPDATE TASK START DATES - Khi Sprint chuyển sang active
+     * Logic: Sửa startDate của tất cả tasks trong Sprint từ ngày mặc định thành sprint.startDate
+     */
+    private void updateTaskStartDatesOnSprintStart(Sprint sprint) {
+        if (sprint.getStartDate() == null) return;
+        
+        // Lấy tất cả tasks trong sprint này
+        List<Task> sprintTasks = taskRepo.findBySprintIdAndArchivedAtIsNull(sprint.getId());
+        
+        if (sprintTasks.isEmpty()) return;
+        
+        // Update startDate của tất cả tasks thành sprint.startDate
+        sprintTasks.forEach(task -> {
+            task.setStartDate(sprint.getStartDate());
+            System.out.println("✅ Auto-update Task[" + task.getId() + "] startDate = " + sprint.getStartDate());
+        });
+        
+        taskRepo.saveAll(sprintTasks);
     }
     
     /**
