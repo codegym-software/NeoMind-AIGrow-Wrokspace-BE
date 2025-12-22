@@ -8,6 +8,7 @@ import com.springboot.demo.model.Role;
 import com.springboot.demo.model.User;
 import com.springboot.demo.model.enums.Scope;
 import com.springboot.demo.repository.CompanyMemberRepository;
+import com.springboot.demo.repository.CompanyRepository;
 import com.springboot.demo.repository.MembershipCleanupRepository;
 import com.springboot.demo.repository.RoleRepository;
 import com.springboot.demo.repository.UserRepository;
@@ -31,6 +32,7 @@ import java.util.Optional;
 public class CompanyMemberServiceImpl implements CompanyMemberService {
 
     private final CompanyMemberRepository cmRepo;
+    private final CompanyRepository companyRepo;
     private final RoleRepository roleRepo;
     private final AbilityService ability;
     private final MembershipCleanupRepository membershipCleanup;
@@ -190,7 +192,10 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
         CompanyMember saved = cmRepo.save(member);
 
         try {
-            emailService.sendInvitationEmail(normalized, "Company", inviterEmail);
+            String companyName = companyRepo.findById(companyId)
+                    .map(c -> c.getName())
+                    .orElse("Company");
+            emailService.sendInvitationEmail(normalized, companyName, inviterEmail);
         } catch (Exception ignore) {}
 
         return new InviteResponse("created", saved);

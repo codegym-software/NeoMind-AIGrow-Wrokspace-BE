@@ -17,9 +17,6 @@ public class EmailService {
     @Value("${app.email.from:noreply@example.com}")
     private String from;
 
-    @Value("${app.email.subject:Bạn được mời tham gia công ty}")
-    private String subject;
-
     @Value("${app.url:https://ai-grow.com}")
     private String appUrl;
 
@@ -34,13 +31,13 @@ public class EmailService {
         }
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setTo(toEmail);
-            helper.setSubject(subject + " " + companyName);
+            helper.setSubject("📩 Lời mời tham gia " + companyName);
             helper.setFrom(from);
 
             String body = "Xin chào!\n\n" +
-                    inviterName + " đã mời bạn tham gia công ty " + companyName + ".\n\n" +
+                    inviterName + " đã mời bạn tham gia " + companyName + ".\n\n" +
                     "Đăng nhập tại: " + appUrl + " với email: " + toEmail + "\n\n" +
                     "AI-Grow Workspace";
 
